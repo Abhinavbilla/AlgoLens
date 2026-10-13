@@ -1,0 +1,23 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.badge[data-state="ok"] .dot {
+  background: var(--ok);
+}
+
+.badge[data-state="degraded"] .dot,
+.badge[data-state="offline"] .dot {
+  background: var(--warn);
+}
