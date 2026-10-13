@@ -52,10 +52,23 @@ docker compose down
 - **Memory classification for C++** relies on `bad_alloc` reaching stderr. The real harness will catch `std::bad_alloc` itself and report it explicitly.
 - **kafel's syscall table is older than the kernel**: `umount2` is spelled `umount`, and `io_uring_*`/`clone3` need raw numbers (425–427, 435).
 
+## Found while building the real sandbox service (M1)
+
+These are built into `sandbox/` and covered by `sandbox/tests/test_batch.py`, which runs under the production container settings (`docker compose --profile test run --rm sandbox-test`).
+
+- **Our own failures must never look like the code's failures.** Two more cases turned up beyond the spike's launch failure. The jail has no `/dev`, so the driver's per-test setup failed, and every test was reported as a `runtime_error` by the solution. Now each test's child sends a "ready" byte only after setup succeeds, written and closed before any solution code runs. Anything else is `setup_error`, which the batch turns into `sandbox_error`. A fault-injection test proves this, and another proves solution code can't fake it.
+- **Crash dumps.** On WSL every crash inside the jail was piped to `/wsl-capture-crash`. That took about 2 s per crash (so a `bad_alloc` showed up as a timeout, depending on the host) and left 627 MB of dump files in `%TEMP%\wsl-crashes` on C:. `RLIMIT_CORE = 1` byte is the kernel's special value that suppresses piped dumps as well, and 0 does not. The driver sets it first thing, and the compiler runs through the driver's `--exec` wrapper so it gets the same setting.
+- **`python -I` ignores `PYTHONHASHSEED`**, because it implies `-E`, so set iteration order was random between runs. Traces must replay identically, so the driver runs with `-P -s -S`. nsjail passes only the environment variables we set, so nothing is lost.
+- **A test is over when its own process exits.** Leftover processes holding the test's pipes open had turned a correct result into a `timeout`. As PID 1 of the jail, the driver now `kill(-1)`s every other process between tests, including ones that escaped into their own session.
+- **Socket access.** The sandbox has no network at all and serves HTTP on a Unix socket in a shared volume. uvicorn makes the socket world-writable, so the directory is made owner-only (uid 10001: sandbox, api, worker) on every start. A different uid is refused.
+- **Startup self-test.** Until it passes, the sandbox is unhealthy and refuses every batch, and the worker doesn't start. It checks that jails start, that Python and C++ run, and that `unshare`, network and host files are blocked, with CPU limits enforced.
+
 ## Open risk for CI and other Linux hosts
 
 This machine's WSL kernel has no AppArmor. GitHub's `ubuntu-24.04` runners (and stock Ubuntu hosts) do, and two things there may block nsjail:
 - Docker's `docker-default` AppArmor profile denies `mount`
 - `kernel.apparmor_restrict_unprivileged_userns=1` restricts unprivileged user namespaces
 
-Expect to need `apparmor=unconfined` (or a small custom AppArmor profile) on the sandbox service, and possibly the sysctl changed on the CI runner. This will come up in M1 when the sandbox joins the main compose file and the CI compose job runs it.
+Expect to need `apparmor=unconfined` (or a small custom AppArmor profile) on the sandbox service, and possibly the sysctl changed on the CI runner.
+
+**Status:** handled for CI by `docker-compose.ci.yml` (`apparmor=unconfined`, CI only) plus the sysctl step in `.github/workflows/ci.yml`. The sandbox's self-test still has to pass there, so this can't silently weaken isolation. **It hasn't run on GitHub yet** (the repo has no remote), so treat it as unverified until the first CI run.

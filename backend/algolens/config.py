@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ALGOLENS_", env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://algolens:algolens@localhost:5432/algolens"
+    sandbox_socket: str = "/run/sandbox/sandbox.sock"
 
     anthropic_api_key: str | None = Field(
         default=None,

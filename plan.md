@@ -233,6 +233,7 @@ A template is chosen by the line that just ran, the branch taken, and a conditio
   - **State paths**: names, indexing, node fields, `old(path)`. These render as the stored value.
   - **Computed values**: arithmetic or `len()` over state paths. The engine computes the value and **always renders it with its operands**, e.g. `{nums[l] + nums[r]}` renders as "2 + 15 = 17" and `{len(stack)}` as "len(stack) = 3". The template can't supply or format the result itself; it only names the expression. Nested expressions show their leaf operands: `{a + b * c}` renders as "2 + 3 × 4 = 14".
   - Comparisons and `and`/`or`/`not` are allowed only in `when`, not in text.
+  - **[Decision, M1]** Numeric literals can't be arithmetic operands in text (`{n - 1}` is rejected), because that number wouldn't come from the state. They're fine as indices (`{nums[0]}`) and anywhere in `when`. Easy to relax later if narration reads badly without it.
 - **Lint at generation time**, run over the traces of all test inputs:
   - every expression must parse and evaluate on the steps where its line runs
   - no literal numbers in text, except fixed phrases
@@ -344,6 +345,12 @@ If any of these fail, **I stop and come back to you** with what failed and a rec
 3. **bubblewrap**: lighter than nsjail, but needs the same user namespaces, so it probably hits the same wall.
 
 ### 11.2 Design (once the mechanism is settled)
+
+**As built in M1** (`sandbox/`, details in `sandbox/spike/RESULTS.md`):
+- `POST /v1/batch` runs one solution against up to 2,000 tests. C++ is compiled in its own jail; then a driver running as PID 1 of a second jail forks a fresh child per test, with per-test CPU (`ITIMER_PROF`), wall-time, memory and output limits.
+- Batch statuses: `ok`, `compile_error`, `batch_timeout` (finished tests keep their results), `sandbox_error`. Per-test outcomes: `ok`, `runtime_error`, `timeout`, `memory`, `output_limit`, `not_run`. **`sandbox_error` is never a verdict on the code** and must not count toward or against verification (M5).
+- Python results come back as JSON from the entry function; C++ programs read JSON on stdin and emit JSON on fd 3 (`algolens.h`, `nlohmann/json` available). The glue that maps the input DSL to C++ types arrives with M3/M5.
+- The sandbox has no network and is reached only through a Unix socket on a shared volume. A startup self-test gates its health.
 - Generated code, AI-written validators and AI-written checkers all run in the sandbox only.
 - API/worker reach it over an internal-only network.
 - Outcomes: `ok`, `wrong`, `runtime_error`, `timeout`, `memory`, `output_limit`, `compile_error`.

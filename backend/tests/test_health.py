@@ -11,14 +11,29 @@ def test_health_reports_database_down(monkeypatch):
         "postgresql+psycopg://x:x@127.0.0.1:1/x", connect_args={"connect_timeout": 1}
     )
     monkeypatch.setattr(app_module, "database_is_up", lambda: session_module.database_is_up(dead))
+    monkeypatch.setattr(app_module, "sandbox_is_up", lambda: False)
     res = TestClient(app_module.create_app()).get("/api/health")
     assert res.status_code == 503
-    assert res.json() == {"status": "degraded", "version": __version__, "database": "down"}
+    assert res.json() == {
+        "status": "degraded",
+        "version": __version__,
+        "database": "down",
+        "sandbox": "down",
+    }
+
+
+def test_sandbox_outage_does_not_make_api_unhealthy(monkeypatch):
+    monkeypatch.setattr(app_module, "database_is_up", lambda: True)
+    monkeypatch.setattr(app_module, "sandbox_is_up", lambda: False)
+    res = TestClient(app_module.create_app()).get("/api/health")
+    assert res.status_code == 200
+    assert res.json()["sandbox"] == "down"
 
 
 def test_health_ok_with_database(db_url, monkeypatch):
     engine = create_engine(db_url)
     monkeypatch.setattr(app_module, "database_is_up", lambda: session_module.database_is_up(engine))
+    monkeypatch.setattr(app_module, "sandbox_is_up", lambda: True)
     res = TestClient(app_module.create_app()).get("/api/health")
     assert res.status_code == 200
     assert res.json()["database"] == "ok"

@@ -5,7 +5,10 @@ WORKDIR /app
 
 COPY pyproject.toml ./
 COPY algolens ./algolens
-RUN pip install . && useradd --create-home --uid 10001 algolens
+# /run/sandbox is the shared socket volume; whichever container creates it sets its owner,
+# so it must be owned by uid 10001 here too.
+RUN pip install . && useradd --create-home --uid 10001 algolens \
+    && mkdir -p /run/sandbox && chown algolens:algolens /run/sandbox
 
 USER algolens
 EXPOSE 8000

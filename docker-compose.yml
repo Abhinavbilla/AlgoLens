@@ -7,8 +7,43 @@ x-backend: &backend
       required: false
   environment:
     ALGOLENS_DATABASE_URL: postgresql+psycopg://algolens:algolens@db:5432/algolens
+    ALGOLENS_SANDBOX_SOCKET: /run/sandbox/sandbox.sock
+  volumes:
+    - sandbox-socket:/run/sandbox
+
+# Untrusted code runs here. Every setting is deliberate: see sandbox/spike/RESULTS.md.
+x-sandbox-security: &sandbox-security
+  network_mode: none          # talks to the backend only through the socket volume
+  read_only: true
+  cap_drop: [ALL]             # no capabilities at all; nsjail uses user namespaces instead
+  security_opt:
+    - no-new-privileges:true
+    - seccomp=./sandbox/seccomp/sandbox.json   # Docker default + namespace syscalls
+  tmpfs:
+    - /tmp:size=64m           # noexec (Docker's default for tmpfs)
+    - /jobs:size=1g,exec,uid=10001,gid=10001,mode=0700   # job folders; C++ binaries run here
+  mem_limit: 2g
+  pids_limit: 256
+  cpus: 2
 
 services:
+  sandbox:
+    <<: *sandbox-security
+    build:
+      context: ./sandbox
+      target: runtime
+    volumes:
+      - sandbox-socket:/run/sandbox
+
+  # Runs the sandbox's hostile-code suite under the same restrictions:
+  #   docker compose --profile test run --rm sandbox-test
+  sandbox-test:
+    <<: *sandbox-security
+    profiles: [test]
+    build:
+      context: ./sandbox
+      target: test
+
   db:
     image: postgres:16-alpine
     environment:
@@ -49,6 +84,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      sandbox:
+        condition: service_healthy
 
   web:
     build: ./frontend
@@ -60,3 +97,4 @@ services:
 
 volumes:
   pgdata:
+  sandbox-socket:

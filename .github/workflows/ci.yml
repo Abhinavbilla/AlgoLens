@@ -30,6 +30,10 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: ruff format --check .
+      - name: Lint the sandbox with the same rules
+        run: |
+          ruff check ../sandbox --config pyproject.toml --exclude ../sandbox/spike
+          ruff format --check ../sandbox --config pyproject.toml --exclude ../sandbox/spike
       - run: pytest -q
 
   frontend:
@@ -51,13 +55,28 @@ jobs:
       - run: npm run build
 
   compose:
-    # The M0 done criterion: one command brings the whole stack up healthy.
+    # One command brings the whole stack up healthy (M0), with a verified sandbox (M1).
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: docker-compose.yml:docker-compose.ci.yml
     steps:
       - uses: actions/checkout@v4
+      # Ubuntu 24.04 restricts unprivileged user namespaces through AppArmor; nsjail needs them.
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      # Brings up every service; the sandbox only turns healthy if its self-test proves isolation.
       - run: docker compose up -d --build --wait --wait-timeout 300
-      - run: curl --fail --silent http://127.0.0.1:8080/api/health
+      - run: curl --fail --silent http://127.0.0.1:8080/api/health | tee /dev/stderr | grep -q '"sandbox":"ok"'
       - run: curl --fail --silent http://127.0.0.1:8080/ | grep -q "<title>AlgoLens</title>"
+      - name: Sandbox hostile-code suite
+        run: docker compose --profile test run --rm sandbox-test
+      - name: Backend tests against the real database and sandbox
+        run: |
+          docker compose exec -T db createdb -U algolens algolens_test
+          docker run --rm --network algolens_default \
+            -v algolens_sandbox-socket:/run/sandbox -v "$PWD/backend:/src" -w /src \
+            -e ALGOLENS_TEST_DATABASE_URL=postgresql+psycopg://algolens:algolens@db:5432/algolens_test \
+            -e ALGOLENS_TEST_SANDBOX_SOCKET=/run/sandbox/sandbox.sock \
+            python:3.12-slim sh -c 'pip install -q -e ".[dev]" && pytest -q -p no:cacheprovider'
       - if: failure()
         run: docker compose logs
       - if: always()
