@@ -1,0 +1,29 @@
+name: algolens-spike
+
+services:
+  spike:
+    build: .
+    # Hardened, unprivileged: no privileged mode, no capabilities, no network.
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=${SPIKE_SECCOMP:-./seccomp-nsjail.json}
+    tmpfs:
+      - /tmp:size=64m
+      # Job folders need exec so compiled C++ can run; nothing else is executable-writable.
+      - /jobs:size=512m,exec,uid=10001,gid=10001,mode=0700
+    mem_limit: 1g
+    pids_limit: 256
+    cpus: 2
+
+  # Heartbeat in a neighbouring container: gaps would mean the spike disturbed it.
+  canary:
+    image: python:3.12-slim-bookworm
+    network_mode: none
+    command:
+      - python
+      - -u
+      - -c
+      - "import time\nwhile True:\n    print(f'{time.time():.3f}'); time.sleep(0.2)"

@@ -336,6 +336,8 @@ nsjail needs to create namespaces. Inside Docker that often requires `privileged
 - CPU, wall time, memory, PID and output limits each trigger and are classified correctly
 - a fork bomb doesn't affect other containers
 
+**Spike result (2026-10-13): passed.** All criteria were met with `cap_drop: [ALL]` and a custom seccomp profile; a stricter seccomp filter for the jailed program itself is required on top. Details, evidence and lessons are in `sandbox/spike/RESULTS.md`.
+
 If any of these fail, **I stop and come back to you** with what failed and a recommendation. Fallbacks I'd consider, roughly in order:
 1. **Hardened unprivileged container + rlimits**: `network_mode: none`, `read_only`, `cap_drop: ALL`, `no-new-privileges`, compose-level `mem_limit`/`pids_limit`/`cpus`, code run as a non-root user with `setrlimit` and a fresh tmp dir per job. A small pool of these is recycled after each job. It relies only on Docker's own isolation; isolation between jobs is weaker, which recycling mitigates.
 2. **gVisor (`runsc`) runtime** for the sandbox container. Stronger, but installing it on Docker Desktop/WSL2 may be awkward.
