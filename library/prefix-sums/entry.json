@@ -1,0 +1,45 @@
+{
+  "title": "Prefix sums: range sum queries",
+  "category": "Prefix sums",
+  "summary": "Precompute running totals once, then answer each range sum with one subtraction.",
+  "order": 33,
+  "entry": "range_sums",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": -100, "max": 100}, "len": {"min": 1, "max": 20}}},
+      {"name": "queries", "type": {"kind": "array", "of": {"kind": "array", "of": {"kind": "int", "min": 0, "max": "len(nums) - 1"}, "len": {"min": 2, "max": 2}, "sorted": "asc"}, "len": {"min": 1, "max": 8}}}
+    ]
+  },
+  "note": "Each query is [l, r] with l ≤ r: the sum of positions l to r, inclusive.",
+  "default_input": {"args": [[3, 1, 4, 1, 5, 9], [[0, 2], [1, 4], [3, 3]]]},
+  "tests": [
+    {"args": [[3, 1, 4, 1, 5, 9], [[0, 2], [1, 4], [3, 3]]]},
+    {"args": [[5], [[0, 0]]]},
+    {"args": [[1, 2, 3], [[0, 2]]]},
+    {"args": [[-1, -2, 3], [[0, 1], [1, 2], [2, 2]]]},
+    {"args": [[0, 0, 0], [[0, 2], [1, 1]]]},
+    {"args": [[10, -10, 10, -10], [[0, 3], [0, 0], [1, 2]]]},
+    {"args": [[1, 1, 1, 1, 1], [[0, 4], [2, 4], [4, 4], [0, 0]]]},
+    {"args": [[100, 100], [[0, 1], [1, 1]]]}
+  ],
+  "cpp_lines": {"1": 5, "2": 7, "3": 8, "4": 9, "5": 11, "6": 12, "7": 14, "8": 16},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "range": {"label": "query", "from": "l", "to": "r"}},
+      {"kind": "array", "var": "prefix", "label": "prefix (sum of the first i values)", "pointers": [{"label": "l", "at": "l"}, {"label": "r+1", "at": "r + 1"}]},
+      {"kind": "list", "var": "answers"},
+      {"kind": "vars", "vars": ["x", "l", "r"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "prefix[i] will hold the sum of the first i values. The sum of no values is {prefix[0]}."},
+    {"line": 3, "next": 4, "text": "Next value: {x}."},
+    {"line": 3, "next": 5, "text": "All the running totals are ready: {prefix}."},
+    {"line": 4, "text": "Add {x} to the running total: prefix is now {prefix}."},
+    {"line": 5, "text": "Now each query takes a single subtraction."},
+    {"line": 6, "next": 7, "text": "Query: the sum of positions {l} to {r}."},
+    {"line": 6, "next": 8, "text": "Every query is answered."},
+    {"line": 7, "text": "Everything up to position {r}, minus everything before position {l}: {prefix[r + 1] - prefix[l]}."},
+    {"line": 8, "text": "The answers: {answers}."}
+  ]
+}

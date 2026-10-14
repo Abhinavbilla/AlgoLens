@@ -200,6 +200,15 @@ export type ApproachView = {
   examples_checked: number;
   repairs: number;
   failing_case: Record<string, unknown> | null;
+  animated: boolean;
+  animation_note: string;
+  default_input?: { args: unknown[] };
+};
+
+export type Comparison = {
+  sizes: number[];
+  series: { id: string; name: string; points: { n: number; ops: number | null; status: string }[] }[];
+  limits: { cpu_ms: number };
 };
 
 export type ProblemView = {
@@ -211,6 +220,7 @@ export type ProblemView = {
   params: { name: string }[];
   examples: { args: unknown[]; expected: unknown }[];
   comparator: string;
+  inputs: InputParam[];
   approaches: ApproachView[];
 };
 
@@ -233,4 +243,12 @@ export const api = {
   job: (id: string) => get<JobView>(`/api/jobs/${encodeURIComponent(id)}`),
   jobEventsUrl: (id: string) => `/api/jobs/${encodeURIComponent(id)}/events`,
   problem: (id: string) => get<ProblemView>(`/api/problems/${encodeURIComponent(id)}`),
+  compare: (pid: string) => get<Comparison>(`/api/problems/${encodeURIComponent(pid)}/compare`),
+  approachAnimation: (pid: string, aid: string) =>
+    get<Animation>(`/api/problems/${encodeURIComponent(pid)}/approaches/${encodeURIComponent(aid)}/animation`),
+  customApproachAnimation: (pid: string, aid: string, args: unknown[]) =>
+    request<Animation>(
+      `/api/problems/${encodeURIComponent(pid)}/approaches/${encodeURIComponent(aid)}/animation`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ args }) },
+    ),
 };

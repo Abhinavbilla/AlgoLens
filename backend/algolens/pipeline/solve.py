@@ -72,6 +72,7 @@ class ApproachResult:
     examples_checked: int = 0
     repairs: int = 0
     failing_case: dict | None = None
+    animation: dict | None = None  # see pipeline/visualize.py; only for verified approaches
 
     def public(self) -> dict:
         return asdict(self)
@@ -196,6 +197,7 @@ def solve(
     result = SolveResult("done", spec=spec.model_dump(), timings=run.timings)
     try:
         _verify_all(run, spec, rules, result)
+        _animate(run, result)
     except BudgetExhausted as exc:
         reason = f"Not verified: the problem's AI budget ran out ({exc})."
         run.failures.append(reason)
@@ -256,6 +258,21 @@ def _verify_all(run: _Run, spec: ParsedProblem, rules: InputRules, result: Solve
     for a in approaches[1:]:
         with run.timed(f"checking {a.name}"):
             judge.check_approach(a)
+
+
+def _animate(run: _Run, result: SolveResult) -> None:
+    """Animations only for verified code: an animation teaches, so it must be right."""
+    from algolens.pipeline.visualize import plan_animation
+
+    for a in result.approaches:
+        if a.status != "verified":
+            continue
+        with run.timed("preparing animations"):
+            try:
+                a.animation = plan_animation(run, result.spec or {}, a.python_code, a.cpp_code)
+            except BudgetExhausted:
+                a.animation = {"unavailable": "The AI budget ran out before this was animated."}
+                raise
 
 
 def _fields(a: GeneratedApproach | ApproachResult) -> dict:

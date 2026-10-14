@@ -14,9 +14,12 @@ CHUNK = 100  # tests per sandbox batch (lets progress be reported between batche
 
 def run_tests(
     client: SandboxClient, language: str, source: str, entry: str, tests: list, extras: dict,
-    on_progress=None,
+    on_progress=None, per_test: dict | None = None,
 ) -> list[dict]:  # fmt: skip
-    """One result per test ({"outcome", "value", "detail"}), in order."""
+    """One result per test ({"outcome", "value", "detail"}, plus "ops" for tests that ask
+    for a count), in order. `per_test` overrides the sandbox's per-test limits."""
+    if per_test:
+        extras = {**extras, "per_test": per_test}
     out: list[dict] = []
     for i in range(0, len(tests), CHUNK):
         chunk = tests[i : i + CHUNK]

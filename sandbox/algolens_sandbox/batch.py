@@ -58,6 +58,7 @@ class PerTestLimits(BaseModel):
 class TestCase(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     input: dict
+    count: bool = False  # Python only: also report `ops`, executed solution lines
 
 
 class BatchRequest(BaseModel):
@@ -90,6 +91,7 @@ class TestResult(BaseModel):
     stdout: str = ""
     stderr: str = ""
     trace: dict | None = None
+    ops: int | None = None
 
 
 class BatchResponse(BaseModel):

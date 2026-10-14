@@ -7,11 +7,26 @@ Step-by-step algorithm animations built only from real, verified runs of code. S
 Needs Docker (with Compose v2.24+).
 
 ```sh
-cp .env.example .env   # optional until M5; add ANTHROPIC_API_KEY there
+cp .env.example .env   # then paste your API keys into .env (it's git-ignored)
 docker compose up --build
 ```
 
-Open http://localhost:8080. Migrations run automatically when the API starts.
+Open http://localhost:8080. Migrations run automatically when the API starts. The library works without any keys; **Paste a problem** needs them.
+
+### AI keys
+
+Pasted problems are solved by AI models. By default these are free tiers: Gemini for most roles (key from https://aistudio.google.com) and Groq for the independent second brute force (key from https://console.groq.com). Put them in `.env` as `GEMINI_API_KEY` and `GROQ_API_KEY`, then `docker compose up -d` to pick them up. Each role's model is a `provider:model` setting in `.env` (providers: `gemini`, `groq`, `anthropic`, `openai`), so you can switch to paid models without code changes. Brute A and Brute B must be different models.
+
+Privacy: the statement is sent to those providers (free tiers may use prompts to improve their models). AlgoLens stores only a hash of it, never the text.
+
+### What happens to a pasted problem
+
+1. The statement is read into a precise signature, input rules and the worked examples; out-of-scope problems are turned down with a reason.
+2. Two brute forces are written independently (different models; the second sees only the statement), plus one or two better approaches.
+3. Every approach is run on the examples and 300 random valid inputs against the brute force, and its C++ against its Python. Failures get up to two repair rounds. Only approaches that pass everything are marked verified.
+4. Verified approaches get an animation (checked against real recordings), and a chart of how their work grows with input size.
+
+A per-problem token budget (`ALGOLENS_MAX_TOKENS_PER_PROBLEM`) caps the AI spend.
 
 ## Develop
 
@@ -49,6 +64,15 @@ Algorithm library (`library/`, one folder per entry). It's loaded into Postgres 
 docker compose exec api algolens library verify            # all entries
 docker compose exec api algolens library verify bubble-sort
 ```
+
+Evaluation (plan §10): put problems in `eval/<name>/` with `statement.txt`, `reference.py` (defines `reference(...)`, and optionally `check(..., output)`) and an optional `meta.json`. The folder is git-ignored. Then:
+
+```sh
+docker compose run --rm -v ./eval:/app/eval api algolens eval --set /app/eval   # all problems
+docker compose run --rm -v ./eval:/app/eval api algolens eval --set /app/eval two-sum
+```
+
+The report lands in `eval/reports/<time>.md` and `.json`. The exit code is 1 if any verified approach disagrees with your reference (a false verification).
 
 Frontend:
 

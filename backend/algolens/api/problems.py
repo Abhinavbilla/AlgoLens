@@ -9,9 +9,21 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from algolens.db.models import Job
+from algolens.api.library import UNAVAILABLE, _animation_or_error
+from algolens.compare import cached_compare
+from algolens.db.models import Approach, Job, Problem
 from algolens.db.session import session_factory
-from algolens.pipeline.service import MAX_TEXT, missing_keys, normalize, problem_view, submit
+from algolens.pipeline.service import (
+    MAX_TEXT,
+    input_rules,
+    missing_keys,
+    normalize,
+    problem_view,
+    submit,
+)
+from algolens.pipeline.visualize import AnimationSource, sandbox_extras
+from algolens.sandbox.client import SandboxClient, SandboxUnavailable
+from algolens.schema.service import check_input
 
 router = APIRouter(prefix="/api", tags=["problems"])
 FINAL = ("done", "failed")
@@ -94,3 +106,75 @@ def get_problem(problem_id: uuid.UUID) -> dict:
     if view is None:
         raise HTTPException(404, detail="no such problem")
     return view
+
+
+# --- animations of verified approaches ------------------------------------------------------
+
+
+def _approach_source(problem_id: uuid.UUID, approach_id: uuid.UUID):
+    with session_factory()() as session:
+        problem = session.get(Problem, problem_id)
+        approach = session.get(Approach, approach_id)
+        if problem is None or approach is None or approach.problem_id != problem.id:
+            raise HTTPException(404, detail="no such approach")
+    plan = approach.visual_spec or {}
+    if not plan or "unavailable" in plan:
+        message = plan.get("unavailable") or "Only verified approaches are animated."
+        raise HTTPException(409, detail={"message": message, "issues": []})
+    spec = problem.spec or {}
+    source = AnimationSource(str(approach.id), spec["function_name"], approach.python_code,
+                             sandbox_extras(spec), plan)  # fmt: skip
+    return spec, source
+
+
+@router.get("/problems/{problem_id}/approaches/{approach_id}/animation")
+def get_approach_animation(problem_id: uuid.UUID, approach_id: uuid.UUID) -> dict:
+    _, source = _approach_source(problem_id, approach_id)
+    return _animation_or_error(source, source.default_input, custom=False)
+
+
+class CustomInput(BaseModel):
+    args: list
+
+
+@router.post("/problems/{problem_id}/approaches/{approach_id}/animation")
+def post_approach_animation(problem_id: uuid.UUID, approach_id: uuid.UUID,
+                            body: CustomInput) -> dict:  # fmt: skip
+    """A learner's own input, checked against the problem's input rules before anything runs."""
+    spec, source = _approach_source(problem_id, approach_id)
+    client = SandboxClient()
+    try:
+        issues = check_input(input_rules(spec), body.args, client)
+    except SandboxUnavailable as exc:
+        raise HTTPException(503, detail={"message": UNAVAILABLE, "issues": []}) from exc
+    finally:
+        client.close()
+    if issues:
+        raise HTTPException(422, detail={
+            "message": "This input doesn't fit the problem.",
+            "issues": [{"path": i.path, "message": i.message} for i in issues],
+        })  # fmt: skip
+    return _animation_or_error(source, {"args": body.args}, custom=True)
+
+
+@router.get("/problems/{problem_id}/compare")
+def get_compare(problem_id: uuid.UUID) -> dict:
+    """Executed lines vs input size for every verified approach."""
+    with session_factory()() as session:
+        problem = session.get(Problem, problem_id)
+        if problem is None:
+            raise HTTPException(404, detail="no such problem")
+        rows = session.scalars(
+            select(Approach)
+            .where(Approach.problem_id == problem.id, Approach.status == "verified")
+            .order_by(Approach.position)
+        ).all()
+    if problem.status != "done" or not rows:
+        raise HTTPException(409, detail={"message": "No verified approaches to compare.",
+                                         "issues": []})  # fmt: skip
+    approaches = [{"id": str(a.id), "name": a.name, "python_code": a.python_code} for a in rows]
+    key = f"{problem.id}:" + ",".join(a["id"] for a in approaches)
+    try:
+        return cached_compare(key, problem.spec or {}, approaches)
+    except SandboxUnavailable as exc:
+        raise HTTPException(503, detail={"message": UNAVAILABLE, "issues": []}) from exc

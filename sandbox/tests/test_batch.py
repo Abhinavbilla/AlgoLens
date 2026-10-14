@@ -484,3 +484,72 @@ def test_traced_tree_nodes_are_recorded_as_objects():
     heap = resp.trace["heap"]
     classes = {c.get("class") for c in heap.values()}
     assert "TreeNode" in classes
+
+
+# --- op counting for the compare view (plan §7.6) ------------------------------------------
+
+
+def test_count_reports_executed_solution_lines():
+    src = """
+    def f(n):
+        total = 0
+        for i in range(n):
+            total += helper(i)
+        return total
+
+    def helper(i):
+        return i * 2
+    """
+    tests = [Case(id=f"t{n}", input={"args": [n]}, count=True) for n in (0, 1, 10)]
+    tests.append(Case(id="plain", input={"args": [3]}))
+    resp = run_batch(BatchRequest(language="python", source=textwrap.dedent(src), entry="f",
+                                  tests=tests, per_test=FAST))  # fmt: skip
+    assert resp.status == "ok", resp
+    by_id = {r.id: r for r in resp.results}
+    # total = 0, the for line (n + 1 times), the body (n), helper's line (n), return
+    assert [by_id[f"t{n}"].ops for n in (0, 1, 10)] == [3, 6, 33]
+    assert by_id["t10"].value == 90
+    assert by_id["plain"].ops is None
+
+
+def test_count_ignores_prelude_and_library_code():
+    src = """
+    import heapq
+
+    def f(root, xs):
+        heapq.heapify(xs)
+        node = TreeNode(1)
+        return root.val + node.val + len(xs)
+    """
+    resp = run_batch(BatchRequest(
+        language="python", source=textwrap.dedent(src), entry="f", convert=["binary_tree", None],
+        tests=[Case(id="t", input={"args": [[5, 3], [3, 1, 2]]}, count=True)], per_test=FAST,
+    ))  # fmt: skip
+    r = only(resp)
+    assert r.value == 9 and r.ops == 3
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "def f(n):\n    return [i * i for i in range(n)]\n",
+        "def f(n):\n    s = {i % 3 for i in range(n)}\n    return sum(x for x in s)\n",
+        "def f(n):\n    while n > 0: n -= 1\n    return n\n",
+        "def f(n):\n    t = 0\n    for i in range(n): t += i\n    return t\n",
+        "def f(n):\n    if n:\n        return f(n - 1) + 1\n    return 0\n",
+        "def f(n):\n    try:\n        return 1 // (n - n)\n"
+        "    except ZeroDivisionError:\n        return -1\n",
+    ],
+)
+def test_count_matches_the_tracers_frames(src):
+    from algolens_sandbox.batch import TraceRequest, run_trace
+
+    traced = run_trace(TraceRequest(source=src, entry="f", input={"args": [5]}))
+    assert traced.status == "ok", traced
+    resp = py(src, "f", [{"args": [5]}])
+    case = Case(id="t", input={"args": [5]}, count=True)
+    counted = run_batch(
+        BatchRequest(language="python", source=src, entry="f", per_test=FAST, tests=[case])
+    )
+    assert only(resp).value == only(counted).value
+    assert only(counted).ops == len(traced.trace["frames"])

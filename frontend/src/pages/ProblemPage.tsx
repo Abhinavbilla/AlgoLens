@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { api, type ApproachView, type ProblemView } from "../api";
+import { ApproachPlayer } from "./ApproachPlayer";
+import { Compare } from "./CompareChart";
 import pageStyles from "./pages.module.css";
 import styles from "./solve.module.css";
 
@@ -61,10 +63,11 @@ function ProblemContent({ problemId }: { problemId: string }) {
       <ol className={styles.approaches}>
         {p.approaches.map((a) => (
           <li key={a.id}>
-            <ApproachCard approach={a} />
+            <ApproachCard approach={a} problem={p} />
           </li>
         ))}
       </ol>
+      {p.approaches.filter((a) => a.status === "verified").length > 0 && <Compare problemId={p.id} />}
     </article>
   );
 }
@@ -92,8 +95,9 @@ export function ApproachBadge({ approach: a }: { approach: ApproachView }) {
   );
 }
 
-function ApproachCard({ approach: a }: { approach: ApproachView }) {
+function ApproachCard({ approach: a, problem }: { approach: ApproachView; problem: ProblemView }) {
   const [lang, setLang] = useState<"python" | "cpp">("python");
+  const [watching, setWatching] = useState(false);
   return (
     <section className={styles.approach} aria-labelledby={`h-${a.id}`}>
       <h2 id={`h-${a.id}`}>
@@ -112,6 +116,36 @@ function ApproachCard({ approach: a }: { approach: ApproachView }) {
         )}
       </p>
       {a.status !== "verified" && a.reason && <p className={styles.reason}>{a.reason}</p>}
+      <p className={styles.watch}>
+        {a.animated ? (
+          <button type="button" aria-expanded={watching} onClick={() => setWatching((w) => !w)}>
+            {watching ? "Show the code only" : "Watch it run step by step"}
+          </button>
+        ) : (
+          <span className={styles.muted}>{a.animation_note}</span>
+        )}
+        {a.animated && a.animation_note && <span className={styles.muted}> {a.animation_note}</span>}
+      </p>
+      {watching ? (
+        <ApproachPlayer problemId={problem.id} approach={a} inputs={problem.inputs} />
+      ) : (
+        <CodeTabs approach={a} lang={lang} setLang={setLang} />
+      )}
+    </section>
+  );
+}
+
+function CodeTabs({
+  approach: a,
+  lang,
+  setLang,
+}: {
+  approach: ApproachView;
+  lang: "python" | "cpp";
+  setLang: (l: "python" | "cpp") => void;
+}) {
+  return (
+    <>
       <div className={styles.tabs} role="tablist" aria-label={`${a.name} code`}>
         {(["python", "cpp"] as const).map((l) => (
           <button
@@ -129,6 +163,6 @@ function ApproachCard({ approach: a }: { approach: ApproachView }) {
       <pre className={styles.code} role="tabpanel" tabIndex={0}>
         <code>{lang === "python" ? a.python_code.trim() : a.cpp_code.trim()}</code>
       </pre>
-    </section>
+    </>
   );
 }

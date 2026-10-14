@@ -1,0 +1,45 @@
+{
+  "title": "Insertion sort",
+  "category": "Sorting",
+  "summary": "Take each value in turn and shift larger values right until it fits into the sorted part.",
+  "order": 11,
+  "entry": "insertion_sort",
+  "schema": {
+    "params": [
+      {"name": "arr", "type": {"kind": "array", "of": {"kind": "int", "min": -1000, "max": 1000}, "len": {"min": 0, "max": 30}}}
+    ]
+  },
+  "default_input": {"args": [[5, 2, 4, 6, 1, 3]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[1]]},
+    {"args": [[2, 1]]},
+    {"args": [[5, 2, 4, 6, 1, 3]]},
+    {"args": [[1, 2, 3, 4]]},
+    {"args": [[4, 3, 2, 1]]},
+    {"args": [[3, 1, 3, 1]]},
+    {"args": [[-5, 0, -2, 7]]},
+    {"args": [[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]]},
+    {"args": [[1, 1, 1]]}
+  ],
+  "cpp_lines": {"1": 5, "2": 6, "3": 7, "4": 8, "5": 9, "6": 10, "7": 11, "8": 13, "9": 15},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "arr", "pointers": [{"label": "i", "at": "i"}, {"label": "j", "at": "j"}], "range": {"label": "sorted", "from": "0", "to": "i - 1"}},
+      {"kind": "vars", "vars": ["i", "key", "j"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "next": 3, "text": "Everything left of position {i} is sorted. Take the next value."},
+    {"line": 2, "next": 9, "text": "Every value has been inserted."},
+    {"line": 3, "text": "Hold {key} aside while we find where it belongs."},
+    {"line": 4, "text": "Start with its left neighbour, at position {j}."},
+    {"line": 5, "next": 6, "text": "{arr[j]} > {key}, so {arr[j]} has to move one place right."},
+    {"line": 5, "next": 8, "when": "j < 0", "text": "Reached the start: {key} is the smallest so far and goes first."},
+    {"line": 5, "next": 8, "when": "j >= 0", "text": "{arr[j]} ≤ {key}, so {key} belongs just after it."},
+    {"line": 6, "text": "Shift {arr[j]} right, leaving a gap at position {j}."},
+    {"line": 7, "text": "Look one place further left: j goes from {old(j)} to {j}."},
+    {"line": 8, "text": "Drop {key} into the gap."},
+    {"line": 9, "text": "Done: {arr}."}
+  ]
+}

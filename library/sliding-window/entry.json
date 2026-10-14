@@ -1,0 +1,52 @@
+{
+  "title": "Sliding window: shortest subarray with a large enough sum",
+  "category": "Sliding window",
+  "summary": "Grow the window on the right; while its sum is big enough, record it and shrink it from the left.",
+  "order": 32,
+  "entry": "min_window_len",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": 1, "max": 100}, "len": {"min": 1, "max": 30}}},
+      {"name": "target", "type": {"kind": "int", "min": 1, "max": 500}}
+    ]
+  },
+  "note": "All values are positive.",
+  "default_input": {"args": [[2, 3, 1, 2, 4, 3], 7]},
+  "tests": [
+    {"args": [[2, 3, 1, 2, 4, 3], 7]},
+    {"args": [[1, 4, 4], 4]},
+    {"args": [[1, 1, 1, 1, 1, 1, 1, 1], 11]},
+    {"args": [[5], 5]},
+    {"args": [[5], 6]},
+    {"args": [[1, 2, 3, 4, 5], 15]},
+    {"args": [[1, 2, 3, 4, 5], 11]},
+    {"args": [[10, 1, 1, 1, 10], 10]},
+    {"args": [[3, 3, 3, 3], 6]},
+    {"args": [[1, 100, 1], 100]}
+  ],
+  "cpp_lines": {"1": 5, "2": 6, "3": 7, "4": 8, "5": 9, "6": 10, "7": 11, "8": 12, "9": 13, "10": 15, "11": 16, "12": 19},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "pointers": [{"label": "left", "at": "left"}, {"label": "right", "at": "right"}], "range": {"label": "window", "from": "left", "to": "right"}},
+      {"kind": "vars", "vars": ["target", "total", "best", "left", "right"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "best = {best} means no window has reached the target yet."},
+    {"line": 3, "text": "The window is empty, so its sum is {total}."},
+    {"line": 4, "text": "The window's left end starts at position {left}."},
+    {"line": 5, "next": 6, "text": "Grow the window: its right end moves to position {right}."},
+    {"line": 5, "next": 12, "text": "The right end has passed the last value."},
+    {"line": 6, "text": "Add {nums[right]}: the window sum is now {total}."},
+    {"line": 7, "next": 8, "text": "{total} ≥ {target}: this window is big enough. Record it, then try shrinking it."},
+    {"line": 7, "next": 5, "text": "{total} < {target}: the window needs more values."},
+    {"line": 8, "next": 9, "when": "best == 0", "text": "This is the first window to reach the target."},
+    {"line": 8, "next": 9, "when": "best != 0", "text": "Length {right - left + 1} beats the best so far, {best}."},
+    {"line": 8, "next": 10, "text": "Length {right - left + 1} doesn't beat the best so far, {best}."},
+    {"line": 9, "text": "The shortest window found so far has length {best}."},
+    {"line": 10, "text": "Drop {nums[left]} from the left end: the sum falls to {total}."},
+    {"line": 11, "text": "The window now starts at position {left}."},
+    {"line": 12, "next": "return", "when": "best == 0", "text": "No window reaches {target}, so the answer is {best}."},
+    {"line": 12, "next": "return", "when": "best != 0", "text": "The shortest window with a sum of at least {target} has length {best}."}
+  ]
+}

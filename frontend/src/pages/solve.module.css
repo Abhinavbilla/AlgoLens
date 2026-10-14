@@ -156,3 +156,95 @@
   overflow-x: auto;
   max-height: 32em;
 }
+
+.watch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.compare {
+  margin-top: 24px;
+  min-width: 0;
+}
+
+.figure {
+  margin: 12px 0 0;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+}
+
+.grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.tick {
+  fill: var(--text-muted);
+  font-size: 12px;
+}
+
+.axis {
+  fill: var(--text);
+  font-size: 13px;
+}
+
+.series0 {
+  stroke: var(--accent);
+  fill: var(--accent);
+}
+
+.series1 {
+  stroke: var(--warn);
+  fill: var(--warn);
+}
+
+.series2 {
+  stroke: var(--ok);
+  fill: var(--ok);
+}
+
+.series3 {
+  stroke: var(--text);
+  fill: var(--text);
+}
+
+.legend {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  color: var(--text);
+}
+
+.legend li {
+  fill: none;
+}
+
+.table {
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.table caption {
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  padding-bottom: 4px;
+}
+
+.table th,
+.table td {
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  text-align: right;
+}

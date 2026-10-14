@@ -8,6 +8,9 @@ disagreement instead of being copied.
 import hashlib
 import json
 
+from algolens.animation import panels as _panels
+from algolens.narration import template as _template
+
 SCHEMA_GUIDE = """\
 Input schema language (each param: {"name": ..., "type": {...}}):
   {"kind":"int","min":M,"max":N}           {"kind":"float","min":M,"max":N}    {"kind":"bool"}
@@ -182,6 +185,43 @@ def checker_prompt(statement: str, spec: dict) -> str:
     return f"Problem statement:\n<<<\n{statement}\n>>>\n\nParsed description:\n{_spec_text(spec)}\n"
 
 
+VISUAL_SYSTEM = f"""\
+You design a step-by-step animation of a Python solution for learners. The code is run with a
+tracer; after each line runs, a frame records every variable. You choose what to draw (panels)
+and write one-sentence narration templates per line. You never write values yourself: every
+value shown comes from the recorded state through expressions.
+Reply with ONE JSON object:
+{{"visual": {{"panels": [...]}}, "narration": [{{"line": int, "next": int|"return" (optional),
+  "when": str (optional condition), "text": str}}, ...], "cpp_lines": {{"<python line>": <C++ line>}}}}
+
+PANELS (draw the main data structure first, then a "vars" panel with the key scalars):
+{_panels.__doc__}
+NARRATION. A template applies to a frame when `line` is the line that just ran, `next` (if
+given) is the line that runs next (use it to say which branch was taken), and `when` (if given)
+is true. The first applicable template wins, so templates for the same line must not overlap
+unless they say the same thing. Lines with no template get a neutral sentence automatically.
+Write for a learner: say WHY, not just what ("{{s}} < {{target}}: too small, so move l right").
+{_template.__doc__}
+Expressions: variables by name, indexing [i], node fields .val .next .left .right, len(x),
+old(x) for the value before the line ran, arithmetic + - * // %, comparisons, and/or/not.
+cpp_lines maps each Python line that has an equivalent to the matching C++ line number.
+"""
+
+
+def visual_prompt(spec: dict, python_code: str, cpp_code: str, problem: str = "") -> str:
+    def numbered(code: str) -> str:
+        return "\n".join(f"{i:>3}| {line}" for i, line in enumerate(code.splitlines(), 1))
+
+    text = (
+        f"Problem: {spec.get('title', '')}\nInput: {json.dumps(spec.get('params', []))}\n"
+        f"Returns: {spec.get('output', '')}\n\nPython (line numbers on the left):\n"
+        f"{numbered(python_code)}\n\nC++:\n{numbered(cpp_code)}\n"
+    )
+    if problem:
+        text += f"\nYour previous answer had these problems; fix them:\n{problem}\n"
+    return text
+
+
 def prompt_set_hash() -> str:
     """Part of the cache key: changing any prompt invalidates stored results."""
     blob = "\n".join(
@@ -194,6 +234,7 @@ def prompt_set_hash() -> str:
             CHECKER_SYSTEM,
             CODE_RULES,
             SCHEMA_GUIDE,
+            VISUAL_SYSTEM,
         ]
     )
     return hashlib.sha256(blob.encode()).hexdigest()[:16]

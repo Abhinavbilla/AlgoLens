@@ -1,0 +1,50 @@
+{
+  "title": "Quick sort",
+  "category": "Sorting",
+  "summary": "Partition around a pivot so smaller values come first, then sort each side recursively.",
+  "order": 13,
+  "entry": "quick_sort",
+  "schema": {
+    "params": [
+      {"name": "arr", "type": {"kind": "array", "of": {"kind": "int", "min": -1000, "max": 1000}, "len": {"min": 0, "max": 30}}}
+    ]
+  },
+  "default_input": {"args": [[7, 2, 9, 4, 1, 5]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[1]]},
+    {"args": [[2, 1]]},
+    {"args": [[7, 2, 9, 4, 1, 5]]},
+    {"args": [[1, 2, 3, 4]]},
+    {"args": [[4, 3, 2, 1]]},
+    {"args": [[3, 1, 3, 1]]},
+    {"args": [[-5, 0, -2, 7, 7]]},
+    {"args": [[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]]},
+    {"args": [[1, 1, 1]]}
+  ],
+  "cpp_lines": {"1": 23, "2": 24, "3": 25, "5": 6, "6": 7, "7": 8, "8": 10, "9": 11, "10": 12, "11": 13, "12": 14, "13": 15, "14": 18, "15": 19, "16": 20},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "arr", "pointers": [{"label": "p", "at": "p"}, {"label": "k", "at": "k"}, {"label": "hi", "at": "hi"}], "range": {"label": "this part", "from": "lo", "to": "hi"}},
+      {"kind": "vars", "vars": ["lo", "hi", "pivot", "p", "k"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "All parts are sorted: {arr}."},
+    {"line": 3, "text": "Done: {arr}."},
+    {"line": 6, "next": 7, "text": "Positions {lo} to {hi} hold at most one value: nothing to sort."},
+    {"line": 6, "next": 8, "text": "Sort positions {lo} to {hi}."},
+    {"line": 7, "text": "Nothing to do for this part."},
+    {"line": 8, "text": "Use the last value of this part, {pivot}, as the pivot."},
+    {"line": 9, "text": "Values smaller than the pivot will gather at the front, starting at position {p}."},
+    {"line": 10, "next": 11, "text": "Look at {arr[k]}, at position {k}."},
+    {"line": 10, "next": 14, "text": "Every value in this part has been compared with the pivot."},
+    {"line": 11, "next": 12, "text": "{arr[k]} < {pivot}: it belongs before the pivot, so swap it into position {p}."},
+    {"line": 11, "next": 10, "text": "{arr[k]} ≥ {pivot}: leave it on the right side."},
+    {"line": 12, "text": "Swapped: {arr}."},
+    {"line": 13, "text": "The next smaller value will go to position {p}."},
+    {"line": 14, "text": "Swap the pivot into position {p}, its final place: everything left of it is smaller."},
+    {"line": 15, "text": "The part left of the pivot is now sorted."},
+    {"line": 16, "text": "The part right of the pivot is now sorted."}
+  ]
+}

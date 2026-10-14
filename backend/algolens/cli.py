@@ -17,6 +17,9 @@ def main(argv: list[str] | None = None) -> None:
     lib_sub.add_parser("seed", help="load library/ into the database")
     verify = lib_sub.add_parser("verify", help="verify entries in the sandbox and record results")
     verify.add_argument("slugs", nargs="*", help="entries to verify (default: all)")
+    ev = sub.add_parser("eval", help="run the pipeline on a local problem set and write a report")
+    ev.add_argument("--set", dest="set_dir", default="eval", help="eval set folder (default: eval)")
+    ev.add_argument("only", nargs="*", help="problem folders to run (default: all)")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -41,6 +44,8 @@ def main(argv: list[str] | None = None) -> None:
         _seed_library()
         if args.library_command == "verify":
             sys.exit(_verify_library(args.slugs))
+    elif args.command == "eval":
+        sys.exit(_eval(args.set_dir, args.only))
 
 
 def _seed_library() -> None:
@@ -87,6 +92,33 @@ def _verify_library(slugs: list[str]) -> int:
             print(json.dumps({"slug": row.slug, **result}, indent=2))
     client.close()
     return 2 if unchecked else (1 if failed else 0)
+
+
+def _eval(set_dir: str, only: list[str]) -> int:
+    """Exit code 0, or 1 if any verified approach turned out wrong (a false verification)."""
+    from pathlib import Path
+
+    from algolens.ai.client import client_from_settings
+    from algolens.config import get_settings
+    from algolens.evaluation import run_eval
+    from algolens.pipeline.service import missing_keys
+    from algolens.sandbox.client import SandboxClient
+
+    keys = missing_keys()
+    if keys:
+        print(f"missing API keys: {', '.join(keys)} (see .env.example)", file=sys.stderr)
+        return 2
+    s = get_settings()
+    client = SandboxClient()
+    try:
+        summary, path = run_eval(Path(set_dir), client_from_settings(), client,
+                                 token_limit=s.max_tokens_per_problem,
+                                 max_repairs=s.max_repair_rounds, only=only or None)  # fmt: skip
+    finally:
+        client.close()
+    print(json.dumps(summary, indent=2))
+    print(f"report: {path} (and .md)")
+    return 1 if summary["false_verifications"] else 0
 
 
 if __name__ == "__main__":

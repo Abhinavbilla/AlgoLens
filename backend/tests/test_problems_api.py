@@ -10,13 +10,14 @@ from sqlalchemy import create_engine, delete, select
 from algolens.ai.client import AIClient
 from algolens.api import app as app_module
 from algolens.api import problems as problems_api
+from algolens.config import get_settings
 from algolens.db import session as session_module
 from algolens.db.models import Job, Problem, Run
 from algolens.db.session import session_factory
 from algolens.pipeline import service
 from algolens.sandbox.client import SandboxClient
 from algolens.worker import run_one
-from tests.test_solve import STATEMENT, happy
+from tests.test_solve import STATEMENT, happy, kadane
 
 SOCKET = os.environ.get("ALGOLENS_TEST_SANDBOX_SOCKET")
 ROLES = ("parse", "brute_a", "brute_b", "approaches", "checker", "repair", "narration")
@@ -166,3 +167,40 @@ def test_unknown_ids_are_404(api):
     assert api.get(f"/api/jobs/{uuid.uuid4()}").status_code == 404
     assert api.get(f"/api/jobs/{uuid.uuid4()}/events").status_code == 404
     assert api.get(f"/api/problems/{uuid.uuid4()}").status_code == 404
+
+
+@pytest.mark.skipif(not SOCKET, reason="ALGOLENS_TEST_SANDBOX_SOCKET not set")
+def test_verified_approach_animations_and_custom_inputs(sessions, monkeypatch):
+    from tests.test_visualize import PLAN
+
+    monkeypatch.setenv("ALGOLENS_SANDBOX_SOCKET", SOCKET)
+    get_settings.cache_clear()
+    buggy = kadane(best_init="0")
+    ai = fake_ai(happy(narration=PLAN, approaches={"approaches": [kadane(), buggy]}, repair=buggy))
+    with sessions() as s:
+        out = service.submit(s, STATEMENT, ai=ai)
+    run_one(sessions, handlers=_solve_handlers(ai, SOCKET))
+    with sessions() as s:
+        pid = s.get(Job, uuid.UUID(out["job_id"])).payload["problem_id"]
+    api = TestClient(app_module.create_app())
+    view = api.get(f"/api/problems/{pid}").json()
+    assert [p["name"] for p in view["inputs"]] == ["nums"] and view["inputs"][0]["hint"]
+    brute, fast, wrong = view["approaches"]
+    assert fast["animated"] and fast["default_input"] == {"args": [[1]]}
+    assert not wrong["animated"] and "verified" in wrong["animation_note"]
+    base = f"/api/problems/{pid}/approaches"
+
+    anim = api.get(f"{base}/{fast['id']}/animation").json()
+    assert anim["result"] == 1 and anim["frames"]
+    texts = [f["narration"]["text"] for f in anim["frames"]]
+    assert "The best sum so far is 1." in texts
+
+    custom = api.post(f"{base}/{fast['id']}/animation", json={"args": [[-3, 5, -1, 2]]}).json()
+    assert custom["result"] == 6 and custom["input"] == {"args": [[-3, 5, -1, 2]]}
+
+    r = api.post(f"{base}/{fast['id']}/animation", json={"args": [[]]})
+    assert r.status_code == 422 and r.json()["detail"]["issues"]
+    r = api.get(f"{base}/{wrong['id']}/animation")
+    assert r.status_code == 409
+    assert api.get(f"/api/problems/{pid}/approaches/{uuid.uuid4()}/animation").status_code == 404
+    get_settings.cache_clear()

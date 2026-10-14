@@ -31,6 +31,9 @@ from algolens.db.models import Approach, Job, Problem, Run
 from algolens.pipeline.prompts import prompt_set_hash
 from algolens.pipeline.solve import SolveResult, solve
 from algolens.sandbox.client import SandboxClient
+from algolens.schema.describe import describe
+from algolens.schema.model import SchemaError, compile_schema
+from algolens.schema.service import InputRules
 
 log = logging.getLogger("algolens.pipeline")
 
@@ -153,6 +156,9 @@ def store(session: Session, h: str, version: str, result: SolveResult) -> Proble
             problem_id=problem.id, position=i, name=a.name, key_idea=a.key_idea,
             time_complexity=a.time[:64], space_complexity=a.space[:64],
             python_code=a.python_code, cpp_code=a.cpp_code, status=a.status,
+            visual_spec=a.animation,
+            narration_templates=(a.animation or {}).get("narration"),
+            py_to_cpp_lines=(a.animation or {}).get("cpp_lines"),
             verification={
                 "is_brute": a.is_brute, "reason": a.reason, "tests_passed": a.tests_passed,
                 "tests_total": a.tests_total, "examples_checked": a.examples_checked,
@@ -179,13 +185,47 @@ def problem_view(session: Session, problem_id: uuid.UUID) -> dict | None:
         "params": spec.get("params", []),
         "examples": spec.get("examples", []),
         "comparator": (spec.get("comparator") or {}).get("kind", "exact"),
+        "inputs": input_hints(spec),
         "approaches": [
             {
                 "id": str(a.id), "name": a.name, "key_idea": a.key_idea,
                 "time": a.time_complexity, "space": a.space_complexity,
                 "python_code": a.python_code, "cpp_code": a.cpp_code, "status": a.status,
                 **{k: v for k, v in (a.verification or {}).items()},
+                **animation_summary(a.visual_spec),
             }
             for a in approaches
         ],
     }  # fmt: skip
+
+
+def input_hints(spec: dict) -> list[dict]:
+    try:
+        schema = compile_schema({"params": spec.get("params", []),
+                                 "constraints": spec.get("constraints", [])})  # fmt: skip
+    except SchemaError:
+        return []
+    return [
+        {"name": p.name, "kind": spec["params"][i]["type"]["kind"], "hint": describe(p.type)}
+        for i, p in enumerate(schema.params)
+    ]
+
+
+def animation_summary(plan: dict | None) -> dict:
+    if not plan:
+        return {"animated": False, "animation_note": "Only verified approaches are animated."}
+    if "unavailable" in plan:
+        return {"animated": False, "animation_note": plan["unavailable"]}
+    note = ""
+    if plan.get("source", "ai") != "ai":
+        note = (
+            "Some of the AI-written visuals or narration didn't pass our checks, "
+            "so plainer ones are used."
+        )
+    return {"animated": True, "animation_note": note, "default_input": plan["default_input"]}
+
+
+def input_rules(spec: dict) -> InputRules:
+    schema = compile_schema({"params": spec.get("params", []),
+                             "constraints": spec.get("constraints", [])})  # fmt: skip
+    return InputRules(schema, spec.get("extra_rules_python") or None)

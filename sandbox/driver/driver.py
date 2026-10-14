@@ -104,6 +104,7 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
 
     wall_limit = per["wall_ms"] / 1000
     traced = bool(test.get("trace"))
+    counted = bool(test.get("count")) and not traced and language == "python"
     out_cap = per["output_bytes"]
     res_cap = per["trace_output_bytes"] if traced else out_cap
     bufs = {res_r: bytearray(), out_r: bytearray(), err_r: bytearray(), ready_r: bytearray()}
@@ -172,7 +173,7 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
     else:
         outcome, value, detail, trace = _classify(
             language, status, killed_for, cpu_ms, per, bytes(bufs[res_r]), bytes(bufs[err_r]),
-            traced,
+            traced, counted,
         )  # fmt: skip
     result = {
         "id": test["id"],
@@ -186,10 +187,12 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
     }
     if traced:
         result["trace"] = trace
+    if counted:
+        result["ops"] = trace["ops"] if trace else None
     return result
 
 
-def _classify(language, status, killed_for, cpu_ms, per, result, stderr, traced):
+def _classify(language, status, killed_for, cpu_ms, per, result, stderr, traced, counted=False):
     if killed_for == "output":
         return "output_limit", None, f"output exceeded {per['output_bytes']} bytes", None
     if killed_for == "wall":
@@ -213,11 +216,64 @@ def _classify(language, status, killed_for, cpu_ms, per, result, stderr, traced)
     except (UnicodeDecodeError, json.JSONDecodeError):
         return "runtime_error", None, "no valid result was produced", None
     if language == "python":
-        expected = {"value", "trace"} if traced else {"value"}
+        expected = {"value", "trace"} if traced else {"value", "ops"} if counted else {"value"}
         if not isinstance(message, dict) or set(message) != expected:
             return "runtime_error", None, "malformed result message", None
+        if counted:
+            return "ok", message["value"], "", {"ops": message["ops"]}
         return "ok", message["value"], "", message.get("trace")
     return "ok", message, "", None
+
+
+def _count_lines(fn, args, kwargs) -> dict:
+    """Run fn counting executed lines of the solution with sys.monitoring (plan §7.6), with
+    the same definition as the tracer's frames: settrace reports a line when a new line
+    starts *and* when a backward jump lands on the line it came from (a loop on one line,
+    e.g. a comprehension), as CPython 3.12's legacy_tracing.c does. Events in any other
+    code (the prelude, the standard library) are switched off at their first occurrence."""
+    mon = sys.monitoring
+    tool = mon.PROFILER_ID
+    mon.use_tool_id(tool, "algolens-count")
+    count = 0
+    lines: dict = {}
+
+    def line_of(code, offset):
+        table = lines.get(code)
+        if table is None:
+            table = lines[code] = list(code.co_lines())
+        for start, end, line in table:
+            if start <= offset < end:
+                return line
+        return None
+
+    def on_line(code, line):
+        nonlocal count
+        if code.co_filename == PY_SOLUTION:
+            count += 1
+            return None
+        return mon.DISABLE
+
+    def on_jump(code, source, destination):
+        nonlocal count
+        if code.co_filename != PY_SOLUTION or destination > source:
+            return mon.DISABLE
+        line = line_of(code, destination)
+        if line is None or line != line_of(code, source):
+            return mon.DISABLE  # handled by the LINE event at the destination
+        count += 1
+        return None
+
+    mon.register_callback(tool, mon.events.LINE, on_line)
+    mon.register_callback(tool, mon.events.JUMP, on_jump)
+    mon.set_events(tool, mon.events.LINE | mon.events.JUMP)
+    try:
+        value = fn(*args, **kwargs)
+    finally:
+        mon.set_events(tool, 0)
+        mon.register_callback(tool, mon.events.LINE, None)
+        mon.register_callback(tool, mon.events.JUMP, None)
+        mon.free_tool_id(tool)
+    return {"value": value, "ops": count}
 
 
 PRELUDE = """
@@ -328,6 +384,7 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
             os._exit(71)
 
     sys.setrecursionlimit(100_000)
+    counting = bool(test.get("count")) and not traced
     recorder = None
     if traced:
         # Loaded before any solution code runs (part of setup, so a failure is ours).
@@ -349,7 +406,10 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
         args = _structures_in(module, test["input"].get("args", []), per.get("convert") or [])
         kwargs = test["input"].get("kwargs", {})
         fn = getattr(module, entry)
-        if recorder:
+        if counting:
+            ops = _count_lines(fn, args, kwargs)
+            value = ops.pop("value")
+        elif recorder:
             recorder.start()
             try:
                 value = fn(*args, **kwargs)
@@ -365,6 +425,8 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
         os._exit(1)
     try:
         message = {"value": _structures_out(module, value, per.get("convert_result"))}
+        if counting:
+            message["ops"] = ops["ops"]
         if recorder:
             if test.get("trace") == "summary":  # integrity checks: the recording isn't needed
                 message["trace"] = {"frames": len(recorder.frames), "truncated": recorder.truncated}

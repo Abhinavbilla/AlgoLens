@@ -21,6 +21,9 @@ const APPROACH = {
   examples_checked: 2,
   repairs: 1,
   failing_case: null,
+  animated: true,
+  animation_note: "",
+  default_input: { args: [[1]] },
 };
 
 const PROBLEM = {
@@ -32,6 +35,7 @@ const PROBLEM = {
   params: [{ name: "nums" }],
   examples: [],
   comparator: "exact",
+  inputs: [{ name: "nums", kind: "array", hint: "a list of 1 to 100000 integers" }],
   approaches: [
     { ...APPROACH, id: "a0", name: "Brute force", is_brute: true, repairs: 0 },
     APPROACH,
@@ -43,6 +47,8 @@ const PROBLEM = {
       reason: "Wrong on input [[-1]]: expected -1, got 0",
       tests_passed: 0,
       repairs: 2,
+      animated: false,
+      animation_note: "Only verified approaches are animated.",
     },
   ],
 };
@@ -230,4 +236,73 @@ test("a failed job says nothing was judged", async () => {
   const alert = await screen.findByRole("alert");
   expect(alert).toHaveTextContent("the code runner is down");
   expect(alert).toHaveTextContent("Nothing was marked verified or wrong");
+});
+
+const FRAME = {
+  i: 0,
+  line: 2,
+  next: "return",
+  cpp_line: null,
+  code: "return 1",
+  ops: 1,
+  aid: 0,
+  stack: [{ aid: 0, fn: "f", line: 2, call: "f(nums=[1])", new: true }],
+  panels: [],
+  narration: { text: "The best sum so far is 1.", source: "template" },
+  ret: "1",
+};
+
+test("a verified approach can be watched step by step; unverified ones say why not", async () => {
+  mockApi((url) => {
+    if (url === "/api/problems/p1") return { status: 200, body: PROBLEM };
+    if (url === "/api/problems/p1/approaches/a1/animation")
+      return { status: 200, body: { frames: [FRAME], total_ops: 1, result: 1, input: { args: [[1]] } } };
+  });
+  renderAt("/problems/p1");
+  expect(await screen.findByText("Only verified approaches are animated.")).toBeInTheDocument();
+  const buttons = screen.getAllByRole("button", { name: "Watch it run step by step" });
+  expect(buttons).toHaveLength(2); // the brute force and Kadane
+  await userEvent.click(buttons[1]);
+  expect(await screen.findAllByText("The best sum so far is 1.")).not.toHaveLength(0);
+  expect(screen.getByRole("button", { name: "Show the code only" })).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByLabelText(/nums/)).toBeInTheDocument(); // the custom input editor
+});
+
+test("the comparison runs on request and shows a chart, a legend and the numbers", async () => {
+  mockApi((url) => {
+    if (url === "/api/problems/p1") return { status: 200, body: PROBLEM };
+    if (url === "/api/problems/p1/compare")
+      return {
+        status: 200,
+        body: {
+          sizes: [10, 100, 1000, 3000],
+          limits: { cpu_ms: 4000 },
+          series: [
+            {
+              id: "a0",
+              name: "Brute force",
+              points: [
+                { n: 10, ops: 170, status: "ok" },
+                { n: 100, ops: 15200, status: "ok" },
+                { n: 1000, ops: 1502000, status: "ok" },
+                { n: 3000, ops: null, status: "too slow" },
+              ],
+            },
+            {
+              id: "a1",
+              name: "Kadane",
+              points: [10, 100, 1000, 3000].map((n) => ({ n, ops: 3 * n + 4, status: "ok" })),
+            },
+          ],
+        },
+      };
+  });
+  renderAt("/problems/p1");
+  await userEvent.click(await screen.findByRole("button", { name: "Run the comparison" }));
+  expect(await screen.findByRole("img", { name: /Lines executed against input size/ })).toBeInTheDocument();
+  expect(screen.getByText(/stopped: too slow from n = 3000 with a 4 s limit/)).toBeInTheDocument();
+  const table = screen.getByRole("table", { name: "Lines executed at each size" });
+  expect(table).toHaveTextContent("1,502,000");
+  expect(table).toHaveTextContent("too slow");
+  expect(table).toHaveTextContent("9,004");
 });
