@@ -307,3 +307,13 @@ test("the comparison runs on request and shows a chart, a legend and the numbers
   expect(table).toHaveTextContent("too slow");
   expect(table).toHaveTextContent("9,004");
 });
+
+test("an exhaustively tested approach says so", async () => {
+  mockApi((url) =>
+    url === "/api/problems/p1"
+      ? { status: 200, body: { ...PROBLEM, approaches: [{ ...APPROACH, exhaustive: true, tests_passed: 45 }] } }
+      : undefined,
+  );
+  renderAt("/problems/p1");
+  expect(await screen.findByText(/all 45 possible inputs/)).toBeInTheDocument();
+});

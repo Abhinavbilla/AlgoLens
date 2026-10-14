@@ -77,8 +77,9 @@ export function ApproachBadge({ approach: a }: { approach: ApproachView }) {
   if (a.status === "verified") {
     return (
       <p className={`${pageStyles.badge} ${pageStyles.verified}`}>
-        <span aria-hidden="true">✓</span> Verified · {a.examples_checked} examples and {a.tests_passed} random
-        tests, Python and C++ agree
+        <span aria-hidden="true">✓</span> Verified · {a.examples_checked} examples and{" "}
+        {a.exhaustive ? `all ${a.tests_passed} possible inputs` : `${a.tests_passed} random tests`}, Python
+        and C++ agree
       </p>
     );
   }

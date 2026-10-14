@@ -199,6 +199,7 @@ export type ApproachView = {
   tests_total: number;
   examples_checked: number;
   repairs: number;
+  exhaustive?: boolean; // the tests covered every valid input
   failing_case: Record<string, unknown> | null;
   animated: boolean;
   animation_note: string;
