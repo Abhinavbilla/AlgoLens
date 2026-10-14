@@ -115,7 +115,9 @@ class Script:
     """Scripted replies per role, in order; the last reply repeats once the queue runs dry."""
 
     def __init__(self, **replies):
-        self.queues = {role: deque(r if isinstance(r, list) else [r]) for role, r in replies.items()}
+        self.queues = {
+            role: deque(r if isinstance(r, list) else [r]) for role, r in replies.items()
+        }
         self.calls: list[str] = []
         self.prompts: dict[str, list[str]] = {}
         self.lock = threading.Lock()
@@ -210,7 +212,9 @@ def test_brute_force_wrong_twice_means_nothing_is_verified():
 
 
 def test_out_of_scope_statement_is_rejected():
-    result, _ = run(Script(parse={"in_scope": False, "rejection_reason": "This is a geometry proof."}))
+    result, _ = run(
+        Script(parse={"in_scope": False, "rejection_reason": "This is a geometry proof."})
+    )
     assert result.status == "rejected" and result.reason == "This is a geometry proof."
 
 

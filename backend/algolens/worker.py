@@ -1,6 +1,7 @@
 """Job worker. Claims queued jobs with SKIP LOCKED so several workers can run safely.
 
-No job kinds exist yet (the pipeline arrives in M5); unknown kinds are failed, not dropped.
+Unknown kinds are failed, not dropped. Whatever happens, a finished job keeps no pasted
+problem text in its payload.
 """
 
 import logging
@@ -18,7 +19,15 @@ from algolens.db.session import session_factory
 log = logging.getLogger("algolens.worker")
 
 Handler = Callable[[Session, Job], None]
-HANDLERS: dict[str, Handler] = {}
+
+
+def _solve(session: Session, job: Job) -> None:
+    from algolens.pipeline.service import handle_solve
+
+    handle_solve(session, job)
+
+
+HANDLERS: dict[str, Handler] = {"solve": _solve}
 
 
 def claim_next_job(session: Session) -> Job | None:
@@ -52,7 +61,9 @@ def run_one(sessions: sessionmaker[Session], handlers: dict[str, Handler] = HAND
             session.rollback()
             log.exception("job %s failed", job.id)
             job.status = "failed"
-            job.error = str(exc)
+            job.error = str(exc)[:2000]
+        if "text" in (job.payload or {}):
+            job.payload = {k: v for k, v in job.payload.items() if k != "text"}
         job.finished_at = func.now()
         session.commit()
         return True

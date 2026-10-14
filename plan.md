@@ -57,7 +57,7 @@ paste text ──► Parse (AI) ──► ProblemSpec (input schema, examples, c
 | Frontend | **React + TypeScript + Vite, CSS modules**, SVG rendering, no external CDNs | Confirmed. Local assets so it works offline. |
 | Sandbox | **nsjail** in a dedicated `sandbox` container, *pending the M1 spike* (§11) | Isolation without mounting the Docker socket. |
 | Languages | **Python 3.12** (`sys.settrace` + `sys.monitoring`), **C++17** with g++ 13 `-O2` | Confirmed. |
-| AI service | **Claude via Anthropic API**, structured JSON output; model per role is configurable | Confirmed. Brute B uses a different model from Brute A (§6.2). |
+| AI service | **Provider-neutral client** (`backend/algolens/ai/client.py`): Gemini and Groq (free tiers) by default, Anthropic or any OpenAI-compatible endpoint by setting `ALGOLENS_MODEL_<ROLE>=provider:model`; JSON-object replies validated against strict models | Changed after M4 (no paid key to start). Brute B defaults to a different company's model from Brute A (§6.2); startup fails if they're equal. |
 | Startup | **`docker compose up`** (db, api, worker, sandbox, web) | Single command. Migrations + library seeding run on api start. |
 
 ## 3. Repository layout
@@ -372,7 +372,7 @@ If any of these fail, **I stop and come back to you** with what failed and a rec
 ## 12. Non-functional notes
 - **Speed (≤60 s median)**: AI calls run in parallel where independent; tests are batched; C++ compiles run concurrently. Roughly 6–8 AI calls per problem now that Brute B is included.
 - **Offline**: the library and cached problems need no AI. If the AI service is down, new problems get a clear error.
-- **Privacy**: problem text goes only to the Anthropic API. Only its sha256 is stored; it's never logged.
+- **Privacy**: problem text goes only to the configured AI providers (note: free tiers such as Gemini's may use prompts to improve their models). AlgoLens stores only its sha256; the text sits in the job payload until the worker claims the job and is removed then, whatever the outcome; it's never logged.
 - **Observability**: every stage writes timings, tokens and failure reasons to `runs`.
 
 ## 13. Milestones

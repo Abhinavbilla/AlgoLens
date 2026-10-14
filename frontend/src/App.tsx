@@ -3,7 +3,9 @@ import styles from "./App.module.css";
 import { HealthBadge } from "./HealthBadge";
 import { ThemeToggle } from "./ThemeToggle";
 import { EntryPage } from "./pages/EntryPage";
+import { JobPage } from "./pages/JobPage";
 import { LibraryPage } from "./pages/LibraryPage";
+import { ProblemPage } from "./pages/ProblemPage";
 import { SolvePage } from "./pages/SolvePage";
 
 export function App() {
@@ -29,6 +31,8 @@ export function App() {
           <Route path="/" element={<LibraryPage />} />
           <Route path="/library/:slug" element={<EntryPage />} />
           <Route path="/solve" element={<SolvePage />} />
+          <Route path="/jobs/:jobId" element={<JobPage />} />
+          <Route path="/problems/:problemId" element={<ProblemPage />} />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>
       </main>

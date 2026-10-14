@@ -170,6 +170,50 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 const get = <T,>(path: string) => request<T>(path);
 
+// Pasted problems (backend/algolens/api/problems.py).
+
+export type Submitted = { job_id: string } | { problem_id: string };
+
+export type JobView = {
+  id: string;
+  status: "queued" | "running" | "done" | "failed";
+  stage: string;
+  tests_passed: number;
+  tests_total: number;
+  error: string;
+  problem_id: string | null;
+};
+
+export type ApproachView = {
+  id: string;
+  name: string;
+  key_idea: string;
+  time: string;
+  space: string;
+  python_code: string;
+  cpp_code: string;
+  status: "verified" | "unverified" | "timeout";
+  is_brute: boolean;
+  reason: string;
+  tests_passed: number;
+  tests_total: number;
+  examples_checked: number;
+  repairs: number;
+  failing_case: Record<string, unknown> | null;
+};
+
+export type ProblemView = {
+  id: string;
+  status: "done" | "rejected" | "failed";
+  reason: string;
+  title: string;
+  function_name: string;
+  params: { name: string }[];
+  examples: { args: unknown[]; expected: unknown }[];
+  comparator: string;
+  approaches: ApproachView[];
+};
+
 export const api = {
   library: () => get<EntrySummary[]>("/api/library"),
   entry: (slug: string) => get<Entry>(`/api/library/${encodeURIComponent(slug)}`),
@@ -180,4 +224,13 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ args }),
     }),
+  submit: (text: string) =>
+    request<Submitted>("/api/problems", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    }),
+  job: (id: string) => get<JobView>(`/api/jobs/${encodeURIComponent(id)}`),
+  jobEventsUrl: (id: string) => `/api/jobs/${encodeURIComponent(id)}/events`,
+  problem: (id: string) => get<ProblemView>(`/api/problems/${encodeURIComponent(id)}`),
 };

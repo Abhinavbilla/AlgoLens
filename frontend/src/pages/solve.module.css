@@ -1,0 +1,158 @@
+.solve {
+  max-width: 72ch;
+}
+
+.lead {
+  color: var(--text-muted);
+  margin: 4px 0 16px;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 14em;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.formFoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.over {
+  color: var(--warn);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.error {
+  color: var(--warn);
+}
+
+.progress {
+  min-height: 7em;
+}
+
+.stage {
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  height: 10px;
+}
+
+.problem {
+  max-width: 100ch;
+}
+
+.approaches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.approach {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.approach h2 {
+  margin: 0 0 6px;
+  font-size: 1.125rem;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.approach p {
+  margin: 8px 0;
+}
+
+.tag {
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.complexity code {
+  font-family: var(--mono);
+}
+
+.reason {
+  padding: 8px 10px;
+  border-left: 3px solid var(--warn);
+  background: var(--bg);
+  overflow-wrap: anywhere;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.tab,
+.tabOn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tabOn {
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.code {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 0 var(--radius) var(--radius) var(--radius);
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  max-height: 32em;
+}
