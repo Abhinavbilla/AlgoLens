@@ -77,4 +77,6 @@ This machine's WSL kernel has no AppArmor. GitHub's `ubuntu-24.04` runners (and 
 
 Expect to need `apparmor=unconfined` (or a small custom AppArmor profile) on the sandbox service, and possibly the sysctl changed on the CI runner.
 
-**Status:** handled for CI by `docker-compose.ci.yml` (`apparmor=unconfined`, CI only) plus the sysctl step in `.github/workflows/ci.yml`. The sandbox's self-test still has to pass there, so this can't silently weaken isolation. **It hasn't run on GitHub yet** (the repo has no remote), so treat it as unverified until the first CI run.
+**Status: resolved (2026-10-14).** On GitHub's AppArmor-enabled Ubuntu runner, the sandbox passes its startup isolation self-test and the full hostile-code suite. That uses `docker-compose.ci.yml` (`apparmor=unconfined`, CI only) plus the sysctl step in `.github/workflows/ci.yml`.
+
+The override uses compose's `!override` tag. Older compose appends list overrides (duplicates are then rejected) and newer compose replaces them; without the tag, a compose version that replaces lists could silently drop the seccomp profile and `no-new-privileges`.
