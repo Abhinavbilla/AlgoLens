@@ -24,8 +24,8 @@ def test_token_budget_must_be_positive(monkeypatch, value):
 
 
 def test_brute_forces_must_use_different_models(monkeypatch):
-    monkeypatch.setenv("ALGOLENS_MODEL_BRUTE_A", "gemini:gemini-2.5-flash")
-    monkeypatch.setenv("ALGOLENS_MODEL_BRUTE_B", "gemini:gemini-2.5-flash")
+    monkeypatch.setenv("ALGOLENS_MODEL_BRUTE_A", "gemini:gemini-3.8-flash")
+    monkeypatch.setenv("ALGOLENS_MODEL_BRUTE_B", "gemini:gemini-3.8-flash")
     with pytest.raises(ValidationError, match="must be different models"):
         Settings(_env_file=None)
 

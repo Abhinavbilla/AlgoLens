@@ -18,13 +18,13 @@ class Settings(BaseSettings):
     # One model per pipeline role, as "provider:model" (see algolens/ai/client.py). API keys
     # are read from the environment: GEMINI_API_KEY, GROQ_API_KEY, ANTHROPIC_API_KEY, ...
     # Brute B must differ from Brute A (§6.2); by default it's another company's model.
-    model_parse: str = "gemini:gemini-2.5-flash"
-    model_brute_a: str = "gemini:gemini-2.5-flash"
+    model_parse: str = "gemini:gemini-3.8-flash"
+    model_brute_a: str = "gemini:gemini-3.8-flash"
     model_brute_b: str = "groq:openai/gpt-oss-120b"
-    model_approaches: str = "gemini:gemini-2.5-flash"
-    model_checker: str = "gemini:gemini-2.5-flash"
-    model_repair: str = "gemini:gemini-2.5-flash"
-    model_narration: str = "gemini:gemini-2.5-flash"
+    model_approaches: str = "gemini:gemini-3.8-flash"
+    model_checker: str = "gemini:gemini-3.8-flash"
+    model_repair: str = "gemini:gemini-3.8-flash"
+    model_narration: str = "gemini:gemini-3.8-flash"
 
     # Per-problem AI budget, input + output tokens across all calls (plan §6.4).
     max_tokens_per_problem: int = Field(default=200_000, gt=0)
