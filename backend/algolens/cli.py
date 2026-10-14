@@ -54,17 +54,18 @@ def _seed_library() -> None:
 
 
 def _verify_library(slugs: list[str]) -> int:
-    """Exit code 0 only if every selected entry verified."""
+    """Exit code 0 if every selected entry verified, 1 if any failed, 2 if any couldn't be
+    checked (sandbox unavailable). An entry that couldn't be checked keeps no new verdict."""
     from sqlalchemy import select
 
     from algolens.db.models import LibraryEntry
     from algolens.db.session import session_factory
     from algolens.library.loader import from_row
     from algolens.library.verify import verify_entry
-    from algolens.sandbox.client import SandboxClient
+    from algolens.sandbox.client import SandboxClient, SandboxUnavailable
 
     client = SandboxClient()
-    ok = True
+    failed = unchecked = False
     with session_factory()() as session:
         rows = session.scalars(select(LibraryEntry)).all()
         unknown = set(slugs) - {r.slug for r in rows}
@@ -74,13 +75,18 @@ def _verify_library(slugs: list[str]) -> int:
         for row in rows:
             if slugs and row.slug not in slugs:
                 continue
-            result = verify_entry(from_row(row), client)
+            try:
+                result = verify_entry(from_row(row), client)
+            except SandboxUnavailable as exc:
+                unchecked = True
+                print(f"{row.slug}: couldn't verify, no verdict recorded ({exc})", file=sys.stderr)
+                continue
             row.verification = result
             session.commit()
-            ok &= result["status"] == "verified"
+            failed |= result["status"] != "verified"
             print(json.dumps({"slug": row.slug, **result}, indent=2))
     client.close()
-    return 0 if ok else 1
+    return 2 if unchecked else (1 if failed else 0)
 
 
 if __name__ == "__main__":

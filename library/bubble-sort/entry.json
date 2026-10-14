@@ -4,6 +4,11 @@
   "summary": "Repeatedly swap neighbours that are out of order until a pass makes no swaps.",
   "order": 10,
   "entry": "bubble_sort",
+  "schema": {
+    "params": [
+      {"name": "arr", "type": {"kind": "array", "of": {"kind": "int", "min": -1000, "max": 1000}, "len": {"min": 0, "max": 30}}}
+    ]
+  },
   "default_input": {"args": [[5, 1, 4, 2, 8]]},
   "tests": [
     {"args": [[]]},

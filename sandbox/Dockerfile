@@ -20,6 +20,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
 COPY include/algolens.h /usr/local/include/algolens/algolens.h
+# Precompile the header with exactly the sandbox's compile flags (CPP_FLAGS in batch.py);
+# a mismatch would make g++ silently ignore it.
+RUN g++ -std=c++17 -O2 -x c++-header /usr/local/include/algolens/algolens.h \
+      -o /usr/local/include/algolens/algolens.h.gch
 COPY driver /opt/algolens/driver
 COPY algolens_sandbox /opt/algolens/app/algolens_sandbox
 ENV PYTHONPATH=/opt/algolens/app

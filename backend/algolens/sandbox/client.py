@@ -37,6 +37,10 @@ class SandboxClient:
         Raises SandboxUnavailable if the sandbox can't take work at all."""
         return self._post("/v1/trace", request)
 
+    def trace_check(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Recording integrity for many inputs at once: per-input statuses, no recordings."""
+        return self._post("/v1/trace_check", request)
+
     def run_batch(self, request: dict[str, Any]) -> dict[str, Any]:
         """Run a batch (see sandbox/algolens_sandbox/batch.py for the request shape).
 

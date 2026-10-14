@@ -286,7 +286,10 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
     try:
         message = {"value": value}
         if recorder:
-            message["trace"] = recorder.result()
+            if test.get("trace") == "summary":  # integrity checks: the recording isn't needed
+                message["trace"] = {"frames": len(recorder.frames), "truncated": recorder.truncated}
+            else:
+                message["trace"] = recorder.result()
         payload = json.dumps(message, allow_nan=False).encode()
     except (TypeError, ValueError):
         os._exit(EXIT_UNSERIALIZABLE)

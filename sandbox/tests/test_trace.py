@@ -144,3 +144,23 @@ def test_plain_algorithmic_code_is_traceable():
 )
 def test_untraceable_code_is_rejected(src):
     assert check_traceable(src) != []
+
+
+def test_trace_check_judges_many_inputs_in_one_jail():
+    from algolens_sandbox.batch import TraceCheckRequest, run_trace_check
+
+    inputs = [{"args": [[3, 1, 2]]}, {"args": [[]]}, {"args": [[5, 4, 3, 2, 1]]}]
+    resp = run_trace_check(TraceCheckRequest(source=BUBBLE, entry="bubble_sort", inputs=inputs))
+    assert resp.status == "ok", resp
+    assert [r.status for r in resp.results] == ["ok", "ok", "ok"]
+    assert all(r.frames > 0 for r in resp.results)
+    assert resp.results[0].truncated is None
+
+
+def test_trace_check_reports_failures_per_input():
+    from algolens_sandbox.batch import TraceCheckRequest, run_trace_check
+
+    src = "def f(x):\n    return 10 // x\n"
+    resp = run_trace_check(TraceCheckRequest(source=src, entry="f",
+                                             inputs=[{"args": [2]}, {"args": [0]}]))  # fmt: skip
+    assert [r.status for r in resp.results] == ["ok", "runtime_error"]

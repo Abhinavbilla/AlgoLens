@@ -3,6 +3,8 @@
 Batch status values:
 - ok             every test has a result (each with its own outcome)
 - compile_error  C++ didn't compile; `compile_output` says why
+- compile_timeout the compiler ran out of time. Time-dependent (a busy machine can cause
+                 it), so callers should retry before treating it as the code's fault.
 - batch_timeout  the whole batch hit its wall-time budget; finished tests keep their results
 - sandbox_error  the sandbox itself failed. Never a verdict on the code, and callers must
                  not count it toward or against verification.
@@ -27,9 +29,11 @@ DRIVER = "/driver/driver.py"
 # Not -I: it implies -E, which would ignore PYTHONHASHSEED and make set order random.
 # -P -s -S give the rest of isolated mode; nsjail passes only the env vars we set.
 DRIVER_FLAGS = ["-P", "-s", "-S"]
-CPP_FLAGS = ["-std=c++17", "-O2", "-pipe", "-I/usr/local/include/algolens"]
+# Must match the flags algolens.h.gch is built with in the Dockerfile, or the precompiled
+# header is ignored; -Winvalid-pch makes that visible in the compiler output.
+CPP_FLAGS = ["-std=c++17", "-O2", "-pipe", "-Winvalid-pch", "-I/usr/local/include/algolens"]
 COMPILE_LIMITS = jail.JailLimits(
-    wall_s=30, cpu_s=30, mem_mb=1024, nproc=32, fsize_mb=64, tmp_mb=128
+    wall_s=60, cpu_s=60, mem_mb=1024, nproc=32, fsize_mb=64, tmp_mb=128
 )
 MAX_TESTS = 2000
 MAX_SOURCE_BYTES = 200_000
@@ -81,7 +85,7 @@ class TestResult(BaseModel):
 
 
 class BatchResponse(BaseModel):
-    status: Literal["ok", "compile_error", "batch_timeout", "sandbox_error"]
+    status: Literal["ok", "compile_error", "compile_timeout", "batch_timeout", "sandbox_error"]
     detail: str = ""
     compile_output: str = ""
     results: list[TestResult] = []
@@ -129,7 +133,7 @@ def _compile(source: str, work: Path) -> BatchResponse | None:
     if not run.started:
         return BatchResponse(status="sandbox_error", detail="compiler jail failed to start")
     if run.hit_time_limit:
-        return BatchResponse(status="compile_error", detail="compilation timed out")
+        return BatchResponse(status="compile_timeout", detail="compilation timed out")
     if run.exit_code != 0 or not (work / "a.out").exists():
         output = run.stderr.decode(errors="replace").replace("/work/", "")
         return BatchResponse(status="compile_error", compile_output=output[-8000:])
@@ -244,7 +248,10 @@ def run_trace(req: TraceRequest) -> TraceResponse:
     if resp.status != "ok":
         status = "sandbox_error" if resp.status == "sandbox_error" else "trace_failed"
         return TraceResponse(status=status, detail=resp.detail)
-    plain, traced = resp.results
+    return _judge(*resp.results)
+
+
+def _judge(plain: TestResult, traced: TestResult) -> TraceResponse:
     if plain.outcome != "ok":
         return TraceResponse(status=plain.outcome, detail=plain.detail)
     if traced.outcome != "ok" or traced.trace is None:
@@ -255,3 +262,68 @@ def run_trace(req: TraceRequest) -> TraceResponse:
             detail=f"traced result {traced.value!r} != untraced result {plain.value!r}",
         )
     return TraceResponse(status="ok", value=plain.value, trace=traced.trace)
+
+
+class TraceCheckRequest(BaseModel):
+    """Recording integrity for many inputs at once (spec: recording must not change the
+    result on any test input). Returns per-input statuses, not the recordings."""
+
+    source: str = Field(max_length=MAX_SOURCE_BYTES)
+    entry: str = Field(min_length=1, max_length=64)
+    inputs: list[dict] = Field(max_length=MAX_TESTS // 2)
+    cpu_ms: int = Field(default=2000, ge=10, le=30_000)
+    mem_mb: int = Field(default=512, ge=64, le=1024)
+    max_frames: int = Field(default=5000, ge=1, le=20_000)
+    batch_wall_s: int = Field(default=240, ge=1, le=300)
+
+    @field_validator("entry")
+    @classmethod
+    def _entry_is_identifier(cls, v: str) -> str:
+        if not v.isidentifier():
+            raise ValueError("entry must be a Python identifier")
+        return v
+
+
+class TraceCheckResult(BaseModel):
+    status: str  # same statuses as TraceResponse, per input
+    detail: str = ""
+    frames: int = 0
+    truncated: str | None = None
+
+
+class TraceCheckResponse(BaseModel):
+    status: Literal["ok", "rejected", "batch_timeout", "sandbox_error"]
+    detail: str = ""
+    problems: list[str] = []
+    results: list[TraceCheckResult] = []
+
+
+def run_trace_check(req: TraceCheckRequest) -> TraceCheckResponse:
+    problems = check_traceable(req.source)
+    if problems:
+        return TraceCheckResponse(status="rejected", problems=problems, detail=problems[0])
+    batch = BatchRequest(
+        language="python", source=req.source, entry=req.entry, tests=[],
+        per_test=PerTestLimits(cpu_ms=req.cpu_ms, wall_ms=min(req.cpu_ms * 3, 60_000),
+                               mem_mb=req.mem_mb, max_frames=req.max_frames),
+        batch_wall_s=req.batch_wall_s,
+    )  # fmt: skip
+    tests = []
+    for i, inp in enumerate(req.inputs):
+        tests.append({"id": f"u{i}", "input": inp})
+        tests.append({"id": f"t{i}", "input": inp, "trace": "summary"})
+    resp = _run(batch, tests)
+    if resp.status in ("sandbox_error", "compile_error"):
+        return TraceCheckResponse(status="sandbox_error", detail=resp.detail)
+    results = []
+    for plain, traced in zip(resp.results[::2], resp.results[1::2], strict=True):
+        if plain.outcome == "not_run" or traced.outcome == "not_run":
+            results.append(TraceCheckResult(status="not_run"))
+            continue
+        judged = _judge(plain, traced)
+        summary = traced.trace or {}
+        results.append(TraceCheckResult(status=judged.status, detail=judged.detail,
+                                        frames=summary.get("frames", 0),
+                                        truncated=summary.get("truncated")))  # fmt: skip
+    status = "batch_timeout" if resp.status == "batch_timeout" else "ok"
+    return TraceCheckResponse(status=status, detail=resp.detail, results=results)

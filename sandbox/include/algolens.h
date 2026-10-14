@@ -1,15 +1,23 @@
 // Helpers for C++ test programs run by the AlgoLens sandbox driver.
 // The test input arrives as JSON on stdin; the result must be written as JSON with emit(),
 // which uses fd 3 so the program's own std::cout output never corrupts the result.
+//
+// This header is precompiled in the sandbox image (algolens.h.gch, built with the same
+// flags the sandbox compiles with), so make it the first #include of a solution: parsing
+// nlohmann/json takes ~2.5 s otherwise, which a busy machine can stretch past the limit.
 #pragma once
 
 #include <unistd.h>
 
 #include <iostream>
 #include <iterator>
+#include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
 
 namespace algolens {
+
+using Json = nlohmann::json;
 
 inline std::string read_input() {
     return std::string(std::istreambuf_iterator<char>(std::cin), std::istreambuf_iterator<char>());

@@ -65,3 +65,58 @@ def test_animation_is_a_faithful_recording(client):
 def test_unknown_entry_is_404(client):
     assert client.get("/api/library/nope").status_code == 404
     assert client.get("/api/library/nope/animation").status_code == 404
+
+
+def test_verification_catches_a_planted_bug():
+    if not SOCKET:
+        pytest.skip("ALGOLENS_TEST_SANDBOX_SOCKET not set")
+    from dataclasses import replace
+
+    entry = next(e for e in load_all(get_settings().library_dir) if e.slug == "bubble-sort")
+    # Each pass stops one position early: wrong only for some inputs, and the hand-written
+    # tests don't all catch it, so the random tests have to.
+    buggy = replace(
+        entry, python_code=entry.python_code.replace("range(n - 1 - i)", "range(n - 2 - i)")
+    )
+    assert buggy.python_code != entry.python_code
+    sandbox = SandboxClient(SOCKET)
+    result = verify_entry(buggy, sandbox)
+    sandbox.close()
+    assert result["status"] == "failed"
+    assert any("python gave" in f for f in result["failures"])
+
+
+def test_custom_input_runs(client):
+    resp = client.post("/api/library/binary-search/animation", json={"args": [[2, 4, 6], 5]})
+    assert resp.status_code == 200, resp.json()
+    assert resp.json()["result"] == 2
+    assert resp.json()["input"] == {"args": [[2, 4, 6], 5]}
+
+
+def test_custom_input_breaking_the_schema_never_runs(client):
+    resp = client.post("/api/library/binary-search/animation", json={"args": [[5, 1], 3]})
+    assert resp.status_code == 422
+    detail = resp.json()["detail"]
+    assert detail["issues"] == [
+        {"path": "nums", "message": "must be sorted in ascending order (nums[1] = 1 comes after 5)"}
+    ]
+
+
+def test_custom_input_breaking_the_validator_rule(client):
+    resp = client.post("/api/library/two-pointers/animation", json={"args": [[1, 2, 3, 4], 5]})
+    assert resp.status_code == 422
+    assert "more than one pair adds up to 5" in resp.json()["detail"]["issues"][0]["message"]
+
+
+def test_custom_input_too_long_asks_for_a_smaller_one(client):
+    resp = client.post(
+        "/api/library/bubble-sort/animation", json={"args": [list(range(30, 0, -1))]}
+    )
+    assert resp.status_code == 422
+    assert "Try a smaller input" in resp.json()["detail"]["message"]
+
+
+def test_entry_describes_its_inputs(client):
+    params = client.get("/api/library/binary-search").json()["params"]
+    assert [p["name"] for p in params] == ["nums", "target"]
+    assert params[0]["hint"].startswith("a sorted list of 0 to 1000 values")

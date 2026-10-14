@@ -11,10 +11,13 @@ from algolens_sandbox import selftest
 from algolens_sandbox.batch import (
     BatchRequest,
     BatchResponse,
+    TraceCheckRequest,
+    TraceCheckResponse,
     TraceRequest,
     TraceResponse,
     run_batch,
     run_trace,
+    run_trace_check,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -61,3 +64,11 @@ def trace(req: TraceRequest) -> TraceResponse:
         raise HTTPException(503, detail={"status": "unhealthy", "problems": _state["problems"]})
     with _slots:
         return run_trace(req)
+
+
+@app.post("/v1/trace_check")
+def trace_check(req: TraceCheckRequest) -> TraceCheckResponse:
+    if not _state["healthy"]:
+        raise HTTPException(503, detail={"status": "unhealthy", "problems": _state["problems"]})
+    with _slots:
+        return run_trace_check(req)

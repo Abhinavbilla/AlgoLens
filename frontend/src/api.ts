@@ -16,13 +16,18 @@ export type EntrySummary = {
   verification: Verification;
 };
 
+export type InputParam = { name: string; kind: string; hint: string };
+
 export type Entry = EntrySummary & {
   description: string;
   note: string;
   python_code: string;
   cpp_code: string;
   default_input: { args: unknown[] };
+  params: InputParam[];
 };
+
+export type Issue = { path: string; message: string };
 
 export type Narration = { text: string; source: "template" | "neutral" };
 
@@ -79,28 +84,42 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public issues: Issue[] = [],
   ) {
     super(message);
   }
 }
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, init);
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
+    let issues: Issue[] = [];
     try {
       const body = await res.json();
       if (typeof body.detail === "string") message = body.detail;
+      else if (body.detail && typeof body.detail.message === "string") {
+        message = body.detail.message;
+        issues = Array.isArray(body.detail.issues) ? body.detail.issues : [];
+      }
     } catch {
       // keep the generic message
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, issues);
   }
   return res.json() as Promise<T>;
 }
+
+const get = <T,>(path: string) => request<T>(path);
 
 export const api = {
   library: () => get<EntrySummary[]>("/api/library"),
   entry: (slug: string) => get<Entry>(`/api/library/${encodeURIComponent(slug)}`),
   animation: (slug: string) => get<Animation>(`/api/library/${encodeURIComponent(slug)}/animation`),
+  customAnimation: (slug: string, args: unknown[]) =>
+    request<Animation>(`/api/library/${encodeURIComponent(slug)}/animation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ args }),
+    }),
 };

@@ -2,7 +2,8 @@
 
 Each folder has solution.py, solution.cpp, reference.py (an independent, simplest-possible
 solution the entry is checked against), description.md (written by us), and entry.json
-with the title, tests, default input, visual spec, C++ line map and narration templates.
+with the title, input schema, tests, default input, visual spec, C++ line map and narration
+templates. An optional validator.py holds input rules the schema language can't express.
 """
 
 import ast
@@ -18,10 +19,13 @@ from sqlalchemy.orm import Session
 from algolens.animation.builder import AnimationError, compile_visual
 from algolens.db.models import LibraryEntry
 from algolens.narration.engine import TemplateError, compile_templates
+from algolens.schema.model import SchemaError, compile_schema
+from algolens.schema.service import InputRules
+from algolens.schema.validate import validate
 
 log = logging.getLogger("algolens.library")
-REQUIRED = ("title", "category", "summary", "order", "entry", "default_input", "tests",
-            "cpp_lines", "visual", "narration")  # fmt: skip
+REQUIRED = ("title", "category", "summary", "order", "entry", "schema", "default_input",
+            "tests", "cpp_lines", "visual", "narration")  # fmt: skip
 
 
 class LibraryError(ValueError):
@@ -46,6 +50,11 @@ class EntrySource:
     cpp_code: str
     reference_code: str
     description: str
+    schema: dict
+    validator_code: str = ""
+
+    def rules(self) -> InputRules:
+        return InputRules(compile_schema(self.schema), self.validator_code or None)
 
     @property
     def content_hash(self) -> str:
@@ -86,9 +95,15 @@ def load_entry(folder: Path) -> EntrySource:
         cpp_code=files["solution.cpp"],
         reference_code=files["reference.py"],
         description=files["description.md"].strip(),
+        schema=meta["schema"],
+        validator_code=_optional(folder / "validator.py"),
     )
     _check(entry, where)
     return entry
+
+
+def _optional(path: Path) -> str:
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
 def _check(entry: EntrySource, where: str) -> None:
@@ -113,6 +128,20 @@ def _check(entry: EntrySource, where: str) -> None:
             raise LibraryError(f"{where}: cpp_lines {py} -> {cpp} is out of range")
     if not entry.tests:
         raise LibraryError(f"{where}: no tests")
+    try:
+        schema = compile_schema(entry.schema)
+    except SchemaError as exc:
+        raise LibraryError(f"{where}: schema: {exc}") from exc
+    for name, inp in [("default_input", entry.default_input)] + [
+        (f"test {i}", t) for i, t in enumerate(entry.tests)
+    ]:
+        issues = validate(schema, inp.get("args"))
+        if issues:
+            raise LibraryError(f"{where}: {name} breaks the schema: {issues[0]}")
+    if entry.validator_code and "validate" not in {
+        n.name for n in ast.parse(entry.validator_code).body if isinstance(n, ast.FunctionDef)
+    }:
+        raise LibraryError(f"{where}: validator.py doesn't define validate()")
 
 
 def load_all(root: Path) -> list[EntrySource]:
@@ -156,5 +185,6 @@ def from_row(row: LibraryEntry) -> EntrySource:
         slug=row.slug, title=row.title, category=row.category, description=row.description,
         **{k: c[k] for k in ("summary", "order", "entry", "note", "default_input", "tests",
                              "cpp_lines", "visual", "narration", "python_code", "cpp_code",
-                             "reference_code")},
+                             "reference_code", "schema")},
+        validator_code=c.get("validator_code", ""),
     )  # fmt: skip

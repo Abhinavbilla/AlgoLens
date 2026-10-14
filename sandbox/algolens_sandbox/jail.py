@@ -43,16 +43,13 @@ class JailRun:
     stderr: bytes
     log: str
     stdout_capped: bool
+    hit_time_limit: bool = False  # our monotonic watchdog stopped it at limits.wall_s
 
     @property
     def started(self) -> bool:
         """Whether nsjail actually started the program. If not, nothing it reports is a
         verdict on the code: callers must treat it as a sandbox error."""
         return "Executing '" in self.log and "Launching child process failed" not in self.log
-
-    @property
-    def hit_time_limit(self) -> bool:
-        return "run time >= time limit" in self.log
 
 
 def command(
@@ -67,7 +64,7 @@ def command(
     cmd += ["--cwd", "/work", "--hostname", "jail", "--disable_proc"]
     cmd += ["--user", "99999", "--group", "99999"]
     cmd += [
-        "--time_limit", str(limits.wall_s),
+        "--time_limit", "0",  # disabled: see run(); we enforce wall time on a monotonic clock
         "--rlimit_cpu", str(limits.cpu_s),
         "--rlimit_as", str(limits.mem_mb),
         "--rlimit_fsize", str(limits.fsize_mb),
@@ -102,8 +99,18 @@ def run(
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
     )
-    # Backstop in case nsjail itself hangs; its own --time_limit should always fire first.
-    watchdog = threading.Timer(limits.wall_s + 5, _kill_group, args=(proc.pid,))
+    # The wall-time limit is enforced here on a monotonic clock, not by nsjail: nsjail 3.4
+    # measures it with the wall clock, and when the host clock steps backwards (WSL does
+    # this when it resyncs) it computes a negative run time and kills healthy jobs at once.
+    # Killing nsjail's process group also kills the jailed program: it shares the group, and
+    # when the jail's PID 1 dies the kernel ends everything else in that PID namespace.
+    timed_out = threading.Event()
+
+    def on_timeout() -> None:
+        timed_out.set()
+        _kill_group(proc.pid)
+
+    watchdog = threading.Timer(limits.wall_s, on_timeout)
     watchdog.start()
     stderr = bytearray()
 
@@ -135,4 +142,5 @@ def run(
         stderr=bytes(stderr),
         log=log.read_text(errors="replace") if log.exists() else "",
         stdout_capped=capped,
+        hit_time_limit=timed_out.is_set(),
     )

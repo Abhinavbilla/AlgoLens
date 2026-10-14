@@ -63,6 +63,12 @@ These are built into `sandbox/` and covered by `sandbox/tests/test_batch.py`, wh
 - **Socket access.** The sandbox has no network at all and serves HTTP on a Unix socket in a shared volume. uvicorn makes the socket world-writable, so the directory is made owner-only (uid 10001: sandbox, api, worker) on every start. A different uid is refused.
 - **Startup self-test.** Until it passes, the sandbox is unhealthy and refuses every batch, and the worker doesn't start. It checks that jails start, that Python and C++ run, and that `unshare`, network and host files are blocked, with CPU limits enforced.
 
+## Found in M3
+
+- **nsjail's time limit misfires when the clock steps backwards.** nsjail 3.4 measures `--time_limit` with the wall clock. WSL periodically resyncs its clock and sometimes steps it back, and nsjail then logged `run time >= time limit (-1 >= 60)` and killed healthy jobs at once, about 1 run in 4 in one test group. The runner now enforces wall time itself on a monotonic clock (`--time_limit 0`). Killing nsjail's process group also kills the jailed program, and a test checks that nothing is left running.
+- **C++ compiles were slow enough to time out under load.** Parsing `nlohmann/json` took about 2.7 s per compile. The sandbox image now precompiles `algolens.h`, which includes it, with exactly the sandbox's flags. That brings compiles to about 1 s, and `-Winvalid-pch` makes a mismatch visible. The compile limit is 60 s, and a timeout has its own status, `compile_timeout`, which callers retry rather than treat as a compile error.
+- **Under extreme load, WSL itself can restart.** That happened with two hostile-code suites running alongside a stack rebuild. The compose services have `restart: unless-stopped`, so the stack comes back on its own.
+
 ## Open risk for CI and other Linux hosts
 
 This machine's WSL kernel has no AppArmor. GitHub's `ubuntu-24.04` runners (and stock Ubuntu hosts) do, and two things there may block nsjail:

@@ -126,6 +126,15 @@ The AI describes the input in a small typed DSL; **we** generate and validate in
 - **Escape hatch**: constraints the DSL can't express get an AI-written `validate(input)`. It runs **in the sandbox**, must accept every example, and we generate inputs by rejection sampling against it. If too few samples are accepted, the problem is reported as unverifiable.
 - Every example input must pass the validator; if one doesn't, the parse is wrong.
 
+**As built in M3:**
+- The schema format is documented in `backend/algolens/schema/model.py`.
+- Bounds and cross-parameter rules use the narration expression language (already hardened against hostile input).
+- The escape hatch is a `validate(*args) -> str | None` function. For library entries it lives in `validator.py`, and it always runs in the sandbox.
+- Random tests are filtered through the validator in one batch; if fewer than 5% pass, the rules count as too strict to sample from.
+- Each parameter gets a plain-language hint for the input editor, from `schema/describe.py`.
+- A property test checks that thousands of generated inputs always pass validation.
+- Library entries are now verified with their hand-written tests plus 300 random tests, with recording integrity checked on every test input.
+
 ## 6. Verification pipeline
 
 ### 6.1 Stages
@@ -138,6 +147,7 @@ The AI describes the input in a small typed DSL; **we** generate and validate in
    - **Other approaches** must pass the examples, match Brute A on ≥300 random inputs, and match C++ to Python.
 6. **Repair** (§6.3).
 7. Approaches fail independently: one failing never hides the others.
+8. **[Learned in M3] Time-dependent results are retried, never taken as wrong answers.** A test that times out, a batch that runs out of time, or a compile that times out (`compile_timeout`) can be caused by a busy machine rather than by the code. These are rerun once on their own before they count. A repeat is reported as a *timeout*, never as a wrong output or a compile error. In M3, before this rule existed, a correct library entry was briefly marked "failed" because a loaded machine made its C++ compile time out.
 
 ### 6.2 Two independent brute forces (always)
 The goal is that both are unlikely to misread the problem in the same way:

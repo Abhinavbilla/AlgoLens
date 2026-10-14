@@ -366,3 +366,67 @@ def test_crashes_produce_no_core_dumps():
     r = only(cpp(src))
     assert r.outcome == "runtime_error", r
     assert r.wall_ms < 1000, r
+
+
+def test_precompiled_header_is_used(tmp_path):
+    # Parsing nlohmann/json costs ~2.7 s per compile without the precompiled header (~1 s
+    # with it), and a busy machine stretches that toward the limit. g++ -H marks a used
+    # precompiled header with "!"; the flags must be exactly the sandbox's.
+    import subprocess
+
+    from algolens_sandbox.batch import CPP_FLAGS
+
+    src = tmp_path / "t.cpp"
+    src.write_text(
+        "#include <algolens.h>\nint main() { algolens::emit(algolens::Json(1).dump()); }\n"
+    )
+    out = subprocess.run(["g++", *CPP_FLAGS, "-H", "-o", str(tmp_path / "t"), str(src)],
+                         capture_output=True, text=True, check=True)  # fmt: skip
+    assert "! /usr/local/include/algolens/algolens.h.gch" in out.stderr
+    resp = cpp(src.read_text())
+    assert resp.status == "ok" and resp.results[0].value == 1, resp
+
+
+def test_compile_timeout_has_its_own_status(monkeypatch):
+    from algolens_sandbox import batch
+
+    tight = batch.jail.JailLimits(wall_s=1, cpu_s=1, mem_mb=1024, nproc=32, fsize_mb=64, tmp_mb=128)
+    monkeypatch.setattr(batch, "COMPILE_LIMITS", tight)
+    # Deep template recursion: slow to compile, but valid code.
+    src = """
+    template <int N> struct F { static constexpr long v = F<N - 1>::v + F<N - 2>::v; };
+    template <> struct F<1> { static constexpr long v = 1; };
+    template <> struct F<0> { static constexpr long v = 0; };
+    #include <algolens.h>
+    int main() { algolens::emit(std::to_string(F<899>::v)); }
+    """
+    resp = cpp(src)
+    assert resp.status in ("compile_timeout", "compile_error"), resp
+    if resp.status == "compile_error":
+        pytest.skip("compiler finished or rejected the code within a second on this machine")
+
+
+def test_wall_limit_is_enforced_on_a_monotonic_clock_and_leaves_nothing_running():
+    # nsjail's own time limit uses the wall clock and misfires when the host clock steps
+    # backwards (seen on WSL), so the runner enforces it. Killing nsjail must take the
+    # jailed program down with it.
+    import os
+    import time
+
+    src = "import time\ndef f():\n    time.sleep(60)\n"
+    start = time.monotonic()
+    resp = py(src, "f", per_test=PerTestLimits(cpu_ms=500, wall_ms=30_000), batch_wall_s=2)
+    assert resp.status == "batch_timeout", resp
+    assert time.monotonic() - start < 6
+    time.sleep(0.5)
+    leftovers = []
+    for pid in os.listdir("/proc"):
+        if pid.isdigit():
+            try:
+                with open(f"/proc/{pid}/cmdline", "rb") as fh:
+                    cmd = fh.read().replace(b"\0", b" ")
+            except OSError:
+                continue
+            if b"driver.py" in cmd or b"nsjail" in cmd:
+                leftovers.append(cmd.decode(errors="replace")[:80])
+    assert leftovers == [], leftovers
