@@ -6,7 +6,14 @@ seccomp/AppArmor/namespaces behave differently fails here, loudly, instead of si
 running code with weaker isolation or turning sandbox faults into verdicts on code.
 """
 
-from algolens_sandbox.batch import BatchRequest, PerTestLimits, TestCase, run_batch
+from algolens_sandbox.batch import (
+    BatchRequest,
+    PerTestLimits,
+    TestCase,
+    TraceRequest,
+    run_batch,
+    run_trace,
+)
 
 PROBE_PY = """
 import ctypes, os, socket
@@ -31,6 +38,11 @@ def burn():
 PROBE_CPP = r"""
 #include <algolens.h>
 int main() { algolens::read_input(); algolens::emit("[1,2,3]"); }
+"""
+
+PROBE_TRACE = """def f(a):
+    b = a + 1
+    return b
 """
 
 EXPECTED_PY = {
@@ -68,4 +80,9 @@ def run() -> list[str]:
     if resp.status != "ok" or got != ("ok", [1, 2, 3]):
         problems.append(f"c++: expected ok [1, 2, 3], got {resp.status} {got} "
                         f"{resp.detail} {resp.compile_output[-300:]}".strip())  # fmt: skip
+    trace = run_trace(TraceRequest(source=PROBE_TRACE, entry="f", input={"args": [1]}))
+    lines = [(fr["line"], fr["next"]) for fr in (trace.trace or {}).get("frames", [])]
+    if trace.status != "ok" or trace.value != 2 or lines != [(2, 3), (3, "return")]:
+        problems.append(f"trace: expected ok 2 [(2, 3), (3, 'return')], got "
+                        f"{trace.status} {trace.value} {lines} {trace.detail}")  # fmt: skip
     return problems

@@ -30,6 +30,7 @@ REQUEST = "/work/request.json"
 PY_SOLUTION = "/work/solution.py"
 CPP_BINARY = "/work/a.out"
 CPP_INPUT = "/tmp/input.json"
+DRIVER_DIR = "/driver"
 EXIT_MEMORY = 86  # Python child hit MemoryError
 EXIT_UNSERIALIZABLE = 87  # Python child returned something that isn't JSON
 READY = b"R"  # child setup done; solution code (or the C++ exec) is about to run
@@ -100,7 +101,9 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
         os.close(fd)
 
     wall_limit = per["wall_ms"] / 1000
+    traced = bool(test.get("trace"))
     out_cap = per["output_bytes"]
+    res_cap = per["trace_output_bytes"] if traced else out_cap
     bufs = {res_r: bytearray(), out_r: bytearray(), err_r: bytearray(), ready_r: bytearray()}
     sizes = dict.fromkeys(bufs, 0)
     open_fds = set(bufs)
@@ -117,7 +120,7 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
                 open_fds.discard(fd)
                 continue
             sizes[fd] += len(chunk)
-            keep = out_cap + 1 if fd == res_r else LOG_CAP
+            keep = res_cap + 1 if fd == res_r else LOG_CAP
             if len(bufs[fd]) < keep:
                 bufs[fd].extend(chunk[: keep - len(bufs[fd])])
         return bool(ready)
@@ -132,7 +135,7 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
             killed_for = "wall"
             break
         read_ready(min(remaining, POLL_S))
-        if sizes[res_r] > out_cap or sizes[out_r] > out_cap:
+        if sizes[res_r] > res_cap or sizes[out_r] > out_cap:
             killed_for = "output"
             break
         wpid, status, usage = os.wait4(pid, os.WNOHANG)
@@ -143,7 +146,7 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
         for _ in range(64):
             if not read_ready(0):
                 break
-        if sizes[res_r] > out_cap or sizes[out_r] > out_cap:
+        if sizes[res_r] > res_cap or sizes[out_r] > out_cap:
             killed_for = "output"
     else:
         for kill in (lambda: os.killpg(pid, signal.SIGKILL), lambda: os.kill(pid, signal.SIGKILL)):
@@ -161,12 +164,15 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
     ready = bytes(bufs[ready_r])
     setup_ok = ready == READY
     if not setup_ok:
-        outcome, value, detail = "setup_error", None, f"driver setup failed ({ready!r})"
+        outcome, value, detail, trace = (
+            "setup_error", None, f"driver setup failed ({ready!r})", None
+        )  # fmt: skip
     else:
-        outcome, value, detail = _classify(
-            language, status, killed_for, cpu_ms, per, bytes(bufs[res_r]), bytes(bufs[err_r])
-        )
-    return {
+        outcome, value, detail, trace = _classify(
+            language, status, killed_for, cpu_ms, per, bytes(bufs[res_r]), bytes(bufs[err_r]),
+            traced,
+        )  # fmt: skip
+    result = {
         "id": test["id"],
         "outcome": outcome,
         "value": value,
@@ -176,39 +182,44 @@ def run_one(language: str, entry: str, test: dict, per: dict) -> dict:
         "stdout": bufs[out_r][:LOG_CAP].decode(errors="replace"),
         "stderr": bufs[err_r][:LOG_CAP].decode(errors="replace"),
     }
+    if traced:
+        result["trace"] = trace
+    return result
 
 
-def _classify(language, status, killed_for, cpu_ms, per, result, stderr):
+def _classify(language, status, killed_for, cpu_ms, per, result, stderr, traced):
     if killed_for == "output":
-        return "output_limit", None, f"output exceeded {per['output_bytes']} bytes"
+        return "output_limit", None, f"output exceeded {per['output_bytes']} bytes", None
     if killed_for == "wall":
-        return "timeout", None, f"wall time exceeded {per['wall_ms']} ms"
+        return "timeout", None, f"wall time exceeded {per['wall_ms']} ms", None
     if os.WIFSIGNALED(status):
         sig = os.WTERMSIG(status)
         if sig in (signal.SIGPROF, signal.SIGXCPU) or cpu_ms >= per["cpu_ms"]:
-            return "timeout", None, f"CPU time exceeded {per['cpu_ms']} ms"
+            return "timeout", None, f"CPU time exceeded {per['cpu_ms']} ms", None
         if language == "cpp" and b"bad_alloc" in stderr:
-            return "memory", None, f"memory exceeded {per['mem_mb']} MB"
-        return "runtime_error", None, f"killed by {signal.Signals(sig).name}"
+            return "memory", None, f"memory exceeded {per['mem_mb']} MB", None
+        return "runtime_error", None, f"killed by {signal.Signals(sig).name}", None
     code = os.WEXITSTATUS(status)
     if code == EXIT_MEMORY or (language == "cpp" and b"bad_alloc" in stderr):
-        return "memory", None, f"memory exceeded {per['mem_mb']} MB"
+        return "memory", None, f"memory exceeded {per['mem_mb']} MB", None
     if code == EXIT_UNSERIALIZABLE:
-        return "runtime_error", None, "return value is not JSON-serializable"
+        return "runtime_error", None, "return value is not JSON-serializable", None
     if code != 0:
-        return "runtime_error", None, f"exit code {code}"
+        return "runtime_error", None, f"exit code {code}", None
     try:
         message = json.loads(result.decode())
     except (UnicodeDecodeError, json.JSONDecodeError):
-        return "runtime_error", None, "no valid result was produced"
+        return "runtime_error", None, "no valid result was produced", None
     if language == "python":
-        if not isinstance(message, dict) or set(message) != {"value"}:
-            return "runtime_error", None, "malformed result message"
-        return "ok", message["value"], ""
-    return "ok", message, ""
+        expected = {"value", "trace"} if traced else {"value"}
+        if not isinstance(message, dict) or set(message) != expected:
+            return "runtime_error", None, "malformed result message", None
+        return "ok", message["value"], "", message.get("trace")
+    return "ok", message, "", None
 
 
 def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
+    traced = bool(test.get("trace"))
     os.setpgid(0, 0)
     if language == "cpp":
         os.dup2(os.open(CPP_INPUT, os.O_RDONLY), 0)
@@ -240,6 +251,13 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
             os._exit(71)
 
     sys.setrecursionlimit(100_000)
+    recorder = None
+    if traced:
+        # Loaded before any solution code runs (part of setup, so a failure is ours).
+        sys.path.insert(0, DRIVER_DIR)
+        from tracer import Recorder
+
+        recorder = Recorder(PY_SOLUTION, max_frames=per["max_frames"])
     os.write(4, READY)
     os.close(4)
     try:
@@ -250,7 +268,15 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
         spec.loader.exec_module(module)
         args = test["input"].get("args", [])
         kwargs = test["input"].get("kwargs", {})
-        value = getattr(module, entry)(*args, **kwargs)
+        fn = getattr(module, entry)
+        if recorder:
+            recorder.start()
+            try:
+                value = fn(*args, **kwargs)
+            finally:
+                recorder.stop()
+        else:
+            value = fn(*args, **kwargs)
     except MemoryError:
         os._exit(EXIT_MEMORY)
     except BaseException:
@@ -258,7 +284,10 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
         sys.stderr.flush()
         os._exit(1)
     try:
-        payload = json.dumps({"value": value}, allow_nan=False).encode()
+        message = {"value": value}
+        if recorder:
+            message["trace"] = recorder.result()
+        payload = json.dumps(message, allow_nan=False).encode()
     except (TypeError, ValueError):
         os._exit(EXIT_UNSERIALIZABLE)
     except MemoryError:

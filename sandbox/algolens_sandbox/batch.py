@@ -6,6 +6,8 @@ Batch status values:
 - batch_timeout  the whole batch hit its wall-time budget; finished tests keep their results
 - sandbox_error  the sandbox itself failed. Never a verdict on the code, and callers must
                  not count it toward or against verification.
+
+run_trace() records one run for animation; see TraceResponse for its statuses.
 """
 
 import json
@@ -17,6 +19,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator
 
 from algolens_sandbox import jail
+from algolens_sandbox.guard import check_traceable
 
 JOBS_DIR = Path("/jobs")
 PYTHON = "/usr/local/bin/python3"
@@ -37,6 +40,9 @@ class PerTestLimits(BaseModel):
     wall_ms: int = Field(default=3000, ge=10, le=60_000)
     mem_mb: int = Field(default=256, ge=64, le=1024)
     output_bytes: int = Field(default=1 << 20, ge=1024, le=1 << 20)
+    # Only used by traced tests, which only run_trace() creates.
+    max_frames: int = Field(default=5000, ge=1, le=20_000)
+    trace_output_bytes: int = Field(default=16 << 20, ge=1024, le=32 << 20)
 
 
 class TestCase(BaseModel):
@@ -71,6 +77,7 @@ class TestResult(BaseModel):
     wall_ms: float = 0
     stdout: str = ""
     stderr: str = ""
+    trace: dict | None = None
 
 
 class BatchResponse(BaseModel):
@@ -81,6 +88,10 @@ class BatchResponse(BaseModel):
 
 
 def run_batch(req: BatchRequest) -> BatchResponse:
+    return _run(req, [t.model_dump() for t in req.tests])
+
+
+def _run(req: BatchRequest, tests: list[dict]) -> BatchResponse:
     if req.language == "python" and not req.entry:
         return BatchResponse(status="sandbox_error", detail="python batches need an entry")
     job = Path(tempfile.mkdtemp(dir=JOBS_DIR))
@@ -99,11 +110,11 @@ def run_batch(req: BatchRequest) -> BatchResponse:
                     "language": req.language,
                     "entry": req.entry,
                     "per_test": req.per_test.model_dump(),
-                    "tests": [t.model_dump() for t in req.tests],
+                    "tests": tests,
                 }
             )
         )
-        return _drive(req, work)
+        return _drive(req, work, tests)
     finally:
         shutil.rmtree(job, ignore_errors=True)
 
@@ -125,13 +136,16 @@ def _compile(source: str, work: Path) -> BatchResponse | None:
     return None
 
 
-def _drive(req: BatchRequest, work: Path) -> BatchResponse:
+def _drive(req: BatchRequest, work: Path, tests: list[dict]) -> BatchResponse:
     per = req.per_test
     # The driver's own address space needs headroom above the per-test limit it enforces.
     limits = jail.JailLimits(
         wall_s=req.batch_wall_s, cpu_s=req.batch_wall_s, mem_mb=per.mem_mb + 256
     )
-    stdout_cap = len(req.tests) * (per.output_bytes + (32 << 10)) + (1 << 20)
+    per_result = [
+        (per.trace_output_bytes if t.get("trace") else per.output_bytes) + (32 << 10) for t in tests
+    ]
+    stdout_cap = sum(per_result) + (1 << 20)
     run = jail.run([PYTHON, *DRIVER_FLAGS, DRIVER], work, limits, stdout_cap=stdout_cap)
     if not run.started:
         return BatchResponse(status="sandbox_error", detail="driver jail failed to start")
@@ -147,14 +161,14 @@ def _drive(req: BatchRequest, work: Path) -> BatchResponse:
     if setup_failures:
         # Our own driver failed: report it as a sandbox fault, never as a verdict on the code.
         return BatchResponse(status="sandbox_error", detail=setup_failures[0].detail)
-    results = [by_id.get(t.id) or TestResult(id=t.id, outcome="not_run") for t in req.tests]
-    if len(by_id) == len(req.tests):
+    results = [by_id.get(t["id"]) or TestResult(id=t["id"], outcome="not_run") for t in tests]
+    if len(by_id) == len(tests):
         return BatchResponse(status="ok", results=results)
     if run.hit_time_limit:
         done = len(by_id)
         return BatchResponse(
             status="batch_timeout",
-            detail=f"batch exceeded {req.batch_wall_s} s after {done}/{len(req.tests)} tests",
+            detail=f"batch exceeded {req.batch_wall_s} s after {done}/{len(tests)} tests",
             results=results,
         )
     # The driver stopped early without hitting the time limit: a sandbox fault, not a verdict.
@@ -162,3 +176,82 @@ def _drive(req: BatchRequest, work: Path) -> BatchResponse:
     return BatchResponse(
         status="sandbox_error", detail=f"driver exited early ({run.exit_code}): {tail}"
     )
+
+
+# --- tracing ----------------------------------------------------------------------------------
+
+
+class TraceRequest(BaseModel):
+    source: str = Field(max_length=MAX_SOURCE_BYTES)
+    entry: str = Field(min_length=1, max_length=64)
+    input: dict
+    cpu_ms: int = Field(default=5000, ge=10, le=30_000)  # tracing is ~10-50x slower
+    mem_mb: int = Field(default=512, ge=64, le=1024)
+    max_frames: int = Field(default=5000, ge=1, le=20_000)
+
+    @field_validator("entry")
+    @classmethod
+    def _entry_is_identifier(cls, v: str) -> str:
+        if not v.isidentifier():
+            raise ValueError("entry must be a Python identifier")
+        return v
+
+
+class TraceResponse(BaseModel):
+    """status:
+    ok            `trace` is a faithful recording; `value` matches the untraced run
+    rejected      the source failed the traceability check (`problems` says why)
+    runtime_error / timeout / memory / output_limit
+                  the *untraced* run failed this way on this input: nothing to animate
+    trace_failed  the untraced run was fine but the traced one hit a limit (too slow or too
+                  large to record); try a smaller input
+    mismatch      traced and untraced results differ: recording changed the behaviour.
+                  Never animate this.
+    sandbox_error the sandbox itself failed; not a verdict on the code
+    """
+
+    status: Literal[
+        "ok", "rejected", "runtime_error", "timeout", "memory", "output_limit",
+        "trace_failed", "mismatch", "sandbox_error",
+    ]  # fmt: skip
+    detail: str = ""
+    problems: list[str] = []
+    value: Any = None
+    trace: dict | None = None
+
+
+def run_trace(req: TraceRequest) -> TraceResponse:
+    problems = check_traceable(req.source)
+    if problems:
+        return TraceResponse(status="rejected", problems=problems, detail=problems[0])
+    wall_ms = min(req.cpu_ms * 3, 60_000)
+    batch = BatchRequest(
+        language="python",
+        source=req.source,
+        entry=req.entry,
+        tests=[],
+        per_test=PerTestLimits(
+            cpu_ms=req.cpu_ms, wall_ms=wall_ms, mem_mb=req.mem_mb, max_frames=req.max_frames
+        ),
+        batch_wall_s=min(2 * wall_ms // 1000 + 10, 300),
+    )
+    # The same input untraced and traced, in one jail: the results must agree.
+    tests = [
+        {"id": "untraced", "input": req.input},
+        {"id": "traced", "input": req.input, "trace": True},
+    ]
+    resp = _run(batch, tests)
+    if resp.status != "ok":
+        status = "sandbox_error" if resp.status == "sandbox_error" else "trace_failed"
+        return TraceResponse(status=status, detail=resp.detail)
+    plain, traced = resp.results
+    if plain.outcome != "ok":
+        return TraceResponse(status=plain.outcome, detail=plain.detail)
+    if traced.outcome != "ok" or traced.trace is None:
+        return TraceResponse(status="trace_failed", detail=traced.detail or "no trace produced")
+    if traced.value != plain.value:
+        return TraceResponse(
+            status="mismatch",
+            detail=f"traced result {traced.value!r} != untraced result {plain.value!r}",
+        )
+    return TraceResponse(status="ok", value=plain.value, trace=traced.trace)

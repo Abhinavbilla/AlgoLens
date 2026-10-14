@@ -8,7 +8,8 @@ RUN git clone --depth 1 --branch 3.4 https://github.com/google/nsjail.git /nsjai
     && make -C /nsjail -j"$(nproc)"
 
 FROM python:3.12-slim-bookworm AS runtime
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
+    PIP_DEFAULT_TIMEOUT=60 PIP_RETRIES=10
 RUN apt-get update && apt-get install -y --no-install-recommends \
       g++ libprotobuf32 libnl-route-3-200 nlohmann-json3-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -17,7 +18,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
 COPY include/algolens.h /usr/local/include/algolens/algolens.h
-COPY driver/driver.py /opt/algolens/driver/driver.py
+COPY driver /opt/algolens/driver
 COPY algolens_sandbox /opt/algolens/app/algolens_sandbox
 ENV PYTHONPATH=/opt/algolens/app
 

@@ -8,7 +8,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 
 from algolens_sandbox import selftest
-from algolens_sandbox.batch import BatchRequest, BatchResponse, run_batch
+from algolens_sandbox.batch import (
+    BatchRequest,
+    BatchResponse,
+    TraceRequest,
+    TraceResponse,
+    run_batch,
+    run_trace,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("algolens.sandbox")
@@ -46,3 +53,11 @@ def batch(req: BatchRequest) -> BatchResponse:
     # Each jail may use up to 16 processes; this keeps the container under its pid limit.
     with _slots:
         return run_batch(req)
+
+
+@app.post("/v1/trace")
+def trace(req: TraceRequest) -> TraceResponse:
+    if not _state["healthy"]:
+        raise HTTPException(503, detail={"status": "unhealthy", "problems": _state["problems"]})
+    with _slots:
+        return run_trace(req)
