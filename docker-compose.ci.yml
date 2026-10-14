@@ -5,12 +5,12 @@
 # See sandbox/spike/RESULTS.md, "Open risk for CI and other Linux hosts".
 services:
   sandbox:
-    security_opt:
+    security_opt: !override  # replace the base list (compose versions merge lists differently)
       - no-new-privileges:true
       - seccomp=./sandbox/seccomp/sandbox.json
       - apparmor=unconfined
   sandbox-test:
-    security_opt:
+    security_opt: !override  # replace the base list (compose versions merge lists differently)
       - no-new-privileges:true
       - seccomp=./sandbox/seccomp/sandbox.json
       - apparmor=unconfined
