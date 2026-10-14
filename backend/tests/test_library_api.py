@@ -44,17 +44,10 @@ def test_every_library_entry_verifies():
 
 def test_list_and_entry(client):
     entries = client.get("/api/library").json()
-    assert [e["slug"] for e in entries] == [
-        "bubble-sort",
-        "binary-search",
-        "two-pointers",
-        "monotonic-stack",
-        "grid-bfs",
-        "dijkstra",
-        "level-order",
-        "lcs",
-        "subsets",
-    ]
+    # Listed in the entries' declared order (test_animation pins the full list).
+    expected = sorted(load_all(get_settings().library_dir), key=lambda e: (e.order, e.slug))
+    assert [e["slug"] for e in entries] == [e.slug for e in expected]
+    assert len(entries) == 25
     assert entries[0]["verification"]["status"] == "unverified"  # until `library verify` runs
     entry = client.get("/api/library/binary-search").json()
     assert entry["python_code"].startswith("def lower_bound")

@@ -5,7 +5,8 @@ fields below. Fields marked (expr) are expressions in the narration language. So
 names: `item` (an element of the collection), `node` (a graph node number), `row` / `col`.
 Panels choose what to show and how; every value comes from the recorded state.
 
-    array        var, item (expr: text per cell), pointers [{label, at}], range {label, from, to}
+    array        var, item (expr: text per cell), pointers [{label, at}],
+                 range {label, from, to} (to is exclusive: from=lo, to=hi + 1 covers lo..hi)
     stack        var, item          bottom to top (the end of the list is the top)
     queue        var, item          front first
     list         var, item          chips, for lists of results

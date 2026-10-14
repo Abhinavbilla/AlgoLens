@@ -19,6 +19,11 @@
   --range: #e8eefc;
   --range-border: #8aa4ea;
   --current-line: #fff4cc;
+  --syn-kw: #8a2bb0;
+  --syn-str: #1d7a3a;
+  --syn-num: #a04800;
+  --syn-com: #5f6878;
+  --syn-fn: #1f5fb0;
   color-scheme: light;
 }
 
@@ -40,6 +45,11 @@
     --range: #1f2a44;
     --range-border: #4c6bc2;
     --current-line: #3a3420;
+    --syn-kw: #d29bff;
+    --syn-str: #8fd694;
+    --syn-num: #ffb070;
+    --syn-com: #9aa2b1;
+    --syn-fn: #8fbcff;
     color-scheme: dark;
   }
 }
@@ -62,6 +72,11 @@
   --range-border: #4c6bc2;
   --current-line: #3a3420;
   color-scheme: dark;
+  --syn-kw: #d29bff;
+  --syn-str: #8fd694;
+  --syn-num: #ffb070;
+  --syn-com: #9aa2b1;
+  --syn-fn: #8fbcff;
 }
 
 .sr-only {

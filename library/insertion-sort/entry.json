@@ -25,7 +25,7 @@
   "cpp_lines": {"1": 5, "2": 6, "3": 7, "4": 8, "5": 9, "6": 10, "7": 11, "8": 13, "9": 15},
   "visual": {
     "panels": [
-      {"kind": "array", "var": "arr", "pointers": [{"label": "i", "at": "i"}, {"label": "j", "at": "j"}], "range": {"label": "sorted", "from": "0", "to": "i - 1"}},
+      {"kind": "array", "var": "arr", "pointers": [{"label": "i", "at": "i"}, {"label": "j", "at": "j"}], "range": {"label": "sorted", "from": "0", "to": "i"}},
       {"kind": "vars", "vars": ["i", "key", "j"]}
     ]
   },

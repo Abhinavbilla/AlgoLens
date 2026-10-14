@@ -1,0 +1,55 @@
+{
+  "title": "Backtracking: permutations",
+  "category": "Backtracking",
+  "summary": "Place an unused value, recurse to fill the rest, then undo the choice and try the next value.",
+  "order": 72,
+  "entry": "permutations",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": -10, "max": 10}, "len": {"min": 0, "max": 4}, "distinct": true}}
+    ]
+  },
+  "note": "The values are distinct.",
+  "default_input": {"args": [[1, 2, 3]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[7]]},
+    {"args": [[1, 2]]},
+    {"args": [[1, 2, 3]]},
+    {"args": [[3, 1, 2]]},
+    {"args": [[-1, 0]]},
+    {"args": [[0, 5, -5]]},
+    {"args": [[1, 2, 3, 4]]}
+  ],
+  "cpp_lines": {"1": 23, "2": 24, "3": 25, "4": 26, "6": 5, "7": 7, "8": 8, "9": 9, "10": 11, "11": 12, "12": 13, "13": 15, "14": 16, "15": 17, "16": 18, "17": 19, "19": 27, "20": 28},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "pointers": [{"label": "i", "at": "i"}]},
+      {"kind": "array", "var": "used", "label": "used"},
+      {"kind": "stack", "var": "path", "label": "Current arrangement (path)"},
+      {"kind": "list", "var": "result", "label": "Permutations found"}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "No permutations found yet."},
+    {"line": 3, "text": "The current arrangement starts empty."},
+    {"line": 4, "text": "No value is used yet."},
+    {"line": 6, "text": "Define backtrack: it extends the current arrangement one value at a time."},
+    {"line": 7, "next": 8, "text": "{path} uses every value: it's a complete permutation."},
+    {"line": 7, "next": 10, "text": "{path} isn't complete yet. Try each unused value in the next position."},
+    {"line": 8, "text": "Record it: {len(result)} found so far."},
+    {"line": 9, "text": "Go back to the previous position and try something else there."},
+    {"line": 10, "next": 11, "text": "Consider {nums[i]}."},
+    {"line": 10, "next": "return", "text": "Every value has been tried in this position: go back."},
+    {"line": 11, "next": 12, "text": "{nums[i]} is already in the arrangement: skip it."},
+    {"line": 11, "next": 13, "text": "{nums[i]} is free."},
+    {"line": 12, "text": "Move on to the next value."},
+    {"line": 13, "text": "Mark {nums[i]} as used."},
+    {"line": 14, "text": "Place it: the arrangement is now {path}."},
+    {"line": 15, "text": "Back from exploring every arrangement that starts with {path}."},
+    {"line": 16, "text": "Take {nums[i]} back off: {path}."},
+    {"line": 17, "text": "{nums[i]} is free again for other positions."},
+    {"line": 19, "text": "Every permutation has been found."},
+    {"line": 20, "text": "There are {len(result)} permutations."}
+  ]
+}

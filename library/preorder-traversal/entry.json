@@ -1,0 +1,214 @@
+{
+  "title": "Pre-order traversal",
+  "category": "Binary trees",
+  "summary": "Record each node before visiting its left and then its right subtree.",
+  "order": 51,
+  "entry": "preorder",
+  "schema": {
+    "params": [
+      {
+        "name": "root",
+        "type": {
+          "kind": "binary_tree",
+          "of": {
+            "kind": "int",
+            "min": -100,
+            "max": 100
+          },
+          "nodes": {
+            "min": 0,
+            "max": 15
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      [
+        4,
+        2,
+        6,
+        1,
+        3,
+        5,
+        7
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        []
+      ]
+    },
+    {
+      "args": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          null,
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          4,
+          2,
+          6,
+          1,
+          3,
+          5,
+          7
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2,
+          null,
+          3,
+          null,
+          4
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          5,
+          3,
+          8,
+          null,
+          4,
+          7,
+          9
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          null,
+          2,
+          null,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          -1,
+          -2,
+          -3,
+          -4
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "1": 21,
+    "2": 22,
+    "4": 12,
+    "5": 13,
+    "6": 14,
+    "11": 23,
+    "12": 24,
+    "7": 16,
+    "8": 17,
+    "9": 18
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "tree",
+        "var": "root",
+        "label": "Tree",
+        "pointers": [
+          {
+            "label": "node",
+            "at": "node"
+          }
+        ]
+      },
+      {
+        "kind": "list",
+        "var": "order",
+        "label": "Order so far"
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "The visiting order starts empty."
+    },
+    {
+      "line": 4,
+      "text": "Define visit: it handles one node and, by calling itself, everything below it."
+    },
+    {
+      "line": 5,
+      "next": 6,
+      "text": "An empty subtree: nothing to visit here."
+    },
+    {
+      "line": 5,
+      "next": 7,
+      "text": "Visit the node holding {node.val}."
+    },
+    {
+      "line": 6,
+      "text": "Go back up to the caller."
+    },
+    {
+      "line": 7,
+      "text": "Pre-order records a node before its subtrees: record {node.val}. The order is now {order}."
+    },
+    {
+      "line": 8,
+      "text": "Back at {node.val}: its left subtree is done."
+    },
+    {
+      "line": 9,
+      "text": "Back at {node.val}: its right subtree is done."
+    },
+    {
+      "line": 11,
+      "text": "Every node has been visited."
+    },
+    {
+      "line": 12,
+      "text": "The pre-order traversal is {order}."
+    }
+  ]
+}

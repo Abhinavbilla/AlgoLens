@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HighlightedLine } from "./highlight";
 import styles from "./viz.module.css";
 
 type Props = { python: string; cpp: string; pythonLine: number; cppLine: number | null };
@@ -30,7 +31,7 @@ export function CodeView({ python, cpp, pythonLine, cppLine }: Props) {
               <span className={styles.lineNo} aria-hidden="true">
                 {n}
               </span>
-              <code>{text || " "}</code>
+              <code>{text ? <HighlightedLine text={text} lang={lang} /> : " "}</code>
             </div>
           );
         })}

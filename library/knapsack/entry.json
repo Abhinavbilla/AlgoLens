@@ -1,0 +1,51 @@
+{
+  "title": "0/1 knapsack",
+  "category": "Dynamic programming",
+  "summary": "Fill a table of the best value for each number of items and each capacity: leave the item, or take it if it fits.",
+  "order": 62,
+  "entry": "knapsack",
+  "schema": {
+    "params": [
+      {"name": "weights", "type": {"kind": "array", "of": {"kind": "int", "min": 1, "max": 10}, "len": {"min": 0, "max": 6}}},
+      {"name": "values", "type": {"kind": "array", "of": {"kind": "int", "min": 1, "max": 100}, "len": {"min": "len(weights)", "max": "len(weights)"}}},
+      {"name": "capacity", "type": {"kind": "int", "min": 0, "max": 12}}
+    ]
+  },
+  "note": "Item i has weight weights[i] and value values[i]; each item is taken whole or not at all.",
+  "default_input": {"args": [[1, 3, 4], [15, 20, 30], 4]},
+  "tests": [
+    {"args": [[], [], 5]},
+    {"args": [[1], [10], 0]},
+    {"args": [[1], [10], 1]},
+    {"args": [[2], [10], 1]},
+    {"args": [[1, 3, 4], [15, 20, 30], 4]},
+    {"args": [[1, 2, 3], [6, 10, 12], 5]},
+    {"args": [[5, 4, 6, 3], [10, 40, 30, 50], 10]},
+    {"args": [[3, 3, 3], [5, 5, 5], 7]},
+    {"args": [[10, 10], [1, 2], 12]},
+    {"args": [[1, 1, 1, 1], [1, 2, 3, 4], 2]}
+  ],
+  "cpp_lines": {"1": 5, "2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 13, "9": 14, "10": 18},
+  "visual": {
+    "panels": [
+      {"kind": "grid", "var": "dp", "label": "dp[i][c]: best value from the first i items with capacity c", "row_header": {"text": "weights", "offset": 1}, "pointers": [{"label": "i, c", "row": "i", "col": "c"}], "marks": [{"label": "leave it: dp[i-1][c]", "when": "row == i - 1 and col == c"}, {"label": "take it: dp[i-1][c-w]", "when": "row == i - 1 and col == c - w and w <= c"}]},
+      {"kind": "vars", "vars": ["capacity", "i", "w", "v", "c"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "There are {n} items to consider."},
+    {"line": 3, "next": 3, "text": "Build the table one row at a time, every cell starting at zero."},
+    {"line": 3, "next": 4, "text": "dp[i][c] will be the best value from the first i items with capacity c. With no items, every cell is {dp[0][0]}."},
+    {"line": 4, "next": 5, "text": "Now decide about item {i}."},
+    {"line": 4, "next": 10, "text": "Every item has been considered."},
+    {"line": 5, "text": "Item {i} weighs {w} and is worth {v}."},
+    {"line": 6, "next": 7, "text": "Capacity {c}."},
+    {"line": 6, "next": 4, "text": "Item {i} is done for every capacity."},
+    {"line": 7, "text": "Leaving item {i} out, the best is the cell above: {dp[i][c]}."},
+    {"line": 8, "next": 9, "text": "It fits, and taking it gives {dp[i - 1][c - w] + v}, more than {dp[i][c]}: take it."},
+    {"line": 8, "next": 6, "when": "w > c", "text": "It doesn't fit: it weighs {w}, but the capacity is {c}."},
+    {"line": 8, "next": 6, "when": "w <= c", "text": "Taking it would give {dp[i - 1][c - w] + v}, no better than {dp[i][c]}: leave it."},
+    {"line": 9, "text": "The best with capacity {c} is now {dp[i][c]}."},
+    {"line": 10, "text": "The most value that fits in capacity {capacity} is {dp[n][capacity]}."}
+  ]
+}

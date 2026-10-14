@@ -142,9 +142,10 @@ test("code switches between Python and C++", async () => {
     url === "/api/problems/p1" ? { status: 200, body: { ...PROBLEM, approaches: [APPROACH] } } : undefined,
   );
   renderAt("/problems/p1");
-  expect(await screen.findByText(/def f\(nums\)/)).toBeInTheDocument();
+  expect(await screen.findByRole("tabpanel")).toHaveTextContent("def f(nums): return 1");
+  expect(screen.getByRole("tabpanel").querySelector("span")).toHaveTextContent("def"); // highlighted
   await userEvent.click(screen.getByRole("tab", { name: "C++" }));
-  expect(screen.getByText("int main() {}")).toBeInTheDocument();
+  expect(screen.getByRole("tabpanel")).toHaveTextContent("int main() {}");
   expect(screen.getByRole("tab", { name: "C++" })).toHaveAttribute("aria-selected", "true");
 });
 

@@ -434,6 +434,18 @@ I'd like your review at the end of M1 (sandbox mechanism), M2 (first thing you c
 
 ---
 
+## 17. Build status (2026-10-14)
+
+| # | State | Notes |
+|---|---|---|
+| M0–M4 | Done | As described above. |
+| M5 | Built, tested with scripted AI | Provider-neutral client (Gemini + Groq by default), token budget, solve pipeline (`backend/algolens/pipeline/solve.py`), jobs with SSE progress, hash + system-version cache, paste/progress/result pages. 14 scripted scenarios run against the real sandbox (Kadane verified, repair, non-converging repair, A/B disagreement, brute regeneration, out of scope, re-parse, budget, C++ mismatch, lenient and strict checkers). **Not yet run with real models: needs `GEMINI_API_KEY` and `GROQ_API_KEY` in `.env`.** |
+| M6 | Built, tested with scripted AI | Per verified approach: AI visual spec + templates + C++ map, compiled and linted on recordings of the worked examples, one retry with the errors, then salvage (lint-failing templates dropped, generic visual if panels fail). Animation and custom-input endpoints per approach. Unverified approaches are not animated. |
+| M7 | Done | `sys.monitoring` counter in the driver. It matches the tracer's frame count on every library input. 3.12's settrace also reports same-line backward jumps (one-line loops, comprehensions), so the counter counts those JUMP events too, mirroring CPython's `legacy_tracing.c`. Sizes 10…3000; log-log chart plus a data table. |
+| M8 | Done | 25 library entries, all verified with 100% template narration coverage. |
+| M9 | Built | `algolens eval`. Needs your local eval set (`eval/`, git-ignored) and the API keys to produce real numbers. |
+| M10 | Partly done | Syntax colouring uses a small built-in highlighter for Python/C++ (no Shiki bundle: smaller, offline, enough for these solutions). UI check at 375/1280 px in both themes covers all 25 entries. Still open: tuning playback speed and time limits from real eval numbers. |
+
 ## Appendix A: Draft eval set (50 problems)
 
 These are well-known problems. You'll write or paste the statements locally; nothing is shipped. Tags mark which special pipeline paths a problem exercises: `[unordered]`, `[checker]` (multiple valid answers), `[float]`, `[ops]` (list-of-operations input). I'd also suggest **removing the worked examples from 3 statements** (I've marked them `[no-ex]`) to exercise the no-examples path.

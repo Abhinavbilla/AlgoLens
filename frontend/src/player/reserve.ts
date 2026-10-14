@@ -4,6 +4,7 @@ import type { Frame } from "../api";
 // so a panel is the same height at every step and nothing below it moves.
 export type Reserve = {
   pointerRows: number; // most pointer labels sharing one array cell
+  hasRange: boolean; // an array shows a range at some step, so its legend line is reserved
   marks: string[]; // every mark name used, in first-seen order (legends always list them all)
   treeWidth: number;
   treeHeight: number;
@@ -15,7 +16,7 @@ export type Reserve = {
 };
 
 export const NO_RESERVE: Reserve = {
-  pointerRows: 1, marks: [], treeWidth: 1, treeHeight: 1, gridRows: 0, gridCols: 0,
+  pointerRows: 1, hasRange: false, marks: [], treeWidth: 1, treeHeight: 1, gridRows: 0, gridCols: 0,
   gridRowHeader: false, gridColHeader: false, mapRows: 0,
 };
 
@@ -34,6 +35,7 @@ export function computeReserves(frames: Frame[]): Reserve[] {
           const perIndex = new Map<number, number>();
           for (const p of panel.pointers ?? []) perIndex.set(p.index, (perIndex.get(p.index) ?? 0) + 1);
           r.pointerRows = Math.max(r.pointerRows, ...perIndex.values());
+          r.hasRange ||= !!panel.range;
           break;
         }
         case "tree":

@@ -111,3 +111,26 @@ test("a grid shows headers, marks in text, and pointers in their cell", () => {
   expect(cell).toHaveTextContent("(changed)");
   expect(screen.getByText("match:").parentElement).toHaveTextContent("match: (1, 1)");
 });
+
+describe("syntax highlighting", () => {
+  test("python tokens keep the text and mark keywords, strings, numbers and comments", async () => {
+    const { tokenize } = await import("./highlight");
+    const line = '    if nums[i] > 10:  # too big "x"';
+    const tokens = tokenize(line, "python");
+    expect(tokens.map((t) => t.text).join("")).toBe(line);
+    expect(tokens.find((t) => t.text === "if")?.kind).toBe("kw");
+    expect(tokens.find((t) => t.text === "10")?.kind).toBe("num");
+    expect(tokens.find((t) => t.kind === "com")?.text).toBe('# too big "x"');
+  });
+
+  test("c++ tokens", async () => {
+    const { tokenize } = await import("./highlight");
+    const line = 'for (int i = 0; i < n; ++i) { s += "a"; } // loop';
+    const tokens = tokenize(line, "cpp");
+    expect(tokens.map((t) => t.text).join("")).toBe(line);
+    expect(tokens.filter((t) => t.kind === "kw").map((t) => t.text)).toEqual(["for", "int"]);
+    expect(tokens.find((t) => t.kind === "str")?.text).toBe('"a"');
+    expect(tokens.find((t) => t.kind === "com")?.text).toBe("// loop");
+    expect(tokenize("#include <algolens.h>", "cpp")[0].kind).toBe("com");
+  });
+});

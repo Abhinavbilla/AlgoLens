@@ -64,7 +64,7 @@ export function AnimationView({ animation, python, cpp }: Props) {
 function PanelView({ panel, reserve }: { panel: Panel; reserve: Reserve }) {
   switch (panel.kind) {
     case "array":
-      return <ArrayView panel={panel} pointerRows={reserve.pointerRows} />;
+      return <ArrayView panel={panel} pointerRows={reserve.pointerRows} reserveRange={reserve.hasRange} />;
     case "vars":
       return <VarsView panel={panel} />;
     case "map":

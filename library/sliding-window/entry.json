@@ -27,7 +27,7 @@
   "cpp_lines": {"1": 5, "2": 6, "3": 7, "4": 8, "5": 9, "6": 10, "7": 11, "8": 12, "9": 13, "10": 15, "11": 16, "12": 19},
   "visual": {
     "panels": [
-      {"kind": "array", "var": "nums", "pointers": [{"label": "left", "at": "left"}, {"label": "right", "at": "right"}], "range": {"label": "window", "from": "left", "to": "right"}},
+      {"kind": "array", "var": "nums", "pointers": [{"label": "left", "at": "left"}, {"label": "right", "at": "right"}], "range": {"label": "window", "from": "left", "to": "right + 1"}},
       {"kind": "vars", "vars": ["target", "total", "best", "left", "right"]}
     ]
   },

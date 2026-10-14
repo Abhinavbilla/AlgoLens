@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { api, type ApproachView, type ProblemView } from "../api";
+import { HighlightedLine } from "../viz/highlight";
 import { ApproachPlayer } from "./ApproachPlayer";
 import { Compare } from "./CompareChart";
 import pageStyles from "./pages.module.css";
@@ -161,7 +162,17 @@ function CodeTabs({
         ))}
       </div>
       <pre className={styles.code} role="tabpanel" tabIndex={0}>
-        <code>{lang === "python" ? a.python_code.trim() : a.cpp_code.trim()}</code>
+        <code>
+          {(lang === "python" ? a.python_code : a.cpp_code)
+            .trim()
+            .split("\n")
+            .map((line, i) => (
+              <Fragment key={i}>
+                {i > 0 && "\n"}
+                <HighlightedLine text={line} lang={lang} />
+              </Fragment>
+            ))}
+        </code>
       </pre>
     </>
   );

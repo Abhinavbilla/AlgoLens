@@ -7,7 +7,15 @@ import styles from "./viz.module.css";
 // Cells keep a fixed position: only their contents and markers change between steps.
 // They shrink to fit narrow screens; only very long arrays scroll inside the panel.
 // `pointerRows` reserves space for the most pointer labels that ever share one cell.
-export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; pointerRows?: number }) {
+export function ArrayView({
+  panel,
+  pointerRows = 1,
+  reserveRange = false,
+}: {
+  panel: ArrayPanel;
+  pointerRows?: number;
+  reserveRange?: boolean;
+}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   useKeepInView(scrollRef, JSON.stringify(panel.pointers ?? []));
   if (!panel.defined || !panel.items || panel.items.length === 0) {
@@ -15,6 +23,7 @@ export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; point
     return (
       <section className={styles.panel} aria-label={panel.label}>
         <h3 className={styles.title}>{panel.label}</h3>
+        {reserveRange && <RangeLegend />}
         <div className={styles.scroll}>
           <ol className={styles.array} style={{ "--slots": 1, "--pointer-rows": pointerRows, minWidth: 0 } as React.CSSProperties}>
             <li className={styles.slot}>
@@ -38,11 +47,13 @@ export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; point
   return (
     <section className={styles.panel} aria-label={panel.label}>
       <h3 className={styles.title}>{panel.label}</h3>
-      {range && (
+      {range ? (
         <p className={styles.legend}>
           <span className={styles.rangeSwatch} aria-hidden="true" /> {range.label}:{" "}
           {range.from < range.to ? `positions ${range.from} to ${range.to - 1}` : "empty"}
         </p>
+      ) : (
+        reserveRange && <RangeLegend />
       )}
       <div className={styles.scroll} ref={scrollRef}>
         <ol
@@ -88,5 +99,14 @@ export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; point
         </ol>
       </div>
     </section>
+  );
+}
+
+// Holds the range legend's line on steps without a range, so the cells don't move.
+function RangeLegend() {
+  return (
+    <p className={styles.legend} aria-hidden="true">
+      &nbsp;
+    </p>
   );
 }

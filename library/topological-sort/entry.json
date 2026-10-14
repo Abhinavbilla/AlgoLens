@@ -1,0 +1,59 @@
+{
+  "title": "Topological sort (Kahn's algorithm)",
+  "category": "Graphs and grids",
+  "summary": "Repeatedly take a node that nothing points into, and remove its outgoing edges.",
+  "order": 46,
+  "entry": "topo_sort",
+  "schema": {
+    "params": [
+      {"name": "n", "type": {"kind": "int", "min": 1, "max": 8}},
+      {"name": "edges", "type": {"kind": "edges", "nodes": "n", "count": {"min": 0, "max": 10}, "directed": true, "dag": true}}
+    ]
+  },
+  "note": "Each edge [u, v] means u must come before v. When several nodes are ready, the smallest goes first.",
+  "default_input": {"args": [6, [[5, 2], [5, 0], [4, 0], [4, 1], [2, 3], [3, 1]]]},
+  "tests": [
+    {"args": [1, []]},
+    {"args": [3, []]},
+    {"args": [2, [[1, 0]]]},
+    {"args": [3, [[0, 1], [1, 2]]]},
+    {"args": [3, [[2, 1], [1, 0]]]},
+    {"args": [6, [[5, 2], [5, 0], [4, 0], [4, 1], [2, 3], [3, 1]]]},
+    {"args": [4, [[0, 1], [0, 2], [1, 3], [2, 3]]]},
+    {"args": [5, [[4, 3], [3, 2], [2, 1], [1, 0]]]},
+    {"args": [4, [[3, 0], [2, 0], [1, 0]]]},
+    {"args": [7, [[0, 3], [1, 3], [2, 4], [3, 5], [4, 5], [5, 6]]]}
+  ],
+  "cpp_lines": {"4": 6, "5": 7, "6": 8, "7": 9, "8": 10, "9": 11, "10": 14, "11": 13, "12": 17, "13": 18, "14": 19, "15": 21, "16": 22, "17": 23, "18": 24, "19": 25, "20": 29},
+  "visual": {
+    "panels": [
+      {"kind": "graph", "label": "Graph (label = incoming edges left)", "nodes": "n", "edges": "edges", "directed": true, "node_label": "indegree[node]", "pointers": [{"label": "u", "at": "u"}, {"label": "v", "at": "v"}], "marks": [{"label": "ready", "from": "ready"}]},
+      {"kind": "array", "var": "ready", "label": "Ready (min-heap)"},
+      {"kind": "list", "var": "order", "label": "Order so far"},
+      {"kind": "vars", "vars": ["u", "v"]}
+    ]
+  },
+  "narration": [
+    {"line": 5, "text": "indegree[v] will count the edges pointing into v."},
+    {"line": 6, "text": "Start an empty list of outgoing edges for each node."},
+    {"line": 7, "next": 8, "text": "Edge {u} → {v}: {u} must come before {v}."},
+    {"line": 7, "next": 10, "text": "Every edge is recorded."},
+    {"line": 8, "text": "Add {v} to {u}'s outgoing edges."},
+    {"line": 9, "text": "{v} now has {indegree[v]} incoming edges."},
+    {"line": 10, "next": 10, "text": "Collect the nodes that nothing points into."},
+    {"line": 10, "next": 11, "text": "Nothing points into {ready}, so they can go first."},
+    {"line": 11, "text": "Keep the ready nodes in a min-heap, so the smallest is always taken first."},
+    {"line": 12, "text": "The order starts empty."},
+    {"line": 13, "next": 14, "text": "Ready to go: {ready}."},
+    {"line": 13, "next": 20, "text": "No node is ready any more."},
+    {"line": 14, "text": "Take the smallest ready node, {u}."},
+    {"line": 15, "text": "Place {u} next: {order}."},
+    {"line": 16, "next": 17, "text": "Remove the edge {u} → {v}."},
+    {"line": 16, "next": 13, "text": "Every edge out of {u} is removed."},
+    {"line": 17, "text": "{v} now has {indegree[v]} incoming edges left."},
+    {"line": 18, "next": 19, "text": "Nothing points into {v} any more: it's ready."},
+    {"line": 18, "next": 16, "text": "{v} still has to wait."},
+    {"line": 19, "text": "Ready now: {ready}."},
+    {"line": 20, "text": "A topological order: {order}."}
+  ]
+}

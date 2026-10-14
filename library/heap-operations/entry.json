@@ -1,0 +1,71 @@
+{
+  "title": "Heap operations: push and pop",
+  "category": "Heaps",
+  "summary": "Keep every parent no bigger than its children: push sifts a value up, pop sifts the last value down from the top.",
+  "order": 37,
+  "entry": "heap_ops",
+  "schema": {
+    "params": [
+      {"name": "ops", "type": {"kind": "ops", "len": {"min": 1, "max": 9}, "ops": [
+        {"name": "push", "args": [{"kind": "int", "min": -50, "max": 50}]},
+        {"name": "pop", "args": []}
+      ]}}
+    ]
+  },
+  "note": "A list of operations: [\"push\", x] adds x, [\"pop\"] removes the smallest value. The result is the popped values, in order.",
+  "default_input": {"args": [[["push", 5], ["push", 3], ["push", 8], ["push", 1], ["pop"], ["push", 4], ["pop"], ["pop"]]]},
+  "tests": [
+    {"args": [[["push", 1]]]},
+    {"args": [[["push", 1], ["pop"]]]},
+    {"args": [[["push", 2], ["push", 1], ["pop"], ["pop"]]]},
+    {"args": [[["push", 5], ["push", 3], ["push", 8], ["push", 1], ["pop"], ["push", 4], ["pop"], ["pop"]]]},
+    {"args": [[["push", 3], ["push", 3], ["push", 3], ["pop"], ["pop"]]]},
+    {"args": [[["push", 9], ["push", 7], ["push", 5], ["push", 3], ["push", 1], ["pop"], ["pop"], ["pop"], ["pop"]]]},
+    {"args": [[["push", -1], ["push", 10], ["push", -20], ["pop"], ["push", 0], ["pop"], ["pop"], ["pop"]]]},
+    {"args": [[["push", 4], ["pop"], ["push", 2], ["pop"], ["push", 6]]]}
+  ],
+  "cpp_lines": {"1": 6, "2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 13, "9": 14, "10": 15, "11": 16, "13": 19, "14": 21, "15": 22, "16": 23, "17": 24, "18": 25, "19": 26, "20": 27, "21": 28, "22": 29, "23": 32, "24": 33, "25": 35, "26": 36, "27": 41},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "heap", "label": "Heap (children of i are at 2i+1 and 2i+2)", "pointers": [{"label": "i", "at": "i"}, {"label": "child", "at": "child"}]},
+      {"kind": "list", "var": "popped", "label": "Popped, in order"},
+      {"kind": "vars", "vars": ["op", "i", "parent", "child", "smallest", "last"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "The heap starts empty."},
+    {"line": 3, "text": "Nothing has been popped yet."},
+    {"line": 4, "next": 5, "text": "Next operation: {op}."},
+    {"line": 4, "next": 27, "text": "Every operation is done."},
+    {"line": 5, "next": 6, "text": "Push {op[1]}."},
+    {"line": 5, "next": 13, "text": "Pop the smallest value."},
+    {"line": 6, "text": "Put {op[1]} at the end of the heap: {heap}."},
+    {"line": 7, "text": "It's at position {i}."},
+    {"line": 8, "next": 9, "text": "Its parent, {heap[(i - 1) // 2]}, is bigger than {heap[i]}: the heap rule is broken, so sift it up."},
+    {"line": 8, "next": 4, "when": "i == 0", "text": "{heap[i]} has reached the top."},
+    {"line": 8, "next": 4, "when": "i > 0", "text": "Its parent, {heap[(i - 1) // 2]}, is no bigger than {heap[i]}: it's in place."},
+    {"line": 9, "text": "Its parent is at position {parent}."},
+    {"line": 10, "text": "Swap them: {heap}."},
+    {"line": 11, "text": "Carry on from position {i}."},
+    {"line": 13, "text": "The smallest value is always at the top: record {heap[0]}."},
+    {"line": 14, "text": "Take the last value, {last}, off the end."},
+    {"line": 15, "next": 16, "text": "The heap isn't empty, so {last} fills the top spot and sifts down."},
+    {"line": 15, "next": 4, "text": "The heap is now empty."},
+    {"line": 16, "text": "Put {last} at the top: {heap}."},
+    {"line": 17, "text": "Start sifting down from the top."},
+    {"line": 18, "text": "Compare {heap[i]} with its children."},
+    {"line": 19, "text": "Assume {heap[i]} is the smallest of the three for now."},
+    {"line": 20, "next": 21, "text": "Child position {child}."},
+    {"line": 20, "next": 23, "text": "Both children have been checked."},
+    {"line": 21, "next": 22, "text": "{heap[child]} < {heap[smallest]}: this child is smaller."},
+    {"line": 21, "next": 20, "when": "child >= len(heap)", "text": "There's no child at position {child}."},
+    {"line": 21, "next": 20, "when": "child < len(heap)", "text": "{heap[child]} isn't smaller than {heap[smallest]}."},
+    {"line": 22, "text": "The smallest so far is at position {smallest}."},
+    {"line": 23, "next": 24, "text": "{heap[i]} is no bigger than its children: it's in place."},
+    {"line": 23, "next": 25, "text": "A child is smaller: swap {heap[i]} down."},
+    {"line": 24, "text": "Done sifting down."},
+    {"line": 25, "text": "Swapped: {heap}."},
+    {"line": 26, "text": "Carry on from position {i}."},
+    {"line": 27, "text": "The values came out smallest first: {popped}."}
+  ]
+}

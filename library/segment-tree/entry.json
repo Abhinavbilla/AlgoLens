@@ -1,0 +1,58 @@
+{
+  "title": "Segment tree: build and range sum query",
+  "category": "Segment trees",
+  "summary": "Each node stores the sum of a range; a query adds the few nodes that exactly cover the asked range.",
+  "order": 80,
+  "entry": "range_sum_queries",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": -50, "max": 50}, "len": {"min": 1, "max": 8}}},
+      {"name": "queries", "type": {"kind": "array", "of": {"kind": "array", "of": {"kind": "int", "min": 0, "max": "len(nums) - 1"}, "len": {"min": 2, "max": 2}, "sorted": "asc"}, "len": {"min": 1, "max": 3}}}
+    ]
+  },
+  "note": "Each query is [l, r] with l ≤ r: the sum of positions l to r, inclusive.",
+  "default_input": {"args": [[5, 8, 6, 3, 2, 7], [[1, 4], [0, 2]]]},
+  "tests": [
+    {"args": [[5], [[0, 0]]]},
+    {"args": [[1, 2], [[0, 1], [1, 1]]]},
+    {"args": [[5, 8, 6, 3, 2, 7], [[1, 4], [0, 2]]]},
+    {"args": [[-1, -2, -3], [[0, 2], [1, 1]]]},
+    {"args": [[0, 0, 0, 0], [[0, 3]]]},
+    {"args": [[1, 2, 3, 4, 5, 6, 7, 8], [[0, 7], [3, 5], [7, 7]]]},
+    {"args": [[10, -10, 10], [[0, 1], [1, 2], [0, 2]]]},
+    {"args": [[4, 1, 3], [[2, 2], [0, 0]]]}
+  ],
+  "cpp_lines": {"1": 35, "2": 37, "3": 38, "5": 12, "6": 13, "7": 14, "8": 15, "9": 17, "10": 18, "11": 19, "12": 20, "14": 23, "15": 24, "16": 25, "17": 27, "18": 28, "19": 30, "20": 31, "22": 39, "23": 42},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "pointers": [{"label": "lo", "at": "lo"}, {"label": "hi", "at": "hi"}], "range": {"label": "query", "from": "l", "to": "r + 1"}},
+      {"kind": "array", "var": "tree", "label": "tree (index = node; node k's children are 2k and 2k+1)", "pointers": [{"label": "node", "at": "node"}]},
+      {"kind": "vars", "vars": ["node", "lo", "hi", "mid", "l", "r"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "There are {n} values."},
+    {"line": 3, "text": "The tree lives in a flat array. Each node's children sit at double its index and double plus one."},
+    {"line": 5, "text": "Define build: each node will store the sum of its range of positions."},
+    {"line": 6, "next": 7, "text": "Node {node} covers just position {lo}: it's a leaf."},
+    {"line": 6, "next": 9, "text": "Node {node} covers positions {lo} to {hi}: split it in two."},
+    {"line": 7, "text": "The leaf holds {tree[node]}."},
+    {"line": 8, "text": "Back up to the parent."},
+    {"line": 9, "text": "The halves split after position {mid}."},
+    {"line": 10, "text": "The left half, positions {lo} to {mid}, is built."},
+    {"line": 11, "text": "The right half, positions {mid + 1} to {hi}, is built."},
+    {"line": 12, "text": "Node {node} is the sum of its two children: {tree[node]}."},
+    {"line": 14, "text": "Define query: add up the nodes that exactly cover the asked range."},
+    {"line": 15, "next": 16, "text": "Node {node} covers {lo} to {hi}, outside the query {l} to {r}: it adds nothing."},
+    {"line": 15, "next": 17, "text": "Node {node} covers {lo} to {hi}, which overlaps the query {l} to {r}."},
+    {"line": 16, "text": "Return an empty sum."},
+    {"line": 17, "next": 18, "text": "Positions {lo} to {hi} lie entirely inside the query: use this node's sum, {tree[node]}, without going deeper."},
+    {"line": 17, "next": 19, "text": "Only part of {lo} to {hi} is inside the query: ask both children."},
+    {"line": 18, "text": "Return {tree[node]}."},
+    {"line": 19, "text": "The children split after position {mid}."},
+    {"line": 20, "text": "Add the two children's answers."},
+    {"line": 22, "text": "The tree is built. The root, node one, holds the total: {tree[1]}."},
+    {"line": 23, "next": 23, "text": "Answer the query {l} to {r}."},
+    {"line": 23, "next": "return", "text": "Every query is answered."}
+  ]
+}

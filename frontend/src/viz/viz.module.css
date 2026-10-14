@@ -305,6 +305,27 @@ tr.changed td {
   font-weight: 600;
 }
 
+.synKw {
+  color: var(--syn-kw);
+}
+
+.synStr {
+  color: var(--syn-str);
+}
+
+.synNum {
+  color: var(--syn-num);
+}
+
+.synCom {
+  color: var(--syn-com);
+  font-style: italic;
+}
+
+.synFn {
+  color: var(--syn-fn);
+}
+
 .gutter {
   color: var(--accent);
   text-align: center;

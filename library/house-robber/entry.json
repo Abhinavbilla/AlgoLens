@@ -1,0 +1,45 @@
+{
+  "title": "1D dynamic programming: house robber",
+  "category": "Dynamic programming",
+  "summary": "For each house, choose the better of skipping it or taking it plus the best from two houses back.",
+  "order": 58,
+  "entry": "rob",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": 0, "max": 100}, "len": {"min": 0, "max": 20}}}
+    ]
+  },
+  "note": "No two neighbouring houses can both be robbed.",
+  "default_input": {"args": [[2, 7, 9, 3, 1]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[5]]},
+    {"args": [[1, 2]]},
+    {"args": [[2, 1]]},
+    {"args": [[1, 2, 3, 1]]},
+    {"args": [[2, 7, 9, 3, 1]]},
+    {"args": [[2, 1, 1, 2]]},
+    {"args": [[0, 0, 0]]},
+    {"args": [[10, 1, 1, 10, 1, 1, 10]]},
+    {"args": [[100, 1, 1, 100]]}
+  ],
+  "cpp_lines": {"1": 6, "2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 14},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "label": "Money in each house", "pointers": [{"label": "house i", "at": "i - 1"}]},
+      {"kind": "array", "var": "dp", "label": "dp[i]: best from the first i houses", "pointers": [{"label": "i", "at": "i"}, {"label": "i-1", "at": "i - 1"}, {"label": "i-2", "at": "i - 2"}]},
+      {"kind": "vars", "vars": ["n", "i", "skip", "take"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "There are {n} houses."},
+    {"line": 3, "text": "dp[i] will be the most money from the first i houses. With no houses, that's {dp[0]}."},
+    {"line": 4, "next": 5, "text": "Consider house {i}, which holds {nums[i - 1]}."},
+    {"line": 4, "next": 8, "text": "Every house has been considered."},
+    {"line": 5, "text": "If we skip house {i}, the best is the same as without it: {skip}."},
+    {"line": 6, "when": "i >= 2", "text": "If we take it, its {nums[i - 1]} adds to the best from two houses back, {dp[i - 2]}, for {take}."},
+    {"line": 6, "when": "i < 2", "text": "If we take the first house, we get {take}."},
+    {"line": 7, "text": "Keep the better choice: the best from the first {i} houses is {dp[i]}."},
+    {"line": 8, "text": "The most money without robbing two neighbours is {dp[n]}."}
+  ]
+}

@@ -106,16 +106,12 @@ def texts(animation):
 def test_all_library_entries_load():
     entries = load_all(LIBRARY)
     assert [e.slug for e in entries] == [
-        "bubble-sort",
-        "binary-search",
-        "two-pointers",
-        "monotonic-stack",
-        "grid-bfs",
-        "dijkstra",
-        "level-order",
-        "lcs",
-        "subsets",
-    ]
+        "bubble-sort", "insertion-sort", "merge-sort", "quick-sort", "binary-search",
+        "two-pointers", "sliding-window", "prefix-sums", "monotonic-stack", "heap-operations",
+        "grid-bfs", "graph-dfs", "dijkstra", "topological-sort", "union-find", "level-order",
+        "preorder-traversal", "inorder-traversal", "postorder-traversal", "house-robber", "lcs",
+        "knapsack", "subsets", "permutations", "segment-tree",
+    ]  # fmt: skip
 
 
 def test_two_pointers_animation(tmp_path):
