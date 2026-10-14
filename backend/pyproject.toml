@@ -33,7 +33,7 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-per-file-ignores = { "tests/*" = ["E501"] }
+per-file-ignores = { "tests/*" = ["E501"], "algolens/pipeline/prompts.py" = ["E501"] }
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.pytest.ini_options]

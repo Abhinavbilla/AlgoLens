@@ -1,0 +1,158 @@
+"""Pieces of the AI pipeline that need neither a model nor the sandbox."""
+
+import threading
+
+import pytest
+from pydantic import ValidationError
+
+from algolens.ai.budget import Budget, BudgetExhausted
+from algolens.ai.client import AIClient, AIUnavailable, extract_json, parse_role
+from algolens.pipeline import prompts
+from algolens.pipeline.models import ApproachList, ParsedProblem
+from algolens.pipeline.solve import mutate
+from algolens.verification.compare import same
+
+# --- compare ---------------------------------------------------------------------------------
+
+
+def test_exact_keeps_bool_and_int_apart():
+    assert same("exact", [1, 2], [1, 2])
+    assert not same("exact", True, 1)
+    assert not same("exact", [True], [1])
+    assert not same("exact", [1, 2], [2, 1])
+
+
+def test_float_tolerance_is_absolute_or_relative():
+    assert same("float", 0.1 + 0.2, 0.3)
+    assert same("float", 1e12, 1e12 + 1)
+    assert not same("float", 1.0, 1.001)
+    assert not same("float", float("nan"), float("nan"))
+    assert not same("float", True, 1.0)
+
+
+def test_unordered_comparators():
+    assert same("unordered", [[1, 2], [3]], [[3], [1, 2]])
+    assert not same("unordered", [[1, 2], [3]], [[3], [2, 1]])
+    assert same("unordered_nested", [[1, 2], [3]], [[3], [2, 1]])
+    assert not same("unordered", [1, 1, 2], [1, 2, 2])
+    assert not same("unordered", 1, [1])
+
+
+def test_checker_kind_cannot_be_compared_directly():
+    with pytest.raises(ValueError):
+        same("checker", 1, 1)
+
+
+# --- extract_json / roles ---------------------------------------------------------------------
+
+
+def test_extract_json_tolerates_fences_and_chatter():
+    assert extract_json('{"a": 1}') == {"a": 1}
+    assert extract_json('```json\n{"a": [1, 2]}\n```') == {"a": [1, 2]}
+    assert extract_json('Sure! Here it is: {"a": "}"} hope that helps') == {"a": "}"}
+    assert extract_json("[1, 2]") is None
+    assert extract_json("not json") is None
+
+
+def test_parse_role():
+    assert parse_role("gemini:gemini-2.5-flash") == ("gemini", "gemini-2.5-flash")
+    assert parse_role("groq:openai/gpt-oss-120b") == ("groq", "openai/gpt-oss-120b")
+    for bad in ("gemini", "nope:model", "gemini:"):
+        with pytest.raises(AIUnavailable):
+            parse_role(bad)
+
+
+def test_missing_key_is_unavailable_not_a_verdict(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    client = AIClient({"parse": "gemini:gemini-2.5-flash"})
+    with pytest.raises(AIUnavailable):
+        client.complete_json("parse", "s", "p", Budget(100_000))
+
+
+# --- budget --------------------------------------------------------------------------------
+
+
+def test_budget_reserves_worst_case_and_charges_actual():
+    b = Budget(10_000)
+    with b.reserve(6000, "parse") as charge:
+        assert b.left == 4000
+        with pytest.raises(BudgetExhausted), b.reserve(5000, "brute_a"):
+            pass
+        charge(1000)
+    assert b.used == 1000 and b.left == 9000
+    assert b.report()["by_stage"] == {"parse": 1000}
+
+
+def test_failed_call_counts_its_whole_reservation():
+    b = Budget(10_000)
+    with pytest.raises(RuntimeError), b.reserve(3000, "parse"):
+        raise RuntimeError("network")
+    assert b.used == 3000
+
+
+def test_parallel_reservations_cannot_overshoot():
+    b = Budget(10_000)
+    granted, refused = [], []
+    gate = threading.Barrier(5)
+
+    def worker():
+        gate.wait()
+        try:
+            with b.reserve(3000, "x") as charge:
+                granted.append(1)
+                charge(3000)
+        except BudgetExhausted:
+            refused.append(1)
+
+    threads = [threading.Thread(target=worker) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert len(granted) == 3 and len(refused) == 2 and b.used == 9000
+
+
+def test_fake_client_charges_the_budget():
+    client = AIClient({"parse": "fake:x"}, fake=lambda role, s, p: {"ok": True})
+    b = Budget(100_000)
+    reply = client.complete_json("parse", "system", "prompt", b)
+    assert reply.data == {"ok": True} and 0 < b.used < 100
+
+
+# --- models / prompts -------------------------------------------------------------------------
+
+
+def test_parsed_problem_validation():
+    p = ParsedProblem.model_validate({"in_scope": True, "function_name": "two_sum",
+                                      "params": [{"name": "t", "type": {"kind": "binary_tree"}}]})  # fmt: skip
+    assert p.comparator.kind == "exact" and p.convert() == ["binary_tree"]
+    with pytest.raises(ValidationError):
+        ParsedProblem.model_validate({"in_scope": True, "function_name": "not valid"})
+    with pytest.raises(ValidationError):
+        ParsedProblem.model_validate({"in_scope": True, "comparator": {"kind": "fuzzy"}})
+
+
+def test_approach_list_must_have_one_or_two():
+    one = {"name": "a", "key_idea": "b", "time": "O(n)", "space": "O(1)",
+           "python_code": "def f(x):\n    return x", "cpp_code": "int main() { return 0; }"}  # fmt: skip
+    assert len(ApproachList.model_validate({"approaches": [one]}).approaches) == 1
+    for bad in ([], [one, one, one]):
+        with pytest.raises(ValidationError):
+            ApproachList.model_validate({"approaches": bad})
+
+
+def test_brute_b_prompt_has_only_the_statement_and_signature():
+    spec = {"function_name": "f", "params": [{"name": "nums"}, {"name": "k"}]}
+    text = prompts.brute_b_prompt("STATEMENT", spec)
+    assert "STATEMENT" in text and "def f(nums, k)" in text and "Parsed" not in text
+
+
+def test_prompt_set_hash_is_stable():
+    assert prompts.prompt_set_hash() == prompts.prompt_set_hash()
+    assert len(prompts.prompt_set_hash()) == 16
+
+
+def test_mutations_always_differ():
+    for v in (True, 0, 1.5, "", "ab", [], [1], [1, 2], [[1], [2]], [3, 3]):
+        assert mutate(v) != v
+    assert mutate(None) is None

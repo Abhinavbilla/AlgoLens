@@ -3,7 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,19 +15,16 @@ class Settings(BaseSettings):
     # The repo's library/ folder when run from a checkout; the image sets /app/library.
     library_dir: Path = Path(__file__).resolve().parents[2] / "library"
 
-    anthropic_api_key: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("ALGOLENS_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"),
-    )
-
-    # One model per pipeline role (plan §6). Brute B must differ from Brute A (§6.2).
-    model_parse: str = "claude-sonnet-5-5"
-    model_brute_a: str = "claude-sonnet-5-5"
-    model_brute_b: str = "claude-opus-5-5"
-    model_approaches: str = "claude-sonnet-5-5"
-    model_checker: str = "claude-sonnet-5-5"
-    model_repair: str = "claude-opus-5-5"
-    model_narration: str = "claude-sonnet-5-5"
+    # One model per pipeline role, as "provider:model" (see algolens/ai/client.py). API keys
+    # are read from the environment: GEMINI_API_KEY, GROQ_API_KEY, ANTHROPIC_API_KEY, ...
+    # Brute B must differ from Brute A (§6.2); by default it's another company's model.
+    model_parse: str = "gemini:gemini-2.5-flash"
+    model_brute_a: str = "gemini:gemini-2.5-flash"
+    model_brute_b: str = "groq:openai/gpt-oss-120b"
+    model_approaches: str = "gemini:gemini-2.5-flash"
+    model_checker: str = "gemini:gemini-2.5-flash"
+    model_repair: str = "gemini:gemini-2.5-flash"
+    model_narration: str = "gemini:gemini-2.5-flash"
 
     # Per-problem AI budget, input + output tokens across all calls (plan §6.4).
     max_tokens_per_problem: int = Field(default=200_000, gt=0)
