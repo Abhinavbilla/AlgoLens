@@ -36,7 +36,7 @@ from algolens.pipeline.models import (
 from algolens.sandbox.client import SandboxClient
 from algolens.schema.generate import GenerationError
 from algolens.schema.model import SchemaError, compile_schema
-from algolens.schema.service import InputRules, check_input, generate_tests
+from algolens.schema.service import InputRules, all_inputs, check_input, generate_tests
 from algolens.verification.compare import same
 from algolens.verification.runner import run_tests, show
 
@@ -71,6 +71,8 @@ class ApproachResult:
     tests_total: int = 0
     examples_checked: int = 0
     repairs: int = 0
+    repair_reasons: list[str] = field(default_factory=list)  # why each repair was needed
+    exhaustive: bool = False  # the tests covered every valid input (fewer than 300 exist)
     failing_case: dict | None = None
     animation: dict | None = None  # see pipeline/visualize.py; only for verified approaches
 
@@ -243,13 +245,20 @@ def _verify_all(run: _Run, spec: ParsedProblem, rules: InputRules, result: Solve
 
     with run.timed("building tests"):
         seed = int(hashlib.sha256(run.text.encode()).hexdigest()[:8], 16)
+        exhaustive = False
         try:
             random_inputs = generate_tests(rules, RANDOM_TESTS, seed, run.sandbox)
         except GenerationError as exc:
-            reason = f"Couldn't generate valid random tests: {exc}"
-            run.failures.append(reason)
-            _fail_all(approaches, reason)
-            return
+            # Fewer than 300 distinct valid inputs exist (e.g. 1 <= n <= 45): test all of them.
+            random_inputs = all_inputs(rules, RANDOM_TESTS, run.sandbox)
+            exhaustive = random_inputs is not None
+            if not exhaustive:
+                reason = f"Couldn't generate valid random tests: {exc}"
+                run.failures.append(reason)
+                _fail_all(approaches, reason)
+                return
+        for a in approaches:
+            a.exhaustive = exhaustive
     judge = _Judge(run, spec, checker, random_inputs, approaches)
 
     with run.timed("checking the brute force"):
@@ -396,6 +405,7 @@ class _Judge:
             for k, v in _fields(new).items():
                 setattr(a, k, v)
             a.repairs += 1
+            a.repair_reasons.append(fail[:500])
             res_a = self._python(a.python_code, "the brute force")
             fail = self._example_failure(res_a)
             if fail:
@@ -448,9 +458,20 @@ class _Judge:
             )
         self.reference = res_a
 
-        # Brute A's own C++ must match its Python.
+        # Brute A's own C++ must match its Python. Its Python is now the trusted reference, so a
+        # repair may only replace the C++.
         a.examples_checked, a.tests_total = self.n_ex, len(self.random)
         mismatch = self._cpp_mismatch(res_a, self._cpp(a.cpp_code))
+        for _ in range(run.max_repairs):
+            if not mismatch:
+                break
+            prompt = prompts.repair_prompt(run.text, sd, _fields(a), mismatch[0])
+            prompt += "\nKeep the Python exactly as it is (it is correct); fix only the C++.\n"
+            new = run.ask("repair", prompts.REPAIR_SYSTEM, prompt, GeneratedApproach)
+            a.cpp_code = new.cpp_code
+            a.repairs += 1
+            a.repair_reasons.append(mismatch[0][:500])
+            mismatch = self._cpp_mismatch(res_a, self._cpp(a.cpp_code))
         if mismatch:
             a.status, a.reason, a.failing_case = "unverified", mismatch[0], mismatch[1]
         else:
@@ -515,6 +536,7 @@ class _Judge:
             for k, v in _fields(new).items():
                 setattr(a, k, v)
             a.repairs += 1
+            a.repair_reasons.append(reason[:500])
 
     def _judge_approach(self, a: ApproachResult) -> tuple[str, dict | None, str] | None:
         res = self._python(a.python_code, a.name)

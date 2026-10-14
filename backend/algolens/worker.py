@@ -69,6 +69,21 @@ def run_one(sessions: sessionmaker[Session], handlers: dict[str, Handler] = HAND
         return True
 
 
+INTERRUPTED = "interrupted by a restart before it finished; please submit the problem again"
+
+
+def fail_interrupted(session: Session) -> int:
+    """Jobs left "running" by a worker that stopped. Their text is already gone (it's removed
+    when work starts), so they can't be retried: fail them with a clear message instead of
+    leaving them running forever. Assumes one worker; with several, this needs a lease."""
+    jobs = session.scalars(select(Job).where(Job.status == "running")).all()
+    for job in jobs:
+        job.status, job.error, job.finished_at = "failed", INTERRUPTED, func.now()
+        job.payload = {k: v for k, v in (job.payload or {}).items() if k != "text"}
+    session.commit()
+    return len(jobs)
+
+
 def run_forever() -> None:
     stopping = False
 
@@ -80,7 +95,9 @@ def run_forever() -> None:
     signal.signal(signal.SIGINT, stop)
     sessions = session_factory()
     poll = get_settings().worker_poll_seconds
-    log.info("worker started")
+    with sessions() as session:
+        stale = fail_interrupted(session)
+    log.info("worker started (%d interrupted job(s) marked failed)", stale)
     while not stopping:
         try:
             if not run_one(sessions):

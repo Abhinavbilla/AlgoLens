@@ -9,10 +9,32 @@
 
 #include <unistd.h>
 
+// The standard headers solutions commonly use come with it too, at no compile-time cost
+// (they're in the precompiled header), so a forgotten #include isn't a failure.
+#include <algorithm>
+#include <array>
+#include <bitset>
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <deque>
+#include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
+#include <list>
+#include <map>
 #include <nlohmann/json.hpp>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <sstream>
+#include <stack>
 #include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace algolens {

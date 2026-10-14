@@ -80,3 +80,13 @@ def test_culprits_for_lint_errors():
         "line 5: templates [1, 4, 2] all apply but differ: ['a', 'b']",
     ]
     assert culprits(errors) == {3, 2, 4}
+
+
+def test_braced_panel_expressions_are_unwrapped():
+    from algolens.pipeline.visualize import unwrap_braces
+
+    raw = {"panels": [{"kind": "array", "var": "{nums}", "pointers": [{"label": "i", "at": "{i + 1}"}]},
+                      {"kind": "vars", "vars": ["x"]}]}  # fmt: skip
+    out = unwrap_braces(raw)
+    assert out["panels"][0]["var"] == "nums" and out["panels"][0]["pointers"][0]["at"] == "i + 1"
+    assert unwrap_braces("{a} and {b}") == "{a} and {b}"  # only one enclosing pair is removed

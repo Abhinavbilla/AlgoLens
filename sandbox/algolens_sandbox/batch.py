@@ -135,7 +135,14 @@ def _run(req: BatchRequest, tests: list[dict]) -> BatchResponse:
         shutil.rmtree(job, ignore_errors=True)
 
 
+HELPER_INCLUDE = "#include <algolens.h>"
+
+
 def _compile(source: str, work: Path) -> BatchResponse | None:
+    if HELPER_INCLUDE not in source:
+        # The precompiled helper header is only used when it comes first; #line keeps the
+        # compiler's line numbers matching the source as written.
+        source = f"{HELPER_INCLUDE}\n#line 1\n{source}"
     (work / "solution.cpp").write_text(source)
     run = jail.run(
         [PYTHON, *DRIVER_FLAGS, DRIVER, "--exec",  # wrapper: no core dumps from the compiler

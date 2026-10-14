@@ -107,3 +107,41 @@ def _validator_batch(source: str, inputs: list, client: SandboxClient, wall_s: i
             f"input validator didn't run: {resp['status']} {resp.get('detail', '')}"
         )
     return list(resp["results"])  # on batch_timeout, unfinished inputs come back as not_run
+
+
+def all_inputs(
+    rules: InputRules, limit: int, client: SandboxClient | None
+) -> list[list[Any]] | None:
+    """Every valid input, when the schema has only integer and boolean parameters and at most
+    `limit` combinations; otherwise None. Used when the input space is too small to draw
+    `limit` distinct random inputs from: testing all of it is then the stronger check."""
+    from algolens.schema.model import BoolT, IntT, resolve
+
+    if not all(isinstance(p.type, IntT | BoolT) for p in rules.schema.params):
+        return None
+    combos: list[dict[str, Any]] = [{}]
+    for p in rules.schema.params:
+        nxt = []
+        for env in combos:
+            if isinstance(p.type, BoolT):
+                values: list[Any] = [False, True]
+            else:
+                try:
+                    lo, hi = resolve(p.type.min, env), resolve(p.type.max, env)
+                except ValueError:
+                    return None
+                if hi - lo + 1 > limit:
+                    return None
+                values = list(range(lo, hi + 1))
+            nxt += [{**env, p.name: v} for v in values]
+            if len(nxt) > limit * 20:
+                return None
+        combos = nxt
+    inputs = [[env[p.name] for p in rules.schema.params] for env in combos]
+    valid = [args for args in inputs if not validate(rules.schema, args)]
+    if rules.validator and valid:
+        if client is None:
+            return None
+        verdicts = _run_validator(rules.validator, valid, client)
+        valid = [a for a, v in zip(valid, verdicts, strict=True) if v is None]
+    return valid if 0 < len(valid) <= limit else None

@@ -553,3 +553,16 @@ def test_count_matches_the_tracers_frames(src):
     )
     assert only(resp).value == only(counted).value
     assert only(counted).ops == len(traced.trace["frames"])
+
+
+def test_cpp_without_the_helper_include_still_compiles_with_its_line_numbers():
+    src = (
+        "int main() {\n"
+        "    std::vector<long long> v{3, 1, 2};\n"
+        "    std::sort(v.begin(), v.end());\n"
+        "    algolens::emit(algolens::Json(v).dump());\n"
+        "}\n"
+    )
+    assert only(cpp(src)).value == [1, 2, 3]
+    resp = cpp("int main() {\n    undefined_name();\n}\n")
+    assert resp.status == "compile_error" and "solution.cpp:2:" in resp.compile_output

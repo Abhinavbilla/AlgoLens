@@ -34,6 +34,7 @@ ENDPOINTS = {
 # Minimum seconds between calls to one provider (free tiers: Gemini ~15/min, Groq ~30/min).
 MIN_INTERVAL = {"gemini": 4.2, "groq": 2.1, "openai": 0.0, "anthropic": 0.0, "fake": 0.0}
 RETRIES = 5
+MAX_WAIT_S = 120  # a provider asking us to wait longer than this has run out of quota
 TIMEOUT_S = 180
 
 
@@ -124,6 +125,12 @@ class AIClient:
                     )
             except _Retryable as exc:
                 last_error = str(exc)
+                if exc.wait > MAX_WAIT_S:
+                    minutes = round(exc.wait / 60)
+                    raise AIError(
+                        f"{provider} rate limit for {model}: try again in about {minutes} min "
+                        f"({_quota_message(str(exc))})"
+                    ) from exc
                 time.sleep(exc.wait if exc.wait else min(60, 2 ** (attempt + 1)))
                 continue
             data = extract_json(text)
@@ -148,7 +155,16 @@ class AIClient:
             "max_tokens": max_tokens,
             "temperature": 0.2,
         }
-        resp = self._post(f"{base}/chat/completions", body, {"Authorization": f"Bearer {key}"})
+        headers = {"Authorization": f"Bearer {key}"}
+        try:
+            resp = self._post(f"{base}/chat/completions", body, headers)
+        except AIError as exc:
+            # The provider's strict JSON mode rejected the model's own reply (Groq:
+            # json_validate_failed). Ask again without it: extract_json() still checks the reply.
+            if "json_validate_failed" not in str(exc):
+                raise
+            body.pop("response_format")
+            resp = self._post(f"{base}/chat/completions", body, headers)
         choice = resp["choices"][0]["message"].get("content") or ""
         usage = resp.get("usage") or {}
         return choice, (usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0))
@@ -179,7 +195,7 @@ class AIClient:
         if r.status_code == 429 or r.status_code >= 500:
             wait = r.headers.get("retry-after") or ""
             seconds = float(wait) if wait.replace(".", "").isdigit() else 0
-            raise _Retryable(f"HTTP {r.status_code}: {r.text[:200]}", seconds)
+            raise _Retryable(f"HTTP {r.status_code}: {r.text[:400]}", seconds)
         if r.status_code in (401, 403):
             raise AIUnavailable(f"the AI service refused the key (HTTP {r.status_code})")
         if r.status_code >= 400:
@@ -188,6 +204,12 @@ class AIClient:
 
     def close(self) -> None:
         self._http.close()
+
+
+def _quota_message(error: str) -> str:
+    """The provider's own explanation, e.g. "tokens per day (TPD): Limit 200000"."""
+    m = re.search(r'"message":\s*"([^"]{0,200})', error)
+    return m.group(1) if m else error[:200]
 
 
 class _Retryable(Exception):

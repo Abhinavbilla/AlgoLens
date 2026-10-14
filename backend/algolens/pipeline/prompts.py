@@ -36,8 +36,9 @@ Code rules (the code is run and checked automatically):
   returns a tree/list. Only these imports are allowed: collections, heapq, math, bisect,
   itertools, functools, typing, operator, string, dataclasses. No randomness, no I/O, no sys.
   Write plain, readable code: it will be animated step by step for learners.
-- C++17: a complete program. Start with `#include <algolens.h>` (it provides nlohmann::json as
-  algolens::Json, read_input() and emit()). Read the input JSON, whose "args" array holds the
+- C++17: a complete program WITH an `int main()` (the program is compiled and run on its own).
+  Start with `#include <algolens.h>`: it brings in the common standard headers and provides
+  nlohmann::json as algolens::Json, read_input() and emit(). Read the input JSON, whose "args" array holds the
   arguments in order; trees are level-order lists with null, linked lists are plain lists (build
   your own structs). Print nothing else that matters; emit the result as JSON:
       int main() {{
@@ -46,6 +47,12 @@ Code rules (the code is run and checked automatically):
           algolens::emit(algolens::Json({fn}(nums)).dump());
       }}
   Return trees as level-order lists (trailing nulls dropped). Use long long for integers.
+  Always convert JSON with .get<T>() before use (e.g. in["args"][1].get<long long>(),
+  .get<std::string>(), .get<std::vector<std::vector<long long>>>()); never pass a Json value
+  where a C++ type is expected. Convert your result to algolens::Json before .dump().
+  Grids of characters arrive as lists of 1-character STRINGS: read them with
+  .get<std::vector<std::vector<std::string>>>() and compare with "1" (a std::string), never as
+  char. Strings: .get<std::string>(). Booleans: .get<bool>(); emit true/false, not 1/0.
 - The Python and C++ versions must be the same algorithm, with the same output for every input.
 """
 
@@ -144,6 +151,9 @@ def brute_b_prompt(statement: str, spec: dict, failed_example: str = "") -> str:
 APPROACHES_SYSTEM = """\
 You write efficient solutions to an algorithms problem, for learners. Give one or two approaches
 that improve on brute force, ordered from simpler to more efficient; the last should be optimal.
+A brute force is written separately: do NOT include one. Every approach you give must have a
+strictly better time complexity than trying all candidates (e.g. O(n) or O(n log n) instead of
+O(n^2)). If only one improvement exists, give just one.
 Reply with ONE JSON object: {"approaches": [{"name": str, "key_idea": str (one line),
 "time": str, "space": str, "python_code": str, "cpp_code": str}, ...]}"""
 
@@ -194,7 +204,9 @@ Reply with ONE JSON object:
 {{"visual": {{"panels": [...]}}, "narration": [{{"line": int, "next": int|"return" (optional),
   "when": str (optional condition), "text": str}}, ...], "cpp_lines": {{"<python line>": <C++ line>}}}}
 
-PANELS (draw the main data structure first, then a "vars" panel with the key scalars):
+PANELS (draw the main data structure first, then a "vars" panel with the key scalars).
+Panel fields are bare expressions, e.g. "var": "nums", "at": "i + 1" - never wrapped in {{}}.
+Only narration `text` uses {{...}} placeholders.
 {_panels.__doc__}
 NARRATION. A template applies to a frame when `line` is the line that just ran, `next` (if
 given) is the line that runs next (use it to say which branch was taken), and `when` (if given)
@@ -202,6 +214,11 @@ is true. The first applicable template wins, so templates for the same line must
 unless they say the same thing. Lines with no template get a neutral sentence automatically.
 Write for a learner: say WHY, not just what ("{{s}} < {{target}}: too small, so move l right").
 {_template.__doc__}
+NOT allowed inside {{...}} in narration text (these make a template invalid and it is dropped):
+`in` / `not in`, any call except len() and old() (no max(), min(), sum(), str(), methods),
+slicing, comparisons or and/or/not (put conditions in "when"), and string literals.
+Never write a number directly in the sentence ("to 0", "index 1"): every number must come from a
+{{...}} placeholder, and placeholders show values, so say "mark it visited", not "set it to '0'".
 Expressions: variables by name, indexing [i], node fields .val .next .left .right, len(x),
 old(x) for the value before the line ran, arithmetic + - * // %, comparisons, and/or/not.
 cpp_lines maps each Python line that has an equivalent to the matching C++ line number.

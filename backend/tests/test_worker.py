@@ -56,3 +56,17 @@ def test_locked_job_is_skipped_by_second_worker(sessions):
         assert first_job is not None
         assert claim_next_job(second) is None
         first.rollback()
+
+
+def test_jobs_left_running_by_a_stopped_worker_are_failed(sessions):
+    from algolens.worker import INTERRUPTED, fail_interrupted
+
+    with sessions() as s:
+        s.add(Job(kind="solve", status="running", payload={"text": "secret", "text_hash": "h"}))
+        s.add(Job(kind="solve", status="queued"))
+        s.commit()
+        assert fail_interrupted(s) == 1
+    with sessions() as s:
+        jobs = {j.status: j for j in s.scalars(select(Job)).all()}
+        assert jobs["failed"].error == INTERRUPTED and "text" not in jobs["failed"].payload
+        assert "queued" in jobs

@@ -163,6 +163,7 @@ def store(session: Session, h: str, version: str, result: SolveResult) -> Proble
                 "is_brute": a.is_brute, "reason": a.reason, "tests_passed": a.tests_passed,
                 "tests_total": a.tests_total, "examples_checked": a.examples_checked,
                 "repairs": a.repairs, "failing_case": a.failing_case,
+                "repair_reasons": a.repair_reasons, "exhaustive": a.exhaustive,
             },
         ))  # fmt: skip
     return problem

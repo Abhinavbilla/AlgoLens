@@ -103,7 +103,7 @@ def plan_animation(run, spec: dict, python_code: str, cpp_code: str) -> dict:
     default = min(recordings, key=lambda r: len(r.views))
     n_py, n_cpp = len(python_code.splitlines()), len(cpp_code.splitlines())
 
-    problem, plan = "", None
+    problem, plan, attempts = "", None, []
     for _ in range(2):
         try:
             proposal = run.ask("narration", prompts.VISUAL_SYSTEM,
@@ -115,6 +115,7 @@ def plan_animation(run, spec: dict, python_code: str, cpp_code: str) -> dict:
             log.warning("visual plan reply unusable: %s", exc)
             break
         plan, errors = _check(proposal, recordings, default, python_code, n_py, n_cpp)
+        attempts.append(errors[:15])
         if not errors:
             plan["lint"]["retried"] = bool(problem)
             break
@@ -125,6 +126,7 @@ def plan_animation(run, spec: dict, python_code: str, cpp_code: str) -> dict:
     else:
         plan = _salvage(plan, recordings, default, python_code)
     plan["default_input"] = {"args": default.args}
+    plan.setdefault("lint", {})["attempts"] = attempts  # lint errors of each AI proposal
     return plan
 
 
@@ -137,8 +139,9 @@ def _check(p: VisualPlan, recs: list[Recording], default: Recording, code: str, 
             cpp_lines[str(int(k))] = v  # bad pairs are dropped, not fatal
     plan = {"visual": p.visual, "narration": p.narration, "cpp_lines": cpp_lines, "source": "ai",
             "lint": {"errors": [], "dropped": []}}  # fmt: skip
+    plan["visual"] = unwrap_braces(p.visual)
     try:
-        panels = compile_visual(p.visual)
+        panels = compile_visual(plan["visual"])
     except AnimationError as exc:
         return plan, [f"visual: {exc}"]
     try:
@@ -189,6 +192,21 @@ def _salvage(plan: dict, recs: list[Recording], default: Recording, code: str) -
     if plan["lint"]["dropped"]:
         plan["source"] += " (some narration dropped)"
     return plan
+
+
+def unwrap_braces(v: Any) -> Any:
+    """Models often write panel expressions like narration placeholders ("{nums}"); panel
+    fields are bare expressions, so strip one pair of enclosing braces. Nothing else changes:
+    the result is still compiled and checked like any visual spec."""
+    if isinstance(v, dict):
+        return {k: unwrap_braces(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [unwrap_braces(x) for x in v]
+    if isinstance(v, str):
+        t = v.strip()
+        if t.startswith("{") and t.endswith("}") and t.count("{") == 1 and t.count("}") == 1:
+            return t[1:-1].strip()
+    return v
 
 
 def culprits(errors: list[str]) -> set[int]:

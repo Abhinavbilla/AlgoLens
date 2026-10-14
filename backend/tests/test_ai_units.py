@@ -156,3 +156,74 @@ def test_mutations_always_differ():
     for v in (True, 0, 1.5, "", "ab", [], [1], [1, 2], [[1], [2]], [3, 3]):
         assert mutate(v) != v
     assert mutate(None) is None
+
+
+def test_json_mode_rejection_is_retried_without_json_mode(monkeypatch):
+    from algolens.ai import client as cl
+
+    monkeypatch.setenv("GROQ_API_KEY", "x")
+    monkeypatch.setattr(cl, "MIN_INTERVAL", {**cl.MIN_INTERVAL, "groq": 0})
+    bodies = []
+
+    def fake_post(self, url, body, headers):
+        bodies.append(dict(body))
+        if "response_format" in body:
+            raise cl.AIError('HTTP 400: {"error":{"code":"json_validate_failed"}}')
+        return {"choices": [{"message": {"content": 'Here: {"ok": true}'}}], "usage": {}}
+
+    monkeypatch.setattr(cl.AIClient, "_post", fake_post)
+    reply = cl.AIClient({"parse": "groq:m"}).complete_json("parse", "s", "p", Budget(100_000))
+    assert reply.data == {"ok": True} and len(bodies) == 2 and "response_format" not in bodies[1]
+
+
+def test_visual_prompt_renders_literal_braces():
+    assert (
+        "Ellipsis" not in prompts.VISUAL_SYSTEM
+        and "inside {...} in narration" in prompts.VISUAL_SYSTEM
+    )
+    assert "never wrapped in {}" in prompts.VISUAL_SYSTEM
+    rules = prompts.CODE_RULES.format(fn="f", args="x")
+    assert "int main()" in rules and "1-character STRINGS" in rules
+
+
+def test_small_input_spaces_are_enumerated():
+    from algolens.schema.model import compile_schema
+    from algolens.schema.service import InputRules, all_inputs
+
+    one = InputRules(
+        compile_schema({"params": [{"name": "n", "type": {"kind": "int", "min": 1, "max": 45}}]})
+    )
+    assert all_inputs(one, 300, None) == [[n] for n in range(1, 46)]
+    two = InputRules(compile_schema({"params": [
+        {"name": "n", "type": {"kind": "int", "min": 1, "max": 5}},
+        {"name": "k", "type": {"kind": "int", "min": 0, "max": "n"}}]}))  # fmt: skip
+    assert len(all_inputs(two, 300, None)) == 2 + 3 + 4 + 5 + 6
+    big = InputRules(
+        compile_schema({"params": [{"name": "n", "type": {"kind": "int", "min": 1, "max": 1000}}]})
+    )
+    assert all_inputs(big, 300, None) is None
+    arr = InputRules(
+        compile_schema(
+            {"params": [{"name": "a", "type": {"kind": "array", "of": {"kind": "int"}}}]}
+        )
+    )
+    assert all_inputs(arr, 300, None) is None
+
+
+def test_long_rate_limit_fails_fast_with_the_reason(monkeypatch):
+    from algolens.ai import client as cl
+
+    monkeypatch.setenv("GROQ_API_KEY", "x")
+    monkeypatch.setattr(cl, "MIN_INTERVAL", {**cl.MIN_INTERVAL, "groq": 0})
+    calls = []
+
+    def fake_post(self, url, body, headers):
+        calls.append(1)
+        raise cl._Retryable(
+            'HTTP 429: {"error":{"message":"Rate limit reached on tokens per day (TPD)"}}', 1128
+        )
+
+    monkeypatch.setattr(cl.AIClient, "_post", fake_post)
+    with pytest.raises(cl.AIError, match="try again in about 19 min.*tokens per day"):
+        cl.AIClient({"parse": "groq:m"}).complete_json("parse", "s", "p", Budget(100_000))
+    assert calls == [1]
