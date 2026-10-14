@@ -87,3 +87,11 @@
   max-width: 70ch;
   margin-top: 24px;
 }
+
+.about code {
+  font-family: var(--mono);
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}

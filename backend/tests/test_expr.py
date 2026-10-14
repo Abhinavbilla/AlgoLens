@@ -128,8 +128,11 @@ def test_literal_braces_stay_in_text():
         "{r > l} is shown",  # comparison in text
         "{flag and x}",
         "{not x}",
-        "{nums[i] + 1}",  # literal operand: that 1 isn't from the state
-        "{2 + 2}",
+        "{nums[i] + 3}",  # only -2..2 may be operands
+        "{j * 10}",
+        "{j - -3}",
+        "{2 + 2}",  # no value from the state at all
+        "{1 - 2}",
         "{'hello'}",
         "{True}",
         "{len(nums[0] + 1)}",
@@ -140,3 +143,9 @@ def test_literal_braces_stay_in_text():
 def test_templates_reject_ungrounded_or_logical_text(text):
     with pytest.raises(ParseError):
         parse_template(text)
+
+
+@pytest.mark.parametrize("text", ["{j + 1}", "{j - 2}", "{nums[i] + -1}", "{2 * k}", "{-1 + r}"])
+def test_small_constants_are_allowed_as_operands(text):
+    (p,) = parse_template(text).placeholders
+    assert p.computed

@@ -1,14 +1,17 @@
 import { useEffect, useReducer } from "react";
-import { BASE_STEP_MS, initialState, playerReducer } from "./playerState";
+import { initialState, playerReducer, stepDurationMs } from "./playerState";
 
-export function usePlayer(count: number) {
+/** `narrations[i]` is step i's sentence; it sets how long that step stays on screen. */
+export function usePlayer(narrations: string[]) {
+  const count = narrations.length;
   const [state, dispatch] = useReducer(playerReducer, count, initialState);
 
   useEffect(() => {
     if (!state.playing) return;
-    const id = window.setInterval(() => dispatch({ type: "tick" }), BASE_STEP_MS / state.speed);
-    return () => window.clearInterval(id);
-  }, [state.playing, state.speed]);
+    const ms = stepDurationMs(narrations[state.index] ?? "", state.speed);
+    const id = window.setTimeout(() => dispatch({ type: "tick" }), ms);
+    return () => window.clearTimeout(id);
+  }, [state.playing, state.speed, state.index, narrations]);
 
   // Keyboard: Space plays/pauses, arrows step, Home/End jump.
   //  - ignored while typing in a text field or choosing from a select

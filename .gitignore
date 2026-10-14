@@ -10,3 +10,4 @@ dist/
 # Local evaluation set and reports never leave this machine.
 /eval/
 *.tsbuildinfo
+/ui-check-out/

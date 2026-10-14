@@ -1,6 +1,7 @@
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  /* Equal columns so typical solution lines (~60 characters) fit without scrolling. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
@@ -21,10 +22,21 @@
   background: var(--surface);
 }
 
+.stackCell {
+  display: grid;
+}
+
+.stackCell > div {
+  grid-area: 1 / 1;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
 .sentence {
   margin: 0 0 4px;
   font-size: 1.125rem;
-  min-height: 1.5em;
 }
 
 .ran {

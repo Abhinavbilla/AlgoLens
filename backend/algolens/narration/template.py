@@ -6,11 +6,13 @@ on live objects). `{{` and `}}` are literal braces.
 What a placeholder may contain in displayed text:
 - a state path: `{r}`, `{nums[l]}`, `{node.val}`, `{old(r)}`
 - a computed value over state paths: `{nums[l] + nums[r]}`, `{len(stack)}`. The renderer
-  (M6) always shows these with their operands ("2 + 15 = 17").
-Not allowed in text: comparisons, and/or/not, string or boolean literals, and numeric
-literals used as arithmetic operands (a number in narration must come from the state).
-Numeric literals are fine as indices: `{nums[0]}`. Conditions (`when`) may use the full
-expression language.
+  always shows these with their operands ("2 + 15 = 17").
+- small constants from -2 to 2 as operands, shown with the working: `{j + 1}` renders as
+  "2 + 1 = 3". A computed placeholder must still use at least one value from the state.
+Not allowed in text: comparisons, and/or/not, string or boolean literals, other numeric
+literals as operands, and any number written in the sentence itself (the grounding check
+rejects it). Numeric literals are fine as indices: `{nums[0]}`. Conditions (`when`) may use
+the full expression language.
 """
 
 from dataclasses import dataclass
@@ -29,6 +31,7 @@ from algolens.narration.expr import (
     ParseError,
 )
 
+SMALL_LITERALS = range(-2, 3)  # constants allowed as operands, e.g. {j + 1}
 MAX_TEMPLATE_LENGTH = 500
 MAX_PLACEHOLDERS = 10
 
@@ -117,20 +120,46 @@ def _placeholder_end(text: str, start: int) -> int:
 
 def _parse_display(source: str) -> Node:
     node = expr.parse(source)
-    _check_display(node, top=True)
+    _check_display(node)
+    if not expr.is_path(node) and not _uses_state(node):
+        raise ParseError("a computed placeholder must use at least one value from the state")
     return node
 
 
-def _check_display(node: Node, top: bool = False) -> None:
+def is_small_literal(node: Node) -> bool:
+    """A small integer constant (SMALL_LITERALS), allowed as an operand in a placeholder."""
+    if isinstance(node, Neg):
+        return is_small_literal(node.operand)
+    return (isinstance(node, Lit) and isinstance(node.value, int)
+            and not isinstance(node.value, bool) and node.value in SMALL_LITERALS)  # fmt: skip
+
+
+def _uses_state(node: Node) -> bool:
+    if expr.is_path(node) or isinstance(node, Len):
+        return True
+    if isinstance(node, BinOp):
+        return _uses_state(node.left) or _uses_state(node.right)
+    if isinstance(node, Neg):
+        return _uses_state(node.operand)
+    return False
+
+
+def _check_display(node: Node) -> None:
     if expr.is_path(node):
         _check_indices(node)
         return
     match node:
         case BinOp(_, left, right):
             for side in (left, right):
-                if isinstance(side, Lit):
-                    raise ParseError("numbers in narration must come from the state, "
-                                     "not literals in the template")  # fmt: skip
+                if isinstance(side, Lit) or (
+                    isinstance(side, Neg) and isinstance(side.operand, Lit)
+                ):
+                    if not is_small_literal(side):
+                        raise ParseError(
+                            "only small constants (-2 to 2) may appear in a placeholder; other "
+                            "numbers in narration must come from the state"
+                        )
+                    continue
                 _check_display(side)
         case Neg(operand):
             _check_display(operand)

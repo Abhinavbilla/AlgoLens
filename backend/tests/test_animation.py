@@ -222,3 +222,14 @@ def test_visual_spec_can_only_name_paths():
         compile_visual({"panels": [{"kind": "array", "var": "len(nums) + 1"}]})
     with pytest.raises(AnimationError):
         compile_visual({"panels": [{"kind": "chart", "var": "x"}]})
+
+
+def test_small_constants_show_the_working_and_sentence_numbers_stay_rejected(tmp_path):
+    trace, source = record(tmp_path, SRC, "f", 5)
+    ok = compile_templates([{"line": 3, "text": "position {x + 1} comes next"}])
+    anim = build(trace, source=source, templates=ok, panels=[])
+    assert anim["frames"][1]["narration"]["text"] == "position 6 + 1 = 7 comes next"
+    # The same number typed into the sentence is still rejected (neutral fallback).
+    bad = compile_templates([{"line": 3, "text": "position {x} + 1 comes next"}])
+    anim = build(trace, source=source, templates=bad, panels=[])
+    assert anim["frames"][1]["narration"]["source"] == "neutral"

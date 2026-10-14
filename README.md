@@ -58,3 +58,9 @@ npm install
 npm run dev        # proxies /api to localhost:8000
 npm run lint && npm run typecheck && npm test
 ```
+
+UI check (stack running): screenshots of every library entry at 375 px and 1280 px in light and dark themes, and at every step a check for sideways scrolling, overlapping or clipped pointer labels, and anything moving between steps. It uses the installed Microsoft Edge, so there's no browser download:
+
+```sh
+cd frontend && node scripts/ui-check.mjs ../ui-check-out
+```

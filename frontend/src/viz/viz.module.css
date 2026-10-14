@@ -34,20 +34,26 @@
 /* --- array ------------------------------------------------------------------------------- */
 
 .array {
-  --cell: 52px;
+  /* Cells are 52px wide when there's room and shrink to 34px on narrow screens; below that
+     the array scrolls inside its panel (never the page). */
+  --gap: 4px;
   display: grid;
-  gap: 4px;
+  grid-template-columns: repeat(var(--slots), minmax(34px, 52px));
+  gap: var(--gap);
   margin: 0;
   padding: 0;
   list-style: none;
-  width: max-content;
+  width: min(100%, calc(var(--slots) * (52px + var(--gap))));
+  min-width: calc(var(--slots) * (34px + var(--gap)));
 }
 
 .slot {
   display: grid;
-  grid-template-rows: auto 48px minmax(44px, auto);
+  /* index, cell, then one 30px row per pointer label that can ever share this cell */
+  grid-template-rows: auto 48px calc(var(--pointer-rows, 1) * 30px);
   justify-items: center;
-  align-items: center;
+  align-items: start;
+  min-width: 0;
 }
 
 .index {
@@ -61,13 +67,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--cell);
+  width: 100%;
   height: 48px;
   border: 2px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
   font-family: var(--mono);
-  font-size: 1rem;
+  font-size: clamp(0.8125rem, 3.4vw, 1rem);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -95,11 +101,14 @@ tr.changed td {
   box-shadow: 0 0 0 2px var(--changed);
 }
 
+/* Raised without vertical-align (which would make the line taller and shift the layout). */
 .changeMark {
+  position: relative;
+  top: -0.35em;
   margin-left: 4px;
   color: var(--changed);
   font-size: 0.75rem;
-  vertical-align: super;
+  line-height: 0;
 }
 
 .cell .changeMark {
@@ -113,19 +122,39 @@ tr.changed td {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  min-height: 44px;
+  max-width: 100%;
 }
 
+/* Arrow on top, name underneath: narrow enough to sit under its own cell. */
 .pointer {
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--pointer);
-  color: var(--pointer-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 30px;
+  max-width: 100%;
   font-family: var(--mono);
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1;
+}
+
+.arrow {
+  color: var(--pointer);
+  font-size: 0.625rem;
+  line-height: 1;
+  padding-top: 2px;
+}
+
+.pointerLabel {
+  margin-top: 2px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--pointer);
+  color: var(--pointer-text);
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rangeSwatch {
@@ -141,7 +170,7 @@ tr.changed td {
 
 .vars {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
   gap: 6px;
   margin: 0;
 }
@@ -160,9 +189,14 @@ tr.changed td {
   color: var(--text-muted);
 }
 
+/* One line, always: a long value is cut with an ellipsis (full value in the tooltip)
+   rather than wrapping and moving everything below it. */
 .varValue {
   margin: 0;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .map {

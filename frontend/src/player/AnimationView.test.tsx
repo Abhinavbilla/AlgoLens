@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Animation, Frame } from "../api";
 import { AnimationView } from "./AnimationView";
-import { BASE_STEP_MS } from "./playerState";
+import { stepDurationMs } from "./playerState";
 
 const PY = "def f(l, r):\n    l += 1\n    return l\n";
 const CPP = "int f(int l, int r) {\n    l += 1;\n    return l;\n}\n";
@@ -50,7 +50,8 @@ function renderPlayer() {
   return render(<AnimationView animation={ANIMATION} python={PY} cpp={CPP} />);
 }
 
-const narration = () => screen.getByText(/Start with|moves from|Return 1/);
+// The sentence currently shown (the others are laid out invisibly to reserve height).
+const narration = () => document.querySelector("[data-current-narration] p") as HTMLElement;
 
 afterEach(() => vi.useRealTimers());
 
@@ -101,9 +102,12 @@ test("Space plays to the end at the chosen speed", () => {
   fireEvent.change(screen.getByRole("combobox", { name: "Speed" }), { target: { value: "2" } });
   fireEvent.keyDown(window, { key: " " });
   expect(screen.getByRole("button", { name: /Pause/ })).toBeInTheDocument();
-  act(() => vi.advanceTimersByTime(BASE_STEP_MS / 2));
+  // Each step stays up for its own sentence's reading time, divided by the speed.
+  act(() => vi.advanceTimersByTime(stepDurationMs("Start with l at 0.", 2) - 1));
+  expect(narration()).toHaveTextContent("Start with l at 0.");
+  act(() => vi.advanceTimersByTime(1));
   expect(narration()).toHaveTextContent("l moves from 0 to 1.");
-  act(() => vi.advanceTimersByTime(BASE_STEP_MS / 2));
+  act(() => vi.advanceTimersByTime(stepDurationMs("l moves from 0 to 1.", 2)));
   expect(narration()).toHaveTextContent("Return 1.");
   expect(screen.getByRole("button", { name: /Play/ })).toBeInTheDocument();
 });
@@ -120,4 +124,13 @@ test("call stack shows the running call with a text marker", () => {
   expect(within(stack).getByText("f(l=0, r=3)")).toBeInTheDocument();
   expect(within(stack).getByText("new")).toBeInTheDocument();
   expect(within(stack).getByText("(running)")).toBeInTheDocument();
+});
+
+test("the narration box is announced only while not playing", () => {
+  vi.useFakeTimers();
+  renderPlayer();
+  const box = narration().closest("[aria-live]") as HTMLElement;
+  expect(box).toHaveAttribute("aria-live", "polite");
+  fireEvent.keyDown(window, { key: " " });
+  expect(box).toHaveAttribute("aria-live", "off");
 });

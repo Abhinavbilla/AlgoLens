@@ -1,8 +1,11 @@
+import type React from "react";
 import type { ArrayPanel } from "../api";
 import styles from "./viz.module.css";
 
 // Cells keep a fixed position: only their contents and markers change between steps.
-export function ArrayView({ panel }: { panel: ArrayPanel }) {
+// They shrink to fit narrow screens; only very long arrays scroll inside the panel.
+// `pointerRows` reserves space for the most pointer labels that ever share one cell.
+export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; pointerRows?: number }) {
   if (!panel.defined || !panel.items) {
     return (
       <section className={styles.panel} aria-label={panel.label}>
@@ -29,7 +32,10 @@ export function ArrayView({ panel }: { panel: ArrayPanel }) {
         </p>
       )}
       <div className={styles.scroll}>
-        <ol className={styles.array} style={{ gridTemplateColumns: `repeat(${slots}, var(--cell))` }}>
+        <ol
+          className={styles.array}
+          style={{ "--slots": slots, "--pointer-rows": pointerRows } as React.CSSProperties}
+        >
           {Array.from({ length: slots }, (_, i) => {
             const here = pointers.filter((p) => p.index === i);
             const isPhantom = i >= items.length;
@@ -55,8 +61,11 @@ export function ArrayView({ panel }: { panel: ArrayPanel }) {
                 </span>
                 <span className={styles.pointers}>
                   {here.map((p) => (
-                    <span key={p.label} className={styles.pointer}>
-                      <span aria-hidden="true">▲</span> {p.label}
+                    <span key={p.label} className={styles.pointer} data-pointer={p.label}>
+                      <span className={styles.arrow} aria-hidden="true">
+                        ▲
+                      </span>
+                      <span className={styles.pointerLabel}>{p.label}</span>
                     </span>
                   ))}
                 </span>

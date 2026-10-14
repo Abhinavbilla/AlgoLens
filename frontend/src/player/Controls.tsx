@@ -4,16 +4,18 @@ import { SPEEDS, type PlayerAction, type PlayerState } from "./playerState";
 
 type Props = { state: PlayerState; dispatch: Dispatch<PlayerAction>; ops: number };
 
+// On narrow screens Restart/Back/Forward show only their icon; the word stays available to
+// screen readers (it's visually hidden, not removed), so every button keeps its name.
 export function Controls({ state, dispatch, ops }: Props) {
   const last = state.count - 1;
   return (
     <div className={styles.controls}>
       <div className={styles.buttons} role="group" aria-label="Playback">
         <button type="button" onClick={() => dispatch({ type: "restart" })} disabled={state.index === 0}>
-          <span aria-hidden="true">⏮</span> Restart
+          <span aria-hidden="true">⏮</span> <span className={styles.word}>Restart</span>
         </button>
         <button type="button" onClick={() => dispatch({ type: "step", by: -1 })} disabled={state.index === 0}>
-          <span aria-hidden="true">◀</span> Back
+          <span aria-hidden="true">◀</span> <span className={styles.word}>Back</span>
         </button>
         <button
           type="button"
@@ -38,7 +40,7 @@ export function Controls({ state, dispatch, ops }: Props) {
           disabled={state.index >= last}
           aria-keyshortcuts="ArrowRight"
         >
-          Forward <span aria-hidden="true">▶</span>
+          <span className={styles.word}>Forward</span> <span aria-hidden="true">▶</span>
         </button>
         <label className={styles.speed}>
           Speed

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { api, type Animation, type Entry } from "../api";
+import { InlineMarkdown } from "../InlineMarkdown";
 import { AnimationView } from "../player/AnimationView";
 import { VerificationBadge } from "../VerificationBadge";
 import styles from "./pages.module.css";
@@ -62,7 +63,9 @@ function EntryContent({ slug }: { slug: string }) {
       <section className={styles.about}>
         <h2>How it works</h2>
         {e.description.split(/\n\s*\n/).map((para, i) => (
-          <p key={i}>{para}</p>
+          <p key={i}>
+            <InlineMarkdown text={para} />
+          </p>
         ))}
       </section>
     </article>

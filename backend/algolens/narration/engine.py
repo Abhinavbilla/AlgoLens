@@ -18,7 +18,13 @@ from typing import Any
 from algolens.animation.values import FrameView, display, numbers_in
 from algolens.narration import expr
 from algolens.narration.expr import BinOp, ExprError, Len, Neg, Node, evaluate
-from algolens.narration.template import Placeholder, Template, parse_condition, parse_template
+from algolens.narration.template import (
+    Placeholder,
+    Template,
+    is_small_literal,
+    parse_condition,
+    parse_template,
+)
 
 ANY = object()  # template applies whatever line runs next
 _NUMBER = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
@@ -119,10 +125,15 @@ def _render_computed(node: Node, view: FrameView, env, produced: set[str]) -> tu
         value = view.plain(evaluate(node, env))
         numbers_in(value, produced)
         return display(value), value
+    if is_small_literal(node):  # a constant operand, shown as part of the working
+        value = evaluate(node, env)
+        produced.add(display(value))
+        return display(value), value
     if isinstance(node, Neg):
         text, _ = _render_computed(node.operand, view, env, produced)
         wrap = isinstance(node.operand, BinOp)
         value = evaluate(node, env)
+        produced.add(display(value))
         return (f"-({text})" if wrap else f"-{text}"), value
     if isinstance(node, BinOp):
         left, _ = _render_computed(node.left, view, env, produced)

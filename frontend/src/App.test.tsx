@@ -75,3 +75,12 @@ test("theme toggle cycles and sets data-theme", async () => {
   await userEvent.click(button);
   expect(document.documentElement.dataset.theme).toBeUndefined();
 });
+
+test("description markdown renders as elements, never as raw HTML", async () => {
+  const { InlineMarkdown } = await import("./InlineMarkdown");
+  const { container } = render(<InlineMarkdown text={"Move `l` right, a *lower bound*, <b>not bold</b>"} />);
+  expect(container.querySelector("code")).toHaveTextContent("l");
+  expect(container.querySelector("em")).toHaveTextContent("lower bound");
+  expect(container.querySelector("b")).toBeNull();
+  expect(container).toHaveTextContent("<b>not bold</b>");
+});

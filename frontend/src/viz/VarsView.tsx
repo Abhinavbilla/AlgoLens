@@ -9,7 +9,7 @@ export function VarsView({ panel }: { panel: VarsPanel }) {
         {panel.items.map((v) => (
           <div key={v.name} className={`${styles.var} ${v.changed ? styles.changed : ""}`}>
             <dt className={styles.varName}>{v.name}</dt>
-            <dd className={styles.varValue}>
+            <dd className={styles.varValue} title={v.defined ? v.value : undefined}>
               {v.defined ? v.value : <span className={styles.muted}>not set</span>}
               {v.changed && (
                 <>

@@ -1,4 +1,4 @@
-import { initialState, playerReducer, type PlayerAction, type PlayerState } from "./playerState";
+import { initialState, playerReducer, stepDurationMs, type PlayerAction, type PlayerState } from "./playerState";
 
 const run = (s: PlayerState, ...actions: PlayerAction[]) => actions.reduce(playerReducer, s);
 
@@ -47,4 +47,12 @@ test("speed is limited to 0.5x to 4x", () => {
 
 test("a single-frame animation can't play", () => {
   expect(run(initialState(1), { type: "play" }).playing).toBe(false);
+});
+
+test("1x is reading pace: longer sentences stay up longer, 4x is a quarter of that", () => {
+  const short = stepDurationMs("Done.", 1);
+  const long = stepDurationMs("12 < 13: the sum is too small, so move l right to a bigger value.", 1);
+  expect(long).toBeGreaterThan(short);
+  expect(long).toBeGreaterThanOrEqual(3000);
+  expect(stepDurationMs("abc", 4)).toBe(stepDurationMs("abc", 1) / 4);
 });

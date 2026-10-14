@@ -234,7 +234,7 @@ A template is chosen by the line that just ran, the branch taken, and a conditio
   - **Computed values**: arithmetic or `len()` over state paths. The engine computes the value and **always renders it with its operands**, e.g. `{nums[l] + nums[r]}` renders as "2 + 15 = 17" and `{len(stack)}` as "len(stack) = 3". The template can't supply or format the result itself; it only names the expression. Nested expressions show their leaf operands: `{a + b * c}` renders as "2 + 3 × 4 = 14".
   - Comparisons and `and`/`or`/`not` are allowed only in `when`, not in text.
   - **[Decision, M2]** A placeholder that is only `len(x)` shows just the count ("3"), since its operand is a container already on screen; arithmetic always shows operands ("2 + 15 = 17").
-  - **[Decision, M1]** Numeric literals can't be arithmetic operands in text (`{n - 1}` is rejected), because that number wouldn't come from the state. They're fine as indices (`{nums[0]}`) and anywhere in `when`. Easy to relax later if narration reads badly without it.
+  - **[Decided after M2]** Small constants from -2 to 2 may be operands inside `{…}` and are shown with the working (`{j + 1}` renders as "2 + 1 = 3"). A computed placeholder must still use at least one value from the state. Any number written into the plain sentence is still rejected. Literals of any size remain fine as indices (`{nums[0]}`) and anywhere in `when`.
 - **Lint at generation time**, run over the traces of all test inputs:
   - every expression must parse and evaluate on the steps where its line runs
   - no literal numbers in text, except fixed phrases

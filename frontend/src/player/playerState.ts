@@ -2,7 +2,13 @@
 // immutable, so stepping back and forward again shows exactly the same state.
 
 export const SPEEDS = [0.5, 1, 1.5, 2, 3, 4] as const;
-export const BASE_STEP_MS = 900; // time per step at 1x
+
+// 1x is reading pace: a step stays up long enough to read its own sentence (about 20
+// characters a second plus a moment to look at the change). 4x is a quarter of that: skim.
+export function stepDurationMs(narration: string, speed: number): number {
+  const atReadingPace = Math.min(5000, 600 + 45 * narration.length);
+  return atReadingPace / speed;
+}
 
 export type PlayerState = { index: number; playing: boolean; speed: number; count: number };
 
