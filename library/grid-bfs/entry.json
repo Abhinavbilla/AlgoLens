@@ -1,0 +1,62 @@
+{
+  "title": "Shortest path in a grid (BFS)",
+  "category": "Graphs and grids",
+  "summary": "Find the fewest steps from the top-left to the bottom-right of a grid with walls, exploring in rings.",
+  "order": 40,
+  "entry": "shortest_path",
+  "note": "Moves go up, down, left or right; # is a wall. -1 means there's no path.",
+  "schema": {
+    "params": [
+      {"name": "grid", "type": {"kind": "grid", "chars": ".#", "rows": {"min": 1, "max": 6}, "cols": {"min": 1, "max": 6}}}
+    ]
+  },
+  "default_input": {"args": [[[".", ".", "."], [".", "#", "."], [".", ".", "."]]]},
+  "tests": [
+    {"args": [[["."]]]},
+    {"args": [[["#"]]]},
+    {"args": [[[".", "#"], ["#", "."]]]},
+    {"args": [[[".", "."], [".", "."]]]},
+    {"args": [[[".", ".", "."], [".", "#", "."], [".", ".", "."]]]},
+    {"args": [[[".", "#", "."], [".", "#", "."], [".", ".", "."]]]},
+    {"args": [[[".", ".", ".", ".", "."]]]},
+    {"args": [[[".", ".", "#", "."], ["#", ".", "#", "."], [".", ".", ".", "."]]]},
+    {"args": [[[".", "."], [".", "#"]]]},
+    {"args": [[[".", "#", "."], ["#", ".", "."], [".", ".", "."]]]}
+  ],
+  "cpp_lines": {"5": 10, "6": 11, "7": 12, "8": 14, "9": 15, "10": 16, "11": 17, "12": 18, "13": 20, "14": 21, "15": 24, "16": 25, "17": 26, "18": 27, "19": 28, "20": 32},
+  "visual": {
+    "panels": [
+      {
+        "kind": "grid", "var": "dist", "label": "Steps from the start",
+        "text": "dist[row][col]", "hide_when": "dist[row][col] == -1",
+        "marks": [{"label": "wall", "when": "grid[row][col] == '#'"}, {"label": "in queue", "from": "queue"}],
+        "pointers": [{"label": "here", "row": "r", "col": "c"}, {"label": "next", "row": "nr", "col": "nc"}]
+      },
+      {"kind": "queue", "var": "queue", "label": "Queue (front first)"},
+      {"kind": "vars", "vars": ["r", "c", "nr", "nc"]}
+    ]
+  },
+  "narration": [
+    {"line": 5, "text": "The grid has {rows} rows and {cols} columns."},
+    {"line": 6, "next": 8, "text": "The start and the goal are both open, so a path might exist."},
+    {"line": 6, "next": 7, "text": "The start or the goal is a wall, so there's no path."},
+    {"line": 7, "text": "No path."},
+    {"line": 8, "text": "Mark every cell as not reached yet."},
+    {"line": 9, "text": "The start is {dist[0][0]} steps from itself."},
+    {"line": 10, "text": "Put the start in the queue."},
+    {"line": 11, "next": 12, "text": "The queue isn't empty: take the cell at the front."},
+    {"line": 11, "next": 20, "text": "The queue is empty and the goal was never reached."},
+    {"line": 12, "text": "Visit cell ({r}, {c}), {dist[r][c]} steps from the start."},
+    {"line": 13, "next": 14, "text": "This is the goal."},
+    {"line": 13, "next": 15, "text": "Not the goal yet, so look at its four neighbours."},
+    {"line": 14, "text": "The shortest path takes {dist[r][c]} steps."},
+    {"line": 15, "next": 16, "text": "Try the next direction."},
+    {"line": 15, "next": 11, "text": "All four directions are checked."},
+    {"line": 16, "text": "The neighbour is ({nr}, {nc})."},
+    {"line": 17, "next": 18, "text": "({nr}, {nc}) is open and not reached yet."},
+    {"line": 17, "next": 15, "text": "({nr}, {nc}) is off the grid, a wall, or already reached: skip it."},
+    {"line": 18, "text": "({nr}, {nc}) is {dist[r][c] + 1} steps from the start."},
+    {"line": 19, "text": "Add ({nr}, {nc}) to the back of the queue."},
+    {"line": 20, "text": "No path."}
+  ]
+}

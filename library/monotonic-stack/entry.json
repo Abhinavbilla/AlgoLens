@@ -1,0 +1,49 @@
+{
+  "title": "Monotonic stack: next greater element",
+  "category": "Monotonic stack",
+  "summary": "For each value, find the next value to its right that is bigger, in one pass with a stack.",
+  "order": 35,
+  "entry": "next_greater",
+  "note": "Values are 0 or more; -1 means no greater value comes later.",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": 0, "max": 1000}, "len": {"min": 0, "max": 40}}}
+    ]
+  },
+  "default_input": {"args": [[2, 1, 2, 4, 3]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[5]]},
+    {"args": [[1, 2]]},
+    {"args": [[2, 1]]},
+    {"args": [[2, 1, 2, 4, 3]]},
+    {"args": [[1, 2, 3, 4]]},
+    {"args": [[4, 3, 2, 1]]},
+    {"args": [[3, 3, 3]]},
+    {"args": [[1, 5, 2, 4, 3, 6]]},
+    {"args": [[0, 1000, 0, 999]]}
+  ],
+  "cpp_lines": {"2": 5, "3": 6, "4": 7, "5": 9, "6": 10, "7": 12, "8": 14, "9": 16},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "pointers": [{"label": "i", "at": "i"}]},
+      {"kind": "stack", "var": "stack", "item": "nums[item]", "label": "Stack: values still waiting (top is last)"},
+      {"kind": "array", "var": "answer", "label": "answer"},
+      {"kind": "vars", "vars": ["x", "j"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "when": "len(nums) > 0", "text": "Every answer starts as -1: no greater value found yet."},
+    {"line": 2, "when": "len(nums) == 0", "text": "There are no values, so there are no answers."},
+    {"line": 3, "text": "The stack will hold positions that are still waiting for a greater value."},
+    {"line": 4, "next": 5, "text": "Next value: {x}, at position {i}."},
+    {"line": 4, "next": 9, "text": "Every value has been checked."},
+    {"line": 5, "next": 6, "text": "{x} is bigger than {nums[stack[-1]]} on top of the stack, so {x} is that value's answer."},
+    {"line": 5, "next": 8, "when": "len(stack) == 0", "text": "The stack is empty: nothing is waiting."},
+    {"line": 5, "next": 8, "when": "len(stack) > 0", "text": "{nums[stack[-1]]} on top isn't smaller than {x}, so stop popping."},
+    {"line": 6, "text": "Pop position {j} off the stack."},
+    {"line": 7, "text": "The next greater value after {nums[j]} is {x}."},
+    {"line": 8, "text": "Push position {i}: {x} now waits for a greater value."},
+    {"line": 9, "text": "Answers: {answer}."}
+  ]
+}

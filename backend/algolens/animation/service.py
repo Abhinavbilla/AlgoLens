@@ -22,7 +22,8 @@ class TraceFailed(Exception):
 
 
 def animate(entry: EntrySource, args_input: dict, client: SandboxClient) -> dict:
-    resp = client.trace({"source": entry.python_code, "entry": entry.entry, "input": args_input})
+    resp = client.trace({"source": entry.python_code, "entry": entry.entry, "input": args_input,
+                         **entry.sandbox_extras()})  # fmt: skip
     if resp["status"] != "ok":
         raise TraceFailed(resp["status"], resp.get("detail", ""))
     animation = build(

@@ -1,0 +1,3 @@
+The longest common subsequence (LCS) of two strings is the longest sequence of letters that appears in both, in order but not necessarily side by side. "ABCB" and "BDCAB" share "BCB", so the answer is 3.
+
+Dynamic programming builds the answer from smaller ones. `dp[i][j]` is the LCS length of a's first *i* letters and b's first *j*. If those two prefixes end in the same letter, it's one more than the diagonal cell `dp[i-1][j-1]`. Otherwise it's the better of dropping the last letter of a (the cell above) or of b (the cell to the left). Filling the table row by row takes O(m × n) time, against the exponential time of trying every subsequence.

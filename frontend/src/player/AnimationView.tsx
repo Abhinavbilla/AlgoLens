@@ -3,10 +3,16 @@ import type { Animation, Panel } from "../api";
 import { ArrayView } from "../viz/ArrayView";
 import { CallStack } from "../viz/CallStack";
 import { CodeView } from "../viz/CodeView";
+import { GraphView } from "../viz/GraphView";
+import { GridView } from "../viz/GridView";
+import { LinkedListView } from "../viz/LinkedListView";
 import { MapView } from "../viz/MapView";
+import { SequenceView } from "../viz/SequenceView";
+import { TreeView } from "../viz/TreeView";
 import { VarsView } from "../viz/VarsView";
 import styles from "./AnimationView.module.css";
 import { Controls } from "./Controls";
+import { computeReserves, NO_RESERVE, type Reserve } from "./reserve";
 import { usePlayer } from "./usePlayer";
 
 type Props = { animation: Animation; python: string; cpp: string };
@@ -16,23 +22,8 @@ export function AnimationView({ animation, python, cpp }: Props) {
   const narrations = useMemo(() => frames.map((f) => f.narration.text), [frames]);
   const { state, dispatch } = usePlayer(narrations);
   const frame = frames[state.index];
-  // Space reserved for stacked pointer labels, per panel, so panels never grow mid-run.
-  const pointerRows = useMemo(
-    () =>
-      frames[0].panels.map((_, p) =>
-        Math.max(
-          1,
-          ...frames.map((f) => {
-            const panel = f.panels[p];
-            if (panel?.kind !== "array" || !panel.pointers) return 0;
-            const perIndex = new Map<number, number>();
-            for (const ptr of panel.pointers) perIndex.set(ptr.index, (perIndex.get(ptr.index) ?? 0) + 1);
-            return Math.max(0, ...perIndex.values());
-          }),
-        ),
-      ),
-    [frames],
-  );
+  // The largest size each panel needs anywhere in this run, so panels never change height.
+  const reserves = useMemo(() => computeReserves(frames), [frames]);
 
   return (
     <div className={styles.layout}>
@@ -58,7 +49,7 @@ export function AnimationView({ animation, python, cpp }: Props) {
           </div>
         </div>
         {frame.panels.map((p, i) => (
-          <PanelView key={i} panel={p} pointerRows={pointerRows[i] ?? 1} />
+          <PanelView key={i} panel={p} reserve={reserves[i] ?? NO_RESERVE} />
         ))}
         <Controls state={state} dispatch={dispatch} ops={frame.ops} />
       </div>
@@ -70,13 +61,25 @@ export function AnimationView({ animation, python, cpp }: Props) {
   );
 }
 
-function PanelView({ panel, pointerRows }: { panel: Panel; pointerRows: number }) {
+function PanelView({ panel, reserve }: { panel: Panel; reserve: Reserve }) {
   switch (panel.kind) {
     case "array":
-      return <ArrayView panel={panel} pointerRows={pointerRows} />;
+      return <ArrayView panel={panel} pointerRows={reserve.pointerRows} />;
     case "vars":
       return <VarsView panel={panel} />;
     case "map":
-      return <MapView panel={panel} />;
+      return <MapView panel={panel} minRows={reserve.mapRows} />;
+    case "stack":
+    case "queue":
+    case "list":
+      return <SequenceView panel={panel} />;
+    case "linked_list":
+      return <LinkedListView panel={panel} />;
+    case "tree":
+      return <TreeView panel={panel} reserve={reserve} />;
+    case "graph":
+      return <GraphView panel={panel} markNames={reserve.marks} />;
+    case "grid":
+      return <GridView panel={panel} reserve={reserve} />;
   }
 }

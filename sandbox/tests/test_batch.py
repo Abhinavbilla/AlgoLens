@@ -430,3 +430,57 @@ def test_wall_limit_is_enforced_on_a_monotonic_clock_and_leaves_nothing_running(
             if b"driver.py" in cmd or b"nsjail" in cmd:
                 leftovers.append(cmd.decode(errors="replace")[:80])
     assert leftovers == [], leftovers
+
+
+# --- TreeNode / ListNode inputs ----------------------------------------------------------------
+
+
+def test_trees_and_lists_arrive_as_nodes_and_return_as_lists():
+    src = """
+    def invert(root):
+        if root:
+            root.left, root.right = invert(root.right), invert(root.left)
+        return root
+
+    def reverse(head):
+        prev = None
+        while head:
+            head.next, prev, head = prev, head, head.next
+        return prev
+
+    def depth(root):
+        return 0 if root is None else 1 + max(depth(root.left), depth(root.right))
+    """
+    tree = py(src, "invert", [{"args": [[4, 2, 7, 1, 3, None, 9]]}, {"args": [[]]}],
+              convert=["binary_tree"], convert_result="binary_tree")  # fmt: skip
+    assert [r.value for r in tree.results] == [[4, 7, 2, 9, None, 3, 1], []]
+    lst = py(src, "reverse", [{"args": [[1, 2, 3]]}], convert=["linked_list"])
+    assert lst.results[0].value == [3, 2, 1]
+    assert (
+        only(py(src, "depth", [{"args": [[1, None, 2, None, 3]]}], convert=["binary_tree"])).value
+        == 3
+    )
+
+
+def test_a_solution_may_define_its_own_node_class():
+    src = """
+    class TreeNode:
+        def __init__(self, val=0, left=None, right=None):
+            self.val, self.left, self.right = val, left, right
+            self.mine = True
+    def check(root):
+        return root.mine
+    """
+    assert only(py(src, "check", [{"args": [[1]]}], convert=["binary_tree"])).value is True
+
+
+def test_traced_tree_nodes_are_recorded_as_objects():
+    from algolens_sandbox.batch import TraceRequest, run_trace
+
+    src = "def first(root):\n    node = root.left\n    return node.val\n"
+    resp = run_trace(TraceRequest(source=src, entry="first", input={"args": [[1, 2, 3]]},
+                                  convert=["binary_tree"]))  # fmt: skip
+    assert resp.status == "ok" and resp.value == 2
+    heap = resp.trace["heap"]
+    classes = {c.get("class") for c in heap.values()}
+    assert "TreeNode" in classes

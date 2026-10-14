@@ -1,0 +1,3 @@
+Dijkstra's algorithm finds the shortest distance from a source to every node of a graph whose edge weights aren't negative. It keeps a heap of candidate distances and always takes the closest node it hasn't finished. Because every weight is positive, nothing found later can give that node a shorter path, so its distance is final.
+
+Taking a node, the algorithm checks each neighbour: if going through this node is shorter than the neighbour's best distance so far, the distance is updated and pushed onto the heap. Old, longer entries for the same node can stay in the heap; they're skipped when they come out. With a binary heap this takes O((V + E) log V) time.

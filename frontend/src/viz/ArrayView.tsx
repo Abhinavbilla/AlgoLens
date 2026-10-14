@@ -1,16 +1,29 @@
 import type React from "react";
+import { useRef } from "react";
 import type { ArrayPanel } from "../api";
+import { useKeepInView } from "./useKeepInView";
 import styles from "./viz.module.css";
 
 // Cells keep a fixed position: only their contents and markers change between steps.
 // They shrink to fit narrow screens; only very long arrays scroll inside the panel.
 // `pointerRows` reserves space for the most pointer labels that ever share one cell.
 export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; pointerRows?: number }) {
-  if (!panel.defined || !panel.items) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useKeepInView(scrollRef, JSON.stringify(panel.pointers ?? []));
+  if (!panel.defined || !panel.items || panel.items.length === 0) {
+    // Same rows as a populated array (index, cell, pointer labels), so the height never changes.
     return (
       <section className={styles.panel} aria-label={panel.label}>
         <h3 className={styles.title}>{panel.label}</h3>
-        <p className={styles.muted}>Not defined yet.</p>
+        <div className={styles.scroll}>
+          <ol className={styles.array} style={{ "--slots": 1, "--pointer-rows": pointerRows, minWidth: 0 } as React.CSSProperties}>
+            <li className={styles.slot}>
+              <span className={styles.index}>&nbsp;</span>
+              <span className={`${styles.cell} ${styles.placeholderCell}`}>{panel.defined ? "empty" : "not defined yet"}</span>
+              <span className={styles.pointers} />
+            </li>
+          </ol>
+        </div>
       </section>
     );
   }
@@ -31,7 +44,7 @@ export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; point
           {range.from < range.to ? `positions ${range.from} to ${range.to - 1}` : "empty"}
         </p>
       )}
-      <div className={styles.scroll}>
+      <div className={styles.scroll} ref={scrollRef}>
         <ol
           className={styles.array}
           style={{ "--slots": slots, "--pointer-rows": pointerRows } as React.CSSProperties}
@@ -46,7 +59,7 @@ export function ArrayView({ panel, pointerRows = 1 }: { panel: ArrayPanel; point
               isPhantom ? styles.phantom : "",
             ].join(" ");
             return (
-              <li key={i} className={classes}>
+              <li key={i} className={classes} data-keep-in-view={here.length ? "" : undefined}>
                 <span className={styles.index}>{isPhantom ? "end" : i}</span>
                 <span className={styles.cell}>
                   {isPhantom ? "" : items[i]}

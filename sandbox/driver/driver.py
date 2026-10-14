@@ -57,7 +57,9 @@ def main() -> None:
         req = json.load(f)
     per = req["per_test"]
     for test in req["tests"]:
-        result = run_one(req["language"], req.get("entry", ""), test, per)
+        result = run_one(req["language"], req.get("entry", ""), test,
+                         {**per, "convert": req.get("convert") or [],
+                          "convert_result": req.get("convert_result")})  # fmt: skip
         sys.stdout.write(json.dumps(result) + "\n")
         sys.stdout.flush()
 
@@ -218,6 +220,81 @@ def _classify(language, status, killed_for, cpu_ms, per, result, stderr, traced)
     return "ok", message, "", None
 
 
+PRELUDE = """
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+"""
+MAX_NODES = 100_000
+
+
+def _structures_in(module, args: list, kinds: list) -> list:
+    """Turn JSON arguments into TreeNode/ListNode where the input schema says so:
+    binary trees arrive in level order (null for gaps), linked lists as plain lists."""
+    out = []
+    for i, a in enumerate(args):
+        kind = kinds[i] if i < len(kinds) else None
+        if kind == "binary_tree":
+            out.append(_build_tree(module.TreeNode, a))
+        elif kind == "linked_list":
+            head = None
+            for v in reversed(a):
+                head = module.ListNode(v, head)
+            out.append(head)
+        else:
+            out.append(a)
+    return out
+
+
+def _build_tree(cls, items: list):
+    if not items:
+        return None
+    root = cls(items[0])
+    queue, i = [root], 1
+    while queue and i < len(items):
+        node = queue.pop(0)
+        for side in ("left", "right"):
+            if i < len(items) and items[i] is not None:
+                child = cls(items[i])
+                setattr(node, side, child)
+                queue.append(child)
+            i += 1
+    return root
+
+
+def _structures_out(module, value, kind=None):
+    """A returned TreeNode/ListNode becomes level order / a list again, for comparison. If the
+    result is declared a tree or list, None is the empty one: []."""
+    if value is None and kind in ("binary_tree", "linked_list"):
+        return []
+    tree_cls, list_cls = getattr(module, "TreeNode", None), getattr(module, "ListNode", None)
+    if list_cls and isinstance(value, list_cls):
+        out, node = [], value
+        while node is not None and len(out) < MAX_NODES:
+            out.append(node.val)
+            node = node.next
+        return out
+    if tree_cls and isinstance(value, tree_cls):
+        out, queue = [], [value]
+        while queue and len(out) < MAX_NODES:
+            node = queue.pop(0)
+            out.append(None if node is None else node.val)
+            if node is not None:
+                queue += [node.left, node.right]
+        while out and out[-1] is None:
+            out.pop()
+        return out
+    return value
+
+
 def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
     traced = bool(test.get("trace"))
     os.setpgid(0, 0)
@@ -265,8 +342,11 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
 
         spec = importlib.util.spec_from_file_location("solution", PY_SOLUTION)
         module = importlib.util.module_from_spec(spec)
+        # TreeNode/ListNode, as on LeetCode. Defined inside the solution module (so the
+        # tracer records them like the solution's own objects); a solution may redefine them.
+        exec(compile(PRELUDE, "<algolens prelude>", "exec"), module.__dict__)
         spec.loader.exec_module(module)
-        args = test["input"].get("args", [])
+        args = _structures_in(module, test["input"].get("args", []), per.get("convert") or [])
         kwargs = test["input"].get("kwargs", {})
         fn = getattr(module, entry)
         if recorder:
@@ -284,7 +364,7 @@ def _child(language, entry, test, per, res_w, out_w, err_w, ready_w) -> None:
         sys.stderr.flush()
         os._exit(1)
     try:
-        message = {"value": value}
+        message = {"value": _structures_out(module, value, per.get("convert_result"))}
         if recorder:
             if test.get("trace") == "summary":  # integrity checks: the recording isn't needed
                 message["trace"] = {"frames": len(recorder.frames), "truncated": recorder.truncated}

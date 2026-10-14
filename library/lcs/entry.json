@@ -1,0 +1,52 @@
+{
+  "title": "Longest common subsequence (2D DP)",
+  "category": "Dynamic programming",
+  "summary": "Fill a table where each cell is the answer for two shorter prefixes, building up to the whole strings.",
+  "order": 60,
+  "entry": "lcs",
+  "note": "A subsequence keeps the letters' order but can skip letters.",
+  "schema": {
+    "params": [
+      {"name": "a", "type": {"kind": "string", "chars": "ABCD", "len": {"min": 0, "max": 8}}},
+      {"name": "b", "type": {"kind": "string", "chars": "ABCD", "len": {"min": 0, "max": 8}}}
+    ]
+  },
+  "default_input": {"args": ["ABCB", "BDCAB"]},
+  "tests": [
+    {"args": ["", ""]},
+    {"args": ["A", ""]},
+    {"args": ["A", "A"]},
+    {"args": ["A", "B"]},
+    {"args": ["ABCB", "BDCAB"]},
+    {"args": ["ABCD", "ABCD"]},
+    {"args": ["ABCD", "DCBA"]},
+    {"args": ["AAAA", "AA"]},
+    {"args": ["ABAB", "BABA"]},
+    {"args": ["DCABDC", "ACDBCA"]}
+  ],
+  "cpp_lines": {"2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 13, "9": 14, "10": 18},
+  "visual": {
+    "panels": [
+      {
+        "kind": "grid", "var": "dp", "label": "dp[i][j]: longest common subsequence of a's first i and b's first j letters",
+        "row_header": {"text": "a", "offset": 1}, "col_header": {"text": "b", "offset": 1},
+        "pointers": [{"label": "i, j", "row": "i", "col": "j"}],
+        "marks": [{"label": "letters match", "when": "row > 0 and col > 0 and a[row - 1] == b[col - 1]"}]
+      },
+      {"kind": "vars", "vars": ["a", "b", "i", "j"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "a has {m} letters and b has {n}."},
+    {"line": 3, "text": "Start with a table of zeros: an empty prefix has nothing in common with anything."},
+    {"line": 4, "next": 5, "text": "Row {i}: prefixes of a that end in {a[i - 1]}."},
+    {"line": 4, "next": 10, "text": "The table is full."},
+    {"line": 5, "next": 6, "text": "Compare {a[i - 1]} with {b[j - 1]}."},
+    {"line": 5, "next": 4, "text": "Row {i} is done."},
+    {"line": 6, "next": 7, "text": "They match, so take the diagonal cell and add this letter."},
+    {"line": 6, "next": 9, "text": "They differ, so keep the better of dropping a letter from a or from b."},
+    {"line": 7, "text": "dp[{i}][{j}] = {dp[i - 1][j - 1] + 1}."},
+    {"line": 9, "text": "dp[{i}][{j}] is the larger of {dp[i - 1][j]} (above) and {dp[i][j - 1]} (left): {dp[i][j]}."},
+    {"line": 10, "text": "The longest common subsequence has {dp[m][n]} letters."}
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "title": "Subsets (backtracking)",
+  "category": "Backtracking",
+  "summary": "List every subset by choosing, exploring and un-choosing each number in turn.",
+  "order": 70,
+  "entry": "subsets",
+  "note": "The numbers are distinct; the subsets are returned in sorted order.",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": -10, "max": 10}, "len": {"min": 0, "max": 6}, "distinct": true}}
+    ]
+  },
+  "default_input": {"args": [[1, 2, 3]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[7]]},
+    {"args": [[1, 2]]},
+    {"args": [[2, 1]]},
+    {"args": [[1, 2, 3]]},
+    {"args": [[0, -1, 1]]},
+    {"args": [[4, 3, 2, 1]]},
+    {"args": [[-10, 10]]}
+  ],
+  "cpp_lines": {"2": 17, "3": 18, "6": 8, "7": 9, "8": 10, "9": 11, "10": 12, "12": 19, "13": 20},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "pointers": [{"label": "i", "at": "i"}, {"label": "start", "at": "start"}]},
+      {"kind": "stack", "var": "path", "label": "Current subset (path)"},
+      {"kind": "list", "var": "result", "label": "Subsets found"}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "No subsets found yet."},
+    {"line": 3, "text": "The current subset starts empty."},
+    {"line": 5, "text": "Define the recursive helper: it records the current subset, then tries adding each remaining number."},
+    {"line": 6, "text": "Record {path} as a subset."},
+    {"line": 7, "next": 8, "text": "Try adding {nums[i]}."},
+    {"line": 7, "next": "return", "text": "No more numbers to add here, so go back up."},
+    {"line": 8, "text": "Add {nums[i]}: the subset is now {path}."},
+    {"line": 9, "text": "Back from every subset that starts with {path}."},
+    {"line": 10, "text": "Take {nums[i]} back out: the subset is {path} again."},
+    {"line": 12, "text": "Every choice has been explored: {len(result)} subsets."},
+    {"line": 13, "text": "Return them in sorted order."}
+  ]
+}

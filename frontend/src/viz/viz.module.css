@@ -29,6 +29,9 @@
 .scroll {
   overflow-x: auto;
   padding-bottom: 4px;
+  /* Room for a scrollbar is kept even when there isn't one, so one appearing can't move
+     anything. */
+  scrollbar-gutter: stable;
 }
 
 /* --- array ------------------------------------------------------------------------------- */
@@ -312,4 +315,364 @@ tr.changed td {
   text-align: right;
   padding-right: 0.75em;
   user-select: none;
+}
+
+/* --- stacks, queues, lists ------------------------------------------------------------------- */
+
+.sequence,
+.chips {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 18px;
+  list-style: none;
+}
+
+.sequence {
+  width: max-content;
+}
+
+.chips {
+  flex-wrap: wrap;
+  padding-bottom: 0;
+}
+
+.chip {
+  position: relative;
+  min-width: 40px;
+  padding: 8px 10px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.chip.changed {
+  border-color: var(--changed);
+  box-shadow: 0 0 0 2px var(--changed);
+}
+
+.endLabel {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+/* --- linked lists -------------------------------------------------------------------------- */
+
+.linked {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: max-content;
+}
+
+.linkedItem {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: 44px 30px;
+  align-items: center;
+  justify-items: center;
+}
+
+.linkedNode {
+  min-width: 44px;
+  padding: 8px 10px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  text-align: center;
+}
+
+.nullNode {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.linkedArrow {
+  padding: 0 6px;
+  color: var(--text-muted);
+}
+
+.linkedItem .pointers {
+  grid-column: 1;
+}
+
+/* --- trees and graphs (SVG) ------------------------------------------------------------------ */
+
+.svg {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  font-family: var(--mono);
+}
+
+.edge {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.arrowHead {
+  fill: var(--text-muted);
+}
+
+.svgNode circle {
+  fill: var(--bg);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.nodeText {
+  fill: var(--text);
+  font-size: 13px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.nodeLabel {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.svgPointer {
+  fill: var(--pointer);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.weightBox {
+  fill: var(--surface);
+  stroke: var(--border);
+}
+
+.weightText {
+  fill: var(--text-muted);
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* --- grids and 2D tables ----------------------------------------------------------------------- */
+
+.grid {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-family: var(--mono);
+}
+
+.grid th {
+  /* A fixed line, so a blank header (before the table exists) is as tall as a real one. */
+  height: 1.5em;
+  line-height: 1.5;
+  min-width: 20px;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.grid td {
+  position: relative;
+  /* Fixed width (a pointer label can't widen its column), shrinking on narrow screens. */
+  width: clamp(42px, 11vw, 48px);
+  min-width: clamp(42px, 11vw, 48px);
+  max-width: clamp(42px, 11vw, 48px);
+  height: 38px;
+  padding: 2px 4px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.grid td.changedCell {
+  border-color: var(--changed);
+  box-shadow: 0 0 0 2px var(--changed);
+}
+
+/* A fixed line, so an empty cell is exactly as tall as one with a value. */
+.gridText {
+  display: block;
+  height: 1.5em;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.cellPointers {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 2px;
+  height: 1.35em;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+/* --- marks: a distinct pattern per mark, matched by its legend swatch ----------------------- */
+
+.legendList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.legendList strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  border: 2px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg);
+  vertical-align: -2px;
+}
+
+/* 0: hatched */
+td.mark0,
+.swatch.mark0 {
+  background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 4px, var(--border) 4px, var(--border) 6px);
+}
+
+/* Keep values readable on top of the hatching. */
+td.mark0 .gridText {
+  width: fit-content; /* still a block of fixed height, so the row doesn't change */
+  margin: 0 auto;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--bg);
+}
+.mark0 circle {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 4 3;
+}
+
+/* 1: filled / dashed outline */
+td.mark1,
+.swatch.mark1 {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+.mark1 circle {
+  fill: var(--range);
+  stroke: var(--range-border);
+}
+
+/* 2: double border */
+td.mark2,
+.swatch.mark2 {
+  border-style: double;
+  border-width: 4px;
+}
+.mark2 circle {
+  stroke-width: 5;
+}
+
+/* 3: dotted */
+td.mark3,
+.swatch.mark3 {
+  border-style: dotted;
+  border-color: var(--text);
+}
+.mark3 circle {
+  stroke-dasharray: 1 3;
+  stroke-width: 3;
+}
+
+/* --- placeholders: same size as the real thing ------------------------------------------- */
+
+.placeholderCell {
+  width: auto;
+  min-width: 52px;
+  padding: 0 10px;
+  border-style: dashed;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+}
+
+.placeholderChip {
+  border-style: dashed;
+  color: var(--text-muted);
+  font-family: var(--font);
+}
+
+/* Legends: one line per mark, so the height is fixed by the number of marks. */
+.legendList {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.legendList li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* In a grid cell the change marker sits in the corner, not on a line of its own. */
+.grid td .changeMark {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  margin: 0;
+}
+
+/* Pointer labels inside grid cells: slimmer, so short names fit the fixed cell width. */
+.cellPointers .pointerLabel {
+  padding: 1px 2px;
+  font-size: 0.65rem;
+}
+
+.overlayHost {
+  position: relative;
+  display: inline-block;
+}
+
+.overlayNote {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 2px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.nodeSwatch {
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  vertical-align: -3px;
 }

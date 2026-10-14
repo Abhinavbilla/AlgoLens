@@ -55,9 +55,10 @@ def verify_entry(entry: EntrySource, client: SandboxClient) -> dict:
     ]
     tests = [{"id": f"t{i}", "input": {"args": a}} for i, a in enumerate(inputs)]
 
-    py = _batch(client, "python", entry.python_code, entry.entry, tests)
-    ref = _batch(client, "python", entry.reference_code, "reference", tests)
-    cpp = _batch(client, "cpp", entry.cpp_code, "", tests)
+    extras = entry.sandbox_extras()  # which arguments become TreeNode / ListNode
+    py = _batch(client, "python", entry.python_code, entry.entry, tests, extras)
+    ref = _batch(client, "python", entry.reference_code, "reference", tests, extras)
+    cpp = _batch(client, "cpp", entry.cpp_code, "", tests, {})
     for label, args, p, r, c in zip(labels, inputs, py, ref, cpp, strict=True):
         if r["outcome"] != "ok":
             failures.append(f"{label} {args}: reference failed ({r['outcome']}: {r['detail']})")
@@ -70,7 +71,7 @@ def verify_entry(entry: EntrySource, client: SandboxClient) -> dict:
     # Recording integrity on every input.
     all_inputs = [entry.default_input] + [{"args": a} for a in inputs]
     check = client.trace_check(
-        {"source": entry.python_code, "entry": entry.entry, "inputs": all_inputs}
+        {"source": entry.python_code, "entry": entry.entry, "inputs": all_inputs, **extras}
     )
     if check["status"] == "sandbox_error":
         raise SandboxUnavailable(check.get("detail", "sandbox error while checking recordings"))
@@ -91,7 +92,9 @@ def verify_entry(entry: EntrySource, client: SandboxClient) -> dict:
     for name, inp in [("default input", entry.default_input)] + [
         (f"hand-written test {i}", t) for i, t in enumerate(entry.tests)
     ]:
-        resp = client.trace({"source": entry.python_code, "entry": entry.entry, "input": inp})
+        resp = client.trace(
+            {"source": entry.python_code, "entry": entry.entry, "input": inp, **extras}
+        )
         if resp["status"] == "sandbox_error":
             raise SandboxUnavailable(resp.get("detail", "sandbox error while tracing"))
         if resp["status"] != "ok":
@@ -128,25 +131,29 @@ def verify_entry(entry: EntrySource, client: SandboxClient) -> dict:
 TIME_DEPENDENT = ("timeout", "not_run")
 
 
-def _batch(client: SandboxClient, language: str, source: str, entry: str, tests: list) -> list:
+def _batch(
+    client: SandboxClient, language: str, source: str, entry: str, tests: list, extras: dict
+) -> list:
     """Results for every test. A test that timed out (or didn't get to run because the batch
     ran out of time) is retried once on its own before it counts: on a busy machine the wall
     clock can run out for code that's fine, and that must never look like a wrong answer.
     A repeated timeout is reported as a timeout, not as a wrong output."""
-    results = _run_batch(client, language, source, entry, tests, wall_s=240)
+    results = _run_batch(client, language, source, entry, tests, extras, wall_s=240)
     if results and all(r["outcome"] == "compile_timeout" for r in results):
-        results = _run_batch(client, language, source, entry, tests, wall_s=240)
+        results = _run_batch(client, language, source, entry, tests, extras, wall_s=240)
     retry = [i for i, r in enumerate(results) if r["outcome"] in TIME_DEPENDENT]
     if retry and len(retry) <= 50:
-        again = _run_batch(client, language, source, entry, [tests[i] for i in retry], wall_s=120)
+        again = _run_batch(
+            client, language, source, entry, [tests[i] for i in retry], extras, wall_s=120
+        )
         for i, r in zip(retry, again, strict=True):
             results[i] = r
     return results
 
 
-def _run_batch(client, language, source, entry, tests, wall_s: int) -> list:
+def _run_batch(client, language, source, entry, tests, extras: dict, wall_s: int) -> list:
     resp = client.run_batch({
-        "language": language, "source": source, "entry": entry, "tests": tests,
+        "language": language, "source": source, "entry": entry, "tests": tests, **extras,
         "batch_wall_s": wall_s,
     })  # fmt: skip
     if resp["status"] == "sandbox_error":

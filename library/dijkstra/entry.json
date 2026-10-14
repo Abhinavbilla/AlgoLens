@@ -1,0 +1,65 @@
+{
+  "title": "Dijkstra's shortest paths",
+  "category": "Graphs and grids",
+  "summary": "Find the shortest distance from one node to every other, always expanding the closest unfinished node.",
+  "order": 45,
+  "entry": "dijkstra",
+  "note": "Edges are undirected with positive weights; -1 means a node can't be reached.",
+  "schema": {
+    "params": [
+      {"name": "n", "type": {"kind": "int", "min": 1, "max": 8}},
+      {"name": "edges", "type": {"kind": "edges", "nodes": "n", "count": {"min": 0, "max": 10}, "weighted": true, "weight": {"min": 1, "max": 20}}},
+      {"name": "source", "type": {"kind": "int", "min": 0, "max": "n - 1"}}
+    ]
+  },
+  "default_input": {"args": [5, [[0, 1, 4], [0, 2, 1], [2, 1, 2], [1, 3, 1], [2, 3, 5], [3, 4, 3]], 0]},
+  "tests": [
+    {"args": [1, [], 0]},
+    {"args": [2, [], 1]},
+    {"args": [2, [[0, 1, 7]], 0]},
+    {"args": [3, [[0, 1, 1], [1, 2, 1], [0, 2, 5]], 0]},
+    {"args": [5, [[0, 1, 4], [0, 2, 1], [2, 1, 2], [1, 3, 1], [2, 3, 5], [3, 4, 3]], 0]},
+    {"args": [5, [[0, 1, 4], [0, 2, 1], [2, 1, 2], [1, 3, 1], [2, 3, 5], [3, 4, 3]], 4]},
+    {"args": [4, [[0, 1, 2], [2, 3, 2]], 0]},
+    {"args": [4, [[0, 1, 10], [0, 2, 1], [2, 3, 1], [3, 1, 1]], 0]},
+    {"args": [3, [[0, 1, 3], [1, 2, 2], [0, 2, 9]], 2]}
+  ],
+  "cpp_lines": {"5": 8, "6": 9, "7": 10, "8": 11, "9": 13, "10": 14, "11": 17, "12": 18, "13": 19, "14": 21, "15": 22, "16": 24, "17": 25, "18": 26, "19": 27, "20": 31},
+  "visual": {
+    "panels": [
+      {
+        "kind": "graph", "label": "Graph (label = best distance so far)", "nodes": "n", "edges": "edges",
+        "node_label": "dist[node]",
+        "pointers": [{"label": "u", "at": "u"}, {"label": "v", "at": "v"}],
+        "marks": [{"label": "in heap", "from": "heap", "item": "item[1]"}, {"label": "reached", "when": "dist[node] != -1"}]
+      },
+      {"kind": "array", "var": "heap", "label": "Heap of (distance, node), smallest first"},
+      {"kind": "array", "var": "dist", "label": "dist"},
+      {"kind": "vars", "vars": ["d", "u", "v", "w"]}
+    ]
+  },
+  "narration": [
+    {"line": 5, "text": "Start an empty neighbour list for each of the {n} nodes."},
+    {"line": 6, "next": 7, "text": "Edge between {u} and {v}, weight {w}."},
+    {"line": 6, "next": 9, "text": "Every edge is in the neighbour lists."},
+    {"line": 7, "text": "{v} is a neighbour of {u}."},
+    {"line": 8, "text": "And {u} is a neighbour of {v}."},
+    {"line": 9, "text": "No node has been reached yet."},
+    {"line": 10, "text": "The source, {source}, is {dist[source]} away from itself."},
+    {"line": 11, "text": "Put the source in the heap."},
+    {"line": 12, "next": 13, "text": "Take the closest unfinished node from the heap."},
+    {"line": 12, "next": 20, "text": "The heap is empty: every reachable node has its shortest distance."},
+    {"line": 13, "text": "Node {u}, at distance {d}."},
+    {"line": 14, "next": 15, "text": "{d} is more than {u}'s best distance, {dist[u]}: this entry is out of date, so skip it."},
+    {"line": 14, "next": 16, "text": "{d} is {u}'s best distance, so look at its neighbours."},
+    {"line": 15, "text": "Skip this out-of-date entry."},
+    {"line": 16, "next": 17, "text": "Neighbour {v}, edge weight {w}."},
+    {"line": 16, "next": 12, "text": "All of {u}'s neighbours are checked."},
+    {"line": 17, "next": 18, "when": "dist[v] == -1", "text": "{v} hasn't been reached yet."},
+    {"line": 17, "next": 18, "when": "dist[v] != -1", "text": "Going through {u} is shorter: {d + w} < {dist[v]}."},
+    {"line": 17, "next": 16, "text": "Going through {u} isn't shorter: {d + w} ≥ {dist[v]}."},
+    {"line": 18, "text": "{v} is now {dist[v]} away."},
+    {"line": 19, "text": "Push {v} with distance {dist[v]} onto the heap."},
+    {"line": 20, "text": "Distances: {dist}."}
+  ]
+}

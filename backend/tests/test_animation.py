@@ -31,13 +31,54 @@ TRACER_DIR = Path(os.environ.get("ALGOLENS_TRACER_DIR", REPO / "sandbox" / "driv
 sys.path.insert(0, str(TRACER_DIR))
 from tracer import Recorder  # noqa: E402
 
+# The sandbox driver defines these for solutions and builds them from JSON (driver.py);
+# the same here so library entries with tree / linked-list inputs record the same way.
+PRELUDE = """
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
 
-def record(tmp_path, src, entry, *args):
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+"""
+
+
+def _to_nodes(module, kind, value):
+    if kind == "linked_list":
+        head = None
+        for v in reversed(value):
+            head = module.ListNode(v, head)
+        return head
+    if kind == "binary_tree":
+        if not value:
+            return None
+        root = module.TreeNode(value[0])
+        queue, i = [root], 1
+        while queue and i < len(value):
+            node = queue.pop(0)
+            for side in ("left", "right"):
+                if i < len(value) and value[i] is not None:
+                    setattr(node, side, module.TreeNode(value[i]))
+                    queue.append(getattr(node, side))
+                i += 1
+        return root
+    return value
+
+
+def record(tmp_path, src, entry, *args, convert=()):
     path = tmp_path / "solution.py"
     path.write_text(textwrap.dedent(src).lstrip("\n"), encoding="utf-8")
     spec = importlib.util.spec_from_file_location("solution", path)
     module = importlib.util.module_from_spec(spec)
+    exec(compile(PRELUDE, "<prelude>", "exec"), module.__dict__)
     spec.loader.exec_module(module)
+    args = [_to_nodes(module, convert[i] if i < len(convert) else None, a)
+            for i, a in enumerate(args)]  # fmt: skip
     rec = Recorder(str(path))
     rec.start()
     try:
@@ -64,7 +105,17 @@ def texts(animation):
 
 def test_all_library_entries_load():
     entries = load_all(LIBRARY)
-    assert [e.slug for e in entries] == ["bubble-sort", "binary-search", "two-pointers"]
+    assert [e.slug for e in entries] == [
+        "bubble-sort",
+        "binary-search",
+        "two-pointers",
+        "monotonic-stack",
+        "grid-bfs",
+        "dijkstra",
+        "level-order",
+        "lcs",
+        "subsets",
+    ]
 
 
 def test_two_pointers_animation(tmp_path):
@@ -119,7 +170,8 @@ def test_every_frame_maps_to_exactly_one_recorded_frame(tmp_path):
 def test_library_narration_lints_clean(tmp_path):
     for entry in load_all(LIBRARY):
         args = json.loads(json.dumps(entry.default_input["args"]))
-        trace, _ = record(tmp_path, entry.python_code, entry.entry, *args)
+        convert = entry.sandbox_extras().get("convert", [])
+        trace, _ = record(tmp_path, entry.python_code, entry.entry, *args, convert=convert)
         views = [FrameView(f, trace["heap"]) for f in trace["frames"]]
         befores = [before_view(views[i - 1] if i else None, v) for i, v in enumerate(views)]
         report = lint(compile_templates(entry.narration), views, befores)
@@ -233,3 +285,19 @@ def test_small_constants_show_the_working_and_sentence_numbers_stay_rejected(tmp
     bad = compile_templates([{"line": 3, "text": "position {x} + 1 comes next"}])
     anim = build(trace, source=source, templates=bad, panels=[])
     assert anim["frames"][1]["narration"]["source"] == "neutral"
+
+
+def test_nested_lists_in_narration_are_fully_decoded(tmp_path):
+    src = "def f():\n    dp = [[0, 1], [2, 3]]\n    return 0\n"
+    trace, source = record(tmp_path, src, "f")
+    templates = compile_templates([{"line": 2, "text": "dp is {dp} and row {dp[1]}"}])
+    anim = build(trace, source=source, templates=templates, panels=[])
+    assert anim["frames"][0]["narration"]["text"] == "dp is [[0, 1], [2, 3]] and row [2, 3]"
+
+
+def test_a_map_with_a_key_called_ref_is_not_mistaken_for_a_reference(tmp_path):
+    src = "def f():\n    m = {'ref': 5, 'tuple': 6}\n    return 0\n"
+    trace, source = record(tmp_path, src, "f")
+    templates = compile_templates([{"line": 2, "text": "m is {m}"}])
+    anim = build(trace, source=source, templates=templates, panels=[])
+    assert anim["frames"][0]["narration"]["text"] == "m is {'ref': 5, 'tuple': 6}"

@@ -56,7 +56,65 @@ export type MapPanel = {
   entries?: { key: string; value: string; changed: boolean }[];
 };
 
-export type Panel = ArrayPanel | VarsPanel | MapPanel;
+export type SequencePanel = {
+  kind: "stack" | "queue" | "list";
+  label: string;
+  defined: boolean;
+  items?: string[];
+  changed?: number[];
+};
+
+export type LinkedListPanel = {
+  kind: "linked_list";
+  label: string;
+  defined: boolean;
+  nodes?: { id: number; text: string }[];
+  cycle_to?: number | null;
+  pointers?: { label: string; node: number | null }[];
+};
+
+export type TreePanel = {
+  kind: "tree";
+  label: string;
+  defined: boolean;
+  nodes?: { id: number; text: string; x: number; y: number; marks: string[] }[];
+  edges?: { from: number; to: number }[];
+  pointers?: { label: string; node: number | null }[];
+  width?: number;
+  height?: number;
+};
+
+export type GraphPanel = {
+  kind: "graph";
+  label: string;
+  defined: boolean;
+  nodes?: { id: number; x: number; y: number; label: string | null; marks: string[] }[];
+  edges?: { u: number; v: number; w: string | null }[];
+  pointers?: { label: string; node: number }[];
+  directed?: boolean;
+};
+
+export type GridCell = { text: string; marks: string[]; changed: boolean };
+
+export type GridPanel = {
+  kind: "grid";
+  label: string;
+  defined: boolean;
+  rows?: GridCell[][];
+  pointers?: { label: string; row: number; col: number }[];
+  row_header?: string[];
+  col_header?: string[];
+};
+
+export type Panel =
+  | ArrayPanel
+  | VarsPanel
+  | MapPanel
+  | SequencePanel
+  | LinkedListPanel
+  | TreePanel
+  | GraphPanel
+  | GridPanel;
 
 export type Frame = {
   i: number;

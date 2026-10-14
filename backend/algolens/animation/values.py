@@ -47,18 +47,20 @@ class FrameView:
     # --- decoding ----------------------------------------------------------------------------
 
     def deref(self, v: Any) -> Any:
-        """Decode one level, leaving nested values encoded (for the narration evaluator)."""
-        if not isinstance(v, dict):
+        """Decode one level, leaving nested values encoded (for the narration evaluator).
+        The result is a ShallowList/ShallowDict, so it can't be mistaken for an encoded value
+        later (a user's map could well have a key called "ref")."""
+        if type(v) is not dict:  # already decoded (scalar, Shallow*), or not a value
             return v
         if "ref" in v:
             c = self.content(v["ref"])
             if c["type"] == "dict":
-                return {self.key(k): x for k, x in c["items"]}
+                return ShallowDict({self.key(k): x for k, x in c["items"]})
             if c["type"] == "object":
-                return dict(c["fields"])
-            return list(c["items"])
+                return ShallowDict(c["fields"])
+            return ShallowList(c["items"])
         if "tuple" in v:
-            return list(v["tuple"])
+            return ShallowList(v["tuple"])
         if "int" in v:
             return int(v["int"])
         if "float" in v:
@@ -78,8 +80,13 @@ class FrameView:
         return k
 
     def plain(self, v: Any, _seen: frozenset = frozenset()) -> Any:
-        """Fully decoded Python value. Cycles become CYCLE."""
-        if not isinstance(v, dict):
+        """Fully decoded Python value. Cycles become CYCLE. Accepts encoded values and the
+        partly decoded ones deref() returns (whose elements are still encoded)."""
+        if isinstance(v, ShallowDict):
+            return {k: self.plain(x, _seen) for k, x in v.items()}
+        if isinstance(v, ShallowList):
+            return [self.plain(x, _seen) for x in v]
+        if type(v) is not dict:
             return v
         if "ref" in v:
             if v["ref"] in _seen:
@@ -107,6 +114,14 @@ class FrameView:
             before=before.lookup if before else None,
             deref=self.deref,
         )
+
+
+class ShallowList(list):
+    """A list decoded one level: its elements are still encoded."""
+
+
+class ShallowDict(dict):
+    """A map or object decoded one level: its values are still encoded."""
 
 
 class Opaque:

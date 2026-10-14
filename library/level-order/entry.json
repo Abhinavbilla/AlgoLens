@@ -1,0 +1,55 @@
+{
+  "title": "Binary tree level-order traversal",
+  "category": "Binary trees",
+  "summary": "Visit a binary tree level by level, from the top, using a queue.",
+  "order": 50,
+  "entry": "level_order",
+  "note": "The tree is written level by level, with null where a child is missing.",
+  "schema": {
+    "params": [
+      {"name": "root", "type": {"kind": "binary_tree", "of": {"kind": "int", "min": -100, "max": 100}, "nodes": {"min": 0, "max": 15}}}
+    ]
+  },
+  "default_input": {"args": [[3, 9, 20, null, null, 15, 7]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[1]]},
+    {"args": [[1, 2]]},
+    {"args": [[1, null, 2]]},
+    {"args": [[3, 9, 20, null, null, 15, 7]]},
+    {"args": [[1, 2, 3, 4, 5, 6, 7]]},
+    {"args": [[1, 2, null, 3, null, 4]]},
+    {"args": [[5, -3, 8, null, 0, 7]]},
+    {"args": [[1, 1, 1, 1]]}
+  ],
+  "cpp_lines": {"5": 13, "6": 15, "7": 16, "8": 17, "9": 18, "10": 19, "11": 21, "12": 22, "13": 22, "14": 23, "15": 23, "16": 25, "17": 27},
+  "visual": {
+    "panels": [
+      {"kind": "tree", "var": "root", "label": "Tree", "pointers": [{"label": "node", "at": "node"}],
+       "marks": [{"label": "in queue", "from": "queue"}]},
+      {"kind": "queue", "var": "queue", "label": "Queue (front first)"},
+      {"kind": "array", "var": "level", "label": "This level"},
+      {"kind": "list", "var": "levels", "label": "Levels so far"}
+    ]
+  },
+  "narration": [
+    {"line": 5, "text": "No levels yet."},
+    {"line": 6, "when": "len(queue) > 0", "text": "Put the root, {root.val}, in the queue."},
+    {"line": 6, "when": "len(queue) == 0", "text": "The tree is empty, so there's nothing to visit."},
+    {"line": 7, "next": 8, "text": "The queue holds the next level: {len(queue)} nodes."},
+    {"line": 7, "next": 17, "text": "The queue is empty: every level is done."},
+    {"line": 8, "text": "Start a new level."},
+    {"line": 9, "next": 10, "text": "Take the next node of this level."},
+    {"line": 9, "next": 16, "text": "Every node of this level has been visited."},
+    {"line": 10, "text": "Take {node.val} from the front of the queue."},
+    {"line": 11, "text": "Add {node.val} to this level."},
+    {"line": 12, "next": 13, "text": "{node.val} has a left child, {node.left.val}."},
+    {"line": 12, "next": 14, "text": "{node.val} has no left child."},
+    {"line": 13, "text": "{node.left.val} joins the back of the queue, for the next level."},
+    {"line": 14, "next": 15, "text": "{node.val} has a right child, {node.right.val}."},
+    {"line": 14, "next": 9, "text": "{node.val} has no right child."},
+    {"line": 15, "text": "{node.right.val} joins the back of the queue, for the next level."},
+    {"line": 16, "text": "This level is done: {level}."},
+    {"line": 17, "text": "All levels: {levels}."}
+  ]
+}

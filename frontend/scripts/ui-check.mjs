@@ -14,7 +14,8 @@ import { chromium } from "playwright";
 
 const out = process.argv[2] ?? "ui-check";
 const base = process.argv[3] ?? "http://localhost:8080";
-const SLUGS = ["bubble-sort", "binary-search", "two-pointers"];
+// Every library entry, as the API lists them.
+const SLUGS = (await (await fetch(`${base}/api/library`)).json()).map((e) => e.slug);
 const WIDTHS = [375, 1280];
 const THEMES = ["light", "dark"];
 mkdirSync(out, { recursive: true });

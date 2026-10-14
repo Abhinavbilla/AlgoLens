@@ -39,6 +39,12 @@ MAX_TESTS = 2000
 MAX_SOURCE_BYTES = 200_000
 
 
+# Which arguments the driver turns into TreeNode / ListNode before calling the solution.
+Convert = list[Literal["binary_tree", "linked_list"] | None]
+# The result's kind, if it's a tree or list: then a returned None means "empty" ([]).
+ConvertResult = Literal["binary_tree", "linked_list"] | None
+
+
 class PerTestLimits(BaseModel):
     cpu_ms: int = Field(default=1000, ge=10, le=30_000)
     wall_ms: int = Field(default=3000, ge=10, le=60_000)
@@ -61,6 +67,8 @@ class BatchRequest(BaseModel):
     tests: list[TestCase] = Field(max_length=MAX_TESTS)
     per_test: PerTestLimits = PerTestLimits()
     batch_wall_s: int = Field(default=60, ge=1, le=300)
+    convert: Convert = Field(default=[], max_length=20)
+    convert_result: ConvertResult = None
 
     @field_validator("entry")
     @classmethod
@@ -113,6 +121,8 @@ def _run(req: BatchRequest, tests: list[dict]) -> BatchResponse:
                 {
                     "language": req.language,
                     "entry": req.entry,
+                    "convert": req.convert,
+                    "convert_result": req.convert_result,
                     "per_test": req.per_test.model_dump(),
                     "tests": tests,
                 }
@@ -192,6 +202,8 @@ class TraceRequest(BaseModel):
     cpu_ms: int = Field(default=5000, ge=10, le=30_000)  # tracing is ~10-50x slower
     mem_mb: int = Field(default=512, ge=64, le=1024)
     max_frames: int = Field(default=5000, ge=1, le=20_000)
+    convert: Convert = Field(default=[], max_length=20)
+    convert_result: ConvertResult = None
 
     @field_validator("entry")
     @classmethod
@@ -234,6 +246,8 @@ def run_trace(req: TraceRequest) -> TraceResponse:
         source=req.source,
         entry=req.entry,
         tests=[],
+        convert=req.convert,
+        convert_result=req.convert_result,
         per_test=PerTestLimits(
             cpu_ms=req.cpu_ms, wall_ms=wall_ms, mem_mb=req.mem_mb, max_frames=req.max_frames
         ),
@@ -275,6 +289,8 @@ class TraceCheckRequest(BaseModel):
     mem_mb: int = Field(default=512, ge=64, le=1024)
     max_frames: int = Field(default=5000, ge=1, le=20_000)
     batch_wall_s: int = Field(default=240, ge=1, le=300)
+    convert: Convert = Field(default=[], max_length=20)
+    convert_result: ConvertResult = None
 
     @field_validator("entry")
     @classmethod
@@ -303,7 +319,8 @@ def run_trace_check(req: TraceCheckRequest) -> TraceCheckResponse:
     if problems:
         return TraceCheckResponse(status="rejected", problems=problems, detail=problems[0])
     batch = BatchRequest(
-        language="python", source=req.source, entry=req.entry, tests=[],
+        language="python", source=req.source, entry=req.entry, tests=[], convert=req.convert,
+        convert_result=req.convert_result,
         per_test=PerTestLimits(cpu_ms=req.cpu_ms, wall_ms=min(req.cpu_ms * 3, 60_000),
                                mem_mb=req.mem_mb, max_frames=req.max_frames),
         batch_wall_s=req.batch_wall_s,

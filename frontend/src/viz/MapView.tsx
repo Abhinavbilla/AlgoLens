@@ -1,9 +1,13 @@
 import type { MapPanel } from "../api";
 import styles from "./viz.module.css";
 
-export function MapView({ panel }: { panel: MapPanel }) {
+export function MapView({ panel, minRows = 0 }: { panel: MapPanel; minRows?: number }) {
   return (
-    <section className={styles.panel} aria-label={panel.label}>
+    <section
+      className={styles.panel}
+      aria-label={panel.label}
+      style={{ minHeight: minRows ? `calc(${minRows} * 2.5rem + 4.5rem)` : undefined }}
+    >
       <h3 className={styles.title}>{panel.label}</h3>
       {!panel.defined || !panel.entries ? (
         <p className={styles.muted}>Not defined yet.</p>

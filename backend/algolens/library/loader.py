@@ -52,9 +52,20 @@ class EntrySource:
     description: str
     schema: dict
     validator_code: str = ""
+    result_kind: str = ""  # "binary_tree" / "linked_list" when the solution returns one
 
     def rules(self) -> InputRules:
         return InputRules(compile_schema(self.schema), self.validator_code or None)
+
+    def sandbox_extras(self) -> dict:
+        """Which arguments the sandbox turns into TreeNode / ListNode (from the schema), and
+        the result's kind if it's one (so a returned None reads as empty)."""
+        kinds = [p["type"]["kind"] for p in self.schema["params"]]
+        convert = [k if k in ("binary_tree", "linked_list") else None for k in kinds]
+        extras: dict = {"convert": convert} if any(convert) else {}
+        if self.result_kind:
+            extras["convert_result"] = self.result_kind
+        return extras
 
     @property
     def content_hash(self) -> str:
@@ -97,6 +108,7 @@ def load_entry(folder: Path) -> EntrySource:
         description=files["description.md"].strip(),
         schema=meta["schema"],
         validator_code=_optional(folder / "validator.py"),
+        result_kind=meta.get("result_kind", ""),
     )
     _check(entry, where)
     return entry
@@ -187,4 +199,5 @@ def from_row(row: LibraryEntry) -> EntrySource:
                              "cpp_lines", "visual", "narration", "python_code", "cpp_code",
                              "reference_code", "schema")},
         validator_code=c.get("validator_code", ""),
+        result_kind=c.get("result_kind", ""),
     )  # fmt: skip
