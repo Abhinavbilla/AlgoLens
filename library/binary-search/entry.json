@@ -1,0 +1,43 @@
+{
+  "title": "Binary search (lower bound)",
+  "category": "Binary search",
+  "summary": "Find the first position whose value is at least the target by halving the search range.",
+  "order": 20,
+  "entry": "lower_bound",
+  "default_input": {"args": [[1, 3, 3, 5, 8, 13, 21], 5]},
+  "tests": [
+    {"args": [[], 5]},
+    {"args": [[1], 0]},
+    {"args": [[1], 1]},
+    {"args": [[1], 2]},
+    {"args": [[1, 3, 3, 5, 8, 13, 21], 5]},
+    {"args": [[1, 3, 3, 5, 8, 13, 21], 3]},
+    {"args": [[1, 3, 3, 5, 8, 13, 21], 22]},
+    {"args": [[1, 3, 3, 5, 8, 13, 21], -1]},
+    {"args": [[2, 2, 2, 2], 2]},
+    {"args": [[1, 2, 4, 8, 16], 9]}
+  ],
+  "cpp_lines": {"2": 6, "3": 7, "4": 8, "5": 9, "6": 10, "8": 12, "9": 15},
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "nums",
+        "pointers": [{"label": "lo", "at": "lo"}, {"label": "mid", "at": "mid"}, {"label": "hi", "at": "hi"}],
+        "range": {"label": "still searching", "from": "lo", "to": "hi"}
+      },
+      {"kind": "vars", "vars": ["target", "lo", "hi", "mid"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "Search the whole array: lo = {lo} and hi = {hi}, one past the last position."},
+    {"line": 3, "next": 4, "text": "lo = {lo} is still below hi = {hi}, so there's a range left to search."},
+    {"line": 3, "next": 9, "text": "lo and hi have met at {lo}: the range is empty."},
+    {"line": 4, "text": "Look at the middle position, {mid}, which holds {nums[mid]}."},
+    {"line": 5, "next": 6, "when": "nums[mid] < target", "text": "{nums[mid]} < {target}, so the answer is to the right of mid."},
+    {"line": 5, "next": 8, "when": "nums[mid] >= target", "text": "{nums[mid]} ≥ {target}, so the answer is at mid or to its left."},
+    {"line": 6, "text": "Move lo up to {lo}."},
+    {"line": 8, "text": "Move hi down to {hi}."},
+    {"line": 9, "text": "The first position holding a value of at least {target} is {lo}."}
+  ]
+}

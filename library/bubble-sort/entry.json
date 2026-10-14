@@ -1,0 +1,43 @@
+{
+  "title": "Bubble sort",
+  "category": "Sorting",
+  "summary": "Repeatedly swap neighbours that are out of order until a pass makes no swaps.",
+  "order": 10,
+  "entry": "bubble_sort",
+  "default_input": {"args": [[5, 1, 4, 2, 8]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[1]]},
+    {"args": [[2, 1]]},
+    {"args": [[5, 1, 4, 2, 8]]},
+    {"args": [[1, 2, 3, 4]]},
+    {"args": [[4, 3, 2, 1]]},
+    {"args": [[3, 3, 1, 1]]},
+    {"args": [[-5, 0, -2, 7]]},
+    {"args": [[9, 8, 7, 6, 5, 4, 3, 2, 1, 0]]},
+    {"args": [[1, 1, 1]]}
+  ],
+  "cpp_lines": {"2": 7, "3": 8, "4": 9, "5": 10, "6": 11, "7": 12, "8": 13, "9": 16, "10": 17, "11": 20},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "arr", "pointers": [{"label": "j", "at": "j"}, {"label": "j+1", "at": "j + 1"}]},
+      {"kind": "vars", "vars": ["n", "i", "j", "swapped"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "The array has {n} values."},
+    {"line": 3, "next": 4, "text": "Start a new pass (i = {i}). Each pass carries the largest remaining value to the end."},
+    {"line": 3, "next": 11, "text": "Every pass is done."},
+    {"line": 4, "text": "No swaps yet in this pass."},
+    {"line": 5, "next": 6, "text": "Compare {arr[j]} with its right-hand neighbour, {arr[j + 1]}."},
+    {"line": 5, "next": 9, "text": "This pass has reached the sorted part at the end."},
+    {"line": 6, "next": 7, "when": "arr[j] > arr[j + 1]", "text": "{arr[j]} > {arr[j + 1]}, so they're out of order: swap them."},
+    {"line": 6, "next": 5, "when": "arr[j] <= arr[j + 1]", "text": "{arr[j]} ≤ {arr[j + 1]}, already in order. Move on."},
+    {"line": 7, "text": "Swapped: {arr[j]} now comes before {arr[j + 1]}."},
+    {"line": 8, "text": "Remember that this pass swapped something."},
+    {"line": 9, "next": 10, "when": "not swapped", "text": "No swaps in this pass, so the array is already sorted: stop early."},
+    {"line": 9, "next": 3, "when": "swapped", "text": "This pass made swaps, so there may be more to fix."},
+    {"line": 10, "text": "Stop: no more passes needed."},
+    {"line": 11, "text": "Done: {arr}."}
+  ]
+}

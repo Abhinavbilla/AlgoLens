@@ -32,14 +32,22 @@ class SandboxClient:
         except _TRANSPORT_ERRORS:
             return False
 
+    def trace(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Record one run for animation (see TraceResponse in sandbox/algolens_sandbox/batch.py).
+        Raises SandboxUnavailable if the sandbox can't take work at all."""
+        return self._post("/v1/trace", request)
+
     def run_batch(self, request: dict[str, Any]) -> dict[str, Any]:
         """Run a batch (see sandbox/algolens_sandbox/batch.py for the request shape).
 
         Returns the sandbox's response, whose `status` is ok, compile_error, batch_timeout or
         sandbox_error. Raises SandboxUnavailable if the sandbox can't take work at all.
         """
+        return self._post("/v1/batch", request)
+
+    def _post(self, path: str, request: dict[str, Any]) -> dict[str, Any]:
         try:
-            resp = self._http.post("/v1/batch", json=request)
+            resp = self._http.post(path, json=request)
         except _TRANSPORT_ERRORS as exc:
             raise SandboxUnavailable(f"sandbox unreachable: {exc}") from exc
         if resp.status_code == 503:

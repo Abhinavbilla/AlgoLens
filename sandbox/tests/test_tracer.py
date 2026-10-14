@@ -185,6 +185,7 @@ def test_recursion_three_levels_deep(tmp_path):
     ]
     assert [f.get("ret") for f in rec.frames] == [None, None, None, 1, 2, 6]
     deepest = rec.frames[2]["stack"]
+    assert all(a["params"] == ["n"] for a in deepest)
     assert [(a["fn"], a["line"], a["locals"]["n"]) for a in deepest] == [
         ("fact", 4, 3),
         ("fact", 4, 2),

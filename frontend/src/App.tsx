@@ -2,6 +2,7 @@ import { NavLink, Route, Routes } from "react-router";
 import styles from "./App.module.css";
 import { HealthBadge } from "./HealthBadge";
 import { ThemeToggle } from "./ThemeToggle";
+import { EntryPage } from "./pages/EntryPage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { SolvePage } from "./pages/SolvePage";
 
@@ -26,6 +27,7 @@ export function App() {
       <main className={styles.main}>
         <Routes>
           <Route path="/" element={<LibraryPage />} />
+          <Route path="/library/:slug" element={<EntryPage />} />
           <Route path="/solve" element={<SolvePage />} />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>

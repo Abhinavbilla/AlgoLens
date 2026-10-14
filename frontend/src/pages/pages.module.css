@@ -1,0 +1,89 @@
+.summary {
+  margin: 4px 0 16px;
+  color: var(--text-muted);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 1.125rem;
+}
+
+.card a {
+  color: var(--text);
+}
+
+.card p {
+  margin: 0 0 8px;
+}
+
+.category {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+
+.verified {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.unverified {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.entry h1 {
+  margin: 4px 0 8px;
+}
+
+.entryHeader {
+  margin-bottom: 16px;
+}
+
+.crumbs {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.input {
+  margin: 0;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.input code {
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.about {
+  max-width: 70ch;
+  margin-top: 24px;
+}

@@ -1,6 +1,7 @@
 """Runtime configuration, read from ALGOLENS_* environment variables (and .env)."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -11,6 +12,8 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://algolens:algolens@localhost:5432/algolens"
     sandbox_socket: str = "/run/sandbox/sandbox.sock"
+    # The repo's library/ folder when run from a checkout; the image sets /app/library.
+    library_dir: Path = Path(__file__).resolve().parents[2] / "library"
 
     anthropic_api_key: str | None = Field(
         default=None,

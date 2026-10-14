@@ -233,6 +233,7 @@ A template is chosen by the line that just ran, the branch taken, and a conditio
   - **State paths**: names, indexing, node fields, `old(path)`. These render as the stored value.
   - **Computed values**: arithmetic or `len()` over state paths. The engine computes the value and **always renders it with its operands**, e.g. `{nums[l] + nums[r]}` renders as "2 + 15 = 17" and `{len(stack)}` as "len(stack) = 3". The template can't supply or format the result itself; it only names the expression. Nested expressions show their leaf operands: `{a + b * c}` renders as "2 + 3 × 4 = 14".
   - Comparisons and `and`/`or`/`not` are allowed only in `when`, not in text.
+  - **[Decision, M2]** A placeholder that is only `len(x)` shows just the count ("3"), since its operand is a container already on screen; arithmetic always shows operands ("2 + 15 = 17").
   - **[Decision, M1]** Numeric literals can't be arithmetic operands in text (`{n - 1}` is rejected), because that number wouldn't come from the state. They're fine as indices (`{nums[0]}`) and anywhere in `when`. Easy to relax later if narration reads badly without it.
 - **Lint at generation time**, run over the traces of all test inputs:
   - every expression must parse and evaluate on the steps where its line runs
@@ -281,7 +282,8 @@ Narration runs in the worker, outside the sandbox, so it can't go anywhere near 
 The AI supplies `py_to_cpp_lines`. It's validated to be in range and roughly monotone, and the nearest mapped line is used as a fallback.
 
 ## 8. Algorithm library
-- Each entry is a folder in `library/` containing: `solution.py`, `solution.cpp`, `reference.py`, `schema.json`, `visual.json`, `narration.json`, `default_input.json` and `description.md` (written by us).
+- Each entry is a folder in `library/` containing `solution.py`, `solution.cpp`, `reference.py`, `description.md` (written by us), and one `entry.json` holding the title, tests, default input, visual spec, C++ line map and narration templates. (M2: one file instead of six small ones; the input schema joins it in M3.)
+- `algolens library verify` checks Python against the reference and C++ against Python on every test, checks that recording never changes a result, and lints the narration on every recorded frame. The result is stored and shown as the entry's badge; changing an entry resets it to unverified.
 - Entries are seeded into Postgres on startup and verified through the same pipeline with no AI involved. Sorts are checked against `sorted`; the rest against hand-written references.
 - Built in three batches:
   - **M2 (3)**: bubble sort, binary search, two pointers.

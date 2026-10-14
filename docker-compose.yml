@@ -1,7 +1,7 @@
 name: algolens
 
 x-backend: &backend
-  build: ./backend
+  image: algolens-backend
   env_file:
     - path: .env
       required: false
@@ -44,6 +44,26 @@ services:
       context: ./sandbox
       target: test
 
+  # Backend tests against the real database and sandbox, on Python 3.12:
+  #   docker compose --profile test run --rm backend-test
+  backend-test:
+    profiles: [test]
+    image: algolens-backend-test
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: test
+    environment:
+      ALGOLENS_TEST_DATABASE_URL: postgresql+psycopg://algolens:algolens@db:5432/algolens_test
+      ALGOLENS_TEST_SANDBOX_SOCKET: /run/sandbox/sandbox.sock
+    volumes:
+      - sandbox-socket:/run/sandbox
+    depends_on:
+      db:
+        condition: service_healthy
+      sandbox:
+        condition: service_healthy
+
   db:
     image: postgres:16-alpine
     environment:
@@ -62,6 +82,11 @@ services:
 
   api:
     <<: *backend
+    # Built once here; the worker runs the same image.
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime   # the Dockerfile's last stage is the test image
     command: ["algolens", "serve"]
     ports:
       - "127.0.0.1:8000:8000"
@@ -80,6 +105,7 @@ services:
 
   worker:
     <<: *backend
+    pull_policy: never  # local image built by the api service
     command: ["algolens", "worker"]
     depends_on:
       api:

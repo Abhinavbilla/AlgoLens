@@ -36,12 +36,14 @@ SAFE_INT = 2**53
 
 
 class _Activation:
-    __slots__ = ("aid", "fn", "frame", "pending")
+    __slots__ = ("aid", "fn", "frame", "params", "pending")
 
     def __init__(self, aid, fn, frame):
         self.aid = aid
         self.fn = fn
         self.frame = frame
+        code = frame.f_code
+        self.params = list(code.co_varnames[: code.co_argcount + code.co_kwonlyargcount])
         self.pending = None  # line started but not yet known to have finished
 
 
@@ -119,7 +121,8 @@ class Recorder:
                     if not name.startswith("__")
                 }
                 stack.append(
-                    {"aid": a.aid, "fn": a.fn, "line": line if a is act else a.pending,
+                    {"aid": a.aid, "fn": a.fn, "params": a.params,
+                     "line": line if a is act else a.pending,
                      "locals": locals_}
                 )  # fmt: skip
             frame = {"line": line, "next": next_line, "aid": act.aid, "stack": stack}

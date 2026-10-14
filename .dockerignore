@@ -1,0 +1,14 @@
+# Context for builds that use the repository root (the backend images).
+.git
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.egg-info
+**/.pytest_cache
+**/.ruff_cache
+frontend
+eval
+.env
+# The sandbox has its own build; only the tracer is needed here (backend tests record with it).
+sandbox
+!sandbox/driver
