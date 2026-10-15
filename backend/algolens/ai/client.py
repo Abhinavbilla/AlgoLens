@@ -156,15 +156,22 @@ class AIClient:
             "temperature": 0.2,
         }
         headers = {"Authorization": f"Bearer {key}"}
-        try:
-            resp = self._post(f"{base}/chat/completions", body, headers)
-        except AIError as exc:
-            # The provider's strict JSON mode rejected the model's own reply (Groq:
-            # json_validate_failed). Ask again without it: extract_json() still checks the reply.
-            if "json_validate_failed" not in str(exc):
-                raise
-            body.pop("response_format")
-            resp = self._post(f"{base}/chat/completions", body, headers)
+        for _ in range(3):
+            try:
+                resp = self._post(f"{base}/chat/completions", body, headers)
+                break
+            except (_Retryable, AIError) as exc:
+                smaller = _fitting_max_tokens(str(exc), body["max_tokens"])
+                if smaller is not None:
+                    body["max_tokens"] = smaller
+                elif "json_validate_failed" in str(exc) and "response_format" in body:
+                    # The provider's strict JSON mode rejected the model's own reply (Groq).
+                    # Ask again without it: extract_json() still checks the reply.
+                    body.pop("response_format")
+                else:
+                    raise
+        else:
+            raise AIError(f"{provider} kept rejecting the request size for {model}")
         choice = resp["choices"][0]["message"].get("content") or ""
         usage = resp.get("usage") or {}
         return choice, (usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0))
@@ -199,11 +206,28 @@ class AIClient:
         if r.status_code in (401, 403):
             raise AIUnavailable(f"the AI service refused the key (HTTP {r.status_code})")
         if r.status_code >= 400:
-            raise AIError(f"HTTP {r.status_code}: {r.text[:300]}")
+            raise AIError(f"HTTP {r.status_code}: {r.text[:500]}")
         return r.json()
 
     def close(self) -> None:
         self._http.close()
+
+
+MIN_OUTPUT_TOKENS = 1500
+
+
+def _fitting_max_tokens(error: str, max_tokens: int) -> int | None:
+    """A smaller max_tokens when the provider says the request can never fit its per-minute
+    limit (Groq: "Request too large ... (TPM): Limit 8000, Requested 8166", or the output-only
+    OTPM limit); None if that isn't the problem or nothing useful would fit."""
+    if "Request too large" not in error:
+        return None
+    m = re.search(r"\((O?TPM)\): Limit (\d+), Requested (\d+)", error)
+    if not m:
+        return None
+    kind, limit, requested = m.group(1), int(m.group(2)), int(m.group(3))
+    new = limit - 16 if kind == "OTPM" else max_tokens - (requested - limit) - 64
+    return new if MIN_OUTPUT_TOKENS <= new < max_tokens else None
 
 
 def _quota_message(error: str) -> str:

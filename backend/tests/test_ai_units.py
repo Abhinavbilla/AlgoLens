@@ -227,3 +227,41 @@ def test_long_rate_limit_fails_fast_with_the_reason(monkeypatch):
     with pytest.raises(cl.AIError, match="try again in about 19 min.*tokens per day"):
         cl.AIClient({"parse": "groq:m"}).complete_json("parse", "s", "p", Budget(100_000))
     assert calls == [1]
+
+
+def test_request_too_large_retries_within_the_output_limit(monkeypatch):
+    from algolens.ai import client as cl
+
+    monkeypatch.setenv("GROQ_API_KEY", "x")
+    monkeypatch.setattr(cl, "MIN_INTERVAL", {**cl.MIN_INTERVAL, "groq": 0})
+    sizes = []
+
+    def fake_post(self, url, body, headers):
+        sizes.append(body["max_tokens"])
+        if body["max_tokens"] > 2000:
+            raise cl._Retryable("HTTP 429: Request too large ... output tokens per minute (OTPM): "
+                                "Limit 2000, Requested 6436", 0)  # fmt: skip
+        return {"choices": [{"message": {"content": '{"ok": true}'}}], "usage": {}}
+
+    monkeypatch.setattr(cl.AIClient, "_post", fake_post)
+    reply = cl.AIClient({"brute_b": "groq:q"}).complete_json("brute_b", "s", "p", Budget(100_000))
+    assert reply.data == {"ok": True} and sizes == [8000, 1984]
+
+
+def test_request_over_the_per_minute_limit_shrinks_max_tokens(monkeypatch):
+    from algolens.ai import client as cl
+
+    monkeypatch.setenv("GROQ_API_KEY", "x")
+    monkeypatch.setattr(cl, "MIN_INTERVAL", {**cl.MIN_INTERVAL, "groq": 0})
+    sizes = []
+
+    def fake_post(self, url, body, headers):
+        sizes.append(body["max_tokens"])
+        if body["max_tokens"] == 8000:
+            raise cl.AIError('HTTP 413: {"error":{"message":"Request too large for model `m` on tokens '
+                             'per minute (TPM): Limit 8000, Requested 8166, please reduce"}}')  # fmt: skip
+        return {"choices": [{"message": {"content": '{"ok": true}'}}], "usage": {}}
+
+    monkeypatch.setattr(cl.AIClient, "_post", fake_post)
+    reply = cl.AIClient({"parse": "groq:m"}).complete_json("parse", "s", "p", Budget(100_000))
+    assert reply.data == {"ok": True} and sizes == [8000, 7770]
