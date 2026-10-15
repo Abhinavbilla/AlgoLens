@@ -83,6 +83,16 @@ comparator: "exact" unless several answers are valid. "float" for real-number an
 examples: the statement's worked examples, as given (args in parameter order, expected output).
 extra_rules_python: "" unless an input rule can't be written in the schema; then Python source
 defining validate(<params>) returning None if the input is fine, else a short message.
+IMPORTANT: random test inputs are generated from your schema and rules, so EVERY guarantee the
+statement makes about the input must be encoded: "exactly one solution exists", "the answer always
+exists", "values are distinct", "the array is sorted", "the graph is connected", "k <= n".
+Use schema flags where possible. "constraints" are simple expressions only (names, numbers, len(),
++ - * // %, comparisons, and/or/not; NO other calls, loops or comprehensions). Anything needing
+loops, sum(), any() or set() goes in extra_rules_python, which is real Python. For example, for
+"exactly one pair adds up to target":
+  def validate(nums, target):
+      pairs = sum(1 for i in range(len(nums)) for j in range(i + 1, len(nums)) if nums[i] + nums[j] == target)
+      return None if pairs == 1 else "exactly one pair must add up to target"
 {SCHEMA_GUIDE}"""
 
 
