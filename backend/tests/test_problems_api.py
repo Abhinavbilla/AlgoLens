@@ -20,7 +20,7 @@ from algolens.worker import run_one
 from tests.test_solve import STATEMENT, happy, kadane
 
 SOCKET = os.environ.get("ALGOLENS_TEST_SANDBOX_SOCKET")
-ROLES = ("parse", "brute_a", "brute_b", "approaches", "checker", "repair", "narration")
+ROLES = ("parse", "brute_a", "brute_b", "approaches", "checker", "repair", "narration", "explain")
 
 
 def fake_ai(script=None) -> AIClient:
@@ -185,6 +185,7 @@ def test_verified_approach_animations_and_custom_inputs(sessions, monkeypatch):
     api = TestClient(app_module.create_app())
     view = api.get(f"/api/problems/{pid}").json()
     assert [p["name"] for p in view["inputs"]] == ["nums"] and view["inputs"][0]["hint"]
+    assert view["explanation"]["approaches"][0]["name"] == "Brute force"
     brute, fast, wrong = view["approaches"]
     assert fast["animated"] and fast["default_input"] == {"args": [[1]]}
     assert not wrong["animated"] and "verified" in wrong["animation_note"]

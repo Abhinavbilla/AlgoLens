@@ -107,14 +107,7 @@ export type GridPanel = {
 };
 
 export type Panel =
-  | ArrayPanel
-  | VarsPanel
-  | MapPanel
-  | SequencePanel
-  | LinkedListPanel
-  | TreePanel
-  | GraphPanel
-  | GridPanel;
+  ArrayPanel | VarsPanel | MapPanel | SequencePanel | LinkedListPanel | TreePanel | GraphPanel | GridPanel;
 
 export type Frame = {
   i: number;
@@ -168,7 +161,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-const get = <T,>(path: string) => request<T>(path);
+const get = <T>(path: string) => request<T>(path);
 
 // Pasted problems (backend/algolens/api/problems.py).
 
@@ -212,6 +205,25 @@ export type Comparison = {
   limits: { cpu_ms: number };
 };
 
+export type ApproachThinking = {
+  name: string;
+  time: string;
+  space: string;
+  is_brute: boolean;
+  intuition: string;
+  bottleneck: string;
+  data_structure: { name: string; why: string } | null;
+  steps: string[];
+  complexity_reasoning: string;
+};
+
+export type Explanation = {
+  understanding: { restated: string; inputs_outputs: string; observations: string[]; edge_cases: string[] };
+  approaches: ApproachThinking[];
+  pattern: string;
+  takeaway: string;
+};
+
 export type ProblemView = {
   id: string;
   status: "done" | "rejected" | "failed";
@@ -222,6 +234,7 @@ export type ProblemView = {
   examples: { args: unknown[]; expected: unknown }[];
   comparator: string;
   inputs: InputParam[];
+  explanation?: Explanation | null;
   approaches: ApproachView[];
 };
 
@@ -246,7 +259,9 @@ export const api = {
   problem: (id: string) => get<ProblemView>(`/api/problems/${encodeURIComponent(id)}`),
   compare: (pid: string) => get<Comparison>(`/api/problems/${encodeURIComponent(pid)}/compare`),
   approachAnimation: (pid: string, aid: string) =>
-    get<Animation>(`/api/problems/${encodeURIComponent(pid)}/approaches/${encodeURIComponent(aid)}/animation`),
+    get<Animation>(
+      `/api/problems/${encodeURIComponent(pid)}/approaches/${encodeURIComponent(aid)}/animation`,
+    ),
   customApproachAnimation: (pid: string, aid: string, args: unknown[]) =>
     request<Animation>(
       `/api/problems/${encodeURIComponent(pid)}/approaches/${encodeURIComponent(aid)}/animation`,

@@ -243,6 +243,35 @@ def visual_prompt(spec: dict, python_code: str, cpp_code: str, problem: str = ""
     return text
 
 
+EXPLAIN_SYSTEM = """You are a patient teacher explaining how to THINK about an algorithms problem, the way a strong
+candidate talks through it in an interview: understand the problem, start with the brute force,
+find its bottleneck, and improve step by step to the optimal approach. The audience is a beginner.
+You are given the statement and the approaches in order (brute force first), each with verified
+code. Explain THOSE approaches, in that order; never invent a different algorithm.
+For each approach: the intuition in plain words; its bottleneck (what work is wasted or repeated,
+which motivates the next approach; for the last approach, why it's good enough); the data
+structure that makes it work and why (null if it only needs plain variables or the input array);
+3 to 8 short concrete steps; and the reasoning behind its time and space complexity.
+Use short sentences, no jargon without a definition, and small concrete examples from the
+problem's own examples. Reply with ONE JSON object:
+{"understanding": {"restated": str, "inputs_outputs": str, "observations": [str, ...1-5],
+  "edge_cases": [str, ...0-5]},
+ "approaches": [{"intuition": str, "bottleneck": str, "data_structure": {"name": str, "why": str} | null,
+   "steps": [str, ...], "complexity_reasoning": str}, ...one per approach, same order],
+ "pattern": str (e.g. "Sliding window"), "takeaway": str (one sentence to remember)}"""
+
+
+def explain_prompt(statement: str, spec: dict, approaches: list[dict]) -> str:
+    parts = [f"Problem statement:\n<<<\n{statement}\n>>>\n"]
+    for i, a in enumerate(approaches, 1):
+        parts.append(
+            f"Approach {i}: {a['name']} (time {a['time']}, space {a['space']})\n"
+            f"Key idea: {a['key_idea']}\nPython:\n{a['python_code']}\n"
+        )
+    parts.append(f'Give exactly {len(approaches)} entries in "approaches", in this order.')
+    return "\n".join(parts)
+
+
 def prompt_set_hash() -> str:
     """Part of the cache key: changing any prompt invalidates stored results."""
     blob = "\n".join(
@@ -256,6 +285,7 @@ def prompt_set_hash() -> str:
             CODE_RULES,
             SCHEMA_GUIDE,
             VISUAL_SYSTEM,
+            EXPLAIN_SYSTEM,
         ]
     )
     return hashlib.sha256(blob.encode()).hexdigest()[:16]

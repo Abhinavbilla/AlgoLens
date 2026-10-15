@@ -72,3 +72,33 @@ class BruteB(BaseModel):
 
 class Checker(BaseModel):
     python_code: str = Field(min_length=10, max_length=30_000)
+
+
+class Understanding(BaseModel):
+    restated: str = Field(min_length=1, max_length=600)
+    inputs_outputs: str = Field(min_length=1, max_length=400)
+    observations: list[str] = Field(min_length=1, max_length=5)
+    edge_cases: list[str] = Field(default=[], max_length=5)
+
+
+class DataStructure(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    why: str = Field(min_length=1, max_length=400)
+
+
+class ApproachThinking(BaseModel):
+    intuition: str = Field(min_length=1, max_length=600)
+    bottleneck: str = Field(default="", max_length=500)  # what's slow, leading to the next idea
+    data_structure: DataStructure | None = None
+    steps: list[str] = Field(min_length=1, max_length=8)
+    complexity_reasoning: str = Field(min_length=1, max_length=500)
+
+
+class Explanation(BaseModel):
+    """The interview-style thought process, from brute force to optimal (AI-written prose about
+    code that has been verified)."""
+
+    understanding: Understanding
+    approaches: list[ApproachThinking] = Field(min_length=1, max_length=4)
+    pattern: str = Field(min_length=1, max_length=80)
+    takeaway: str = Field(min_length=1, max_length=300)

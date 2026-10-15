@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { api, type ApproachView, type ProblemView } from "../api";
 import { HighlightedLine } from "../viz/highlight";
 import { ApproachPlayer } from "./ApproachPlayer";
+import { ThoughtProcess } from "./ThoughtProcess";
 import { Compare } from "./CompareChart";
 import pageStyles from "./pages.module.css";
 import styles from "./solve.module.css";
@@ -61,6 +62,8 @@ function ProblemContent({ problemId }: { problemId: string }) {
           Signature: <code>{`${p.function_name}(${p.params.map((x) => x.name).join(", ")})`}</code>
         </p>
       </header>
+      {p.explanation && <ThoughtProcess explanation={p.explanation} />}
+      {p.explanation && <h2 className={styles.codeHeading}>The verified code, step by step</h2>}
       <ol className={styles.approaches}>
         {p.approaches.map((a) => (
           <li key={a.id}>

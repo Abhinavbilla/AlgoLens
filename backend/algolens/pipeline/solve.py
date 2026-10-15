@@ -89,6 +89,7 @@ class SolveResult:
     timings: dict[str, float] = field(default_factory=dict)
     tokens: dict = field(default_factory=dict)
     failures: list[str] = field(default_factory=list)
+    explanation: dict | None = None  # the thought process; see _explain()
 
 
 class _Run:
@@ -200,6 +201,7 @@ def solve(
     try:
         _verify_all(run, spec, rules, result)
         _animate(run, result)
+        _explain(run, result)
     except BudgetExhausted as exc:
         reason = f"Not verified: the problem's AI budget ran out ({exc})."
         run.failures.append(reason)
@@ -282,6 +284,41 @@ def _animate(run: _Run, result: SolveResult) -> None:
             except BudgetExhausted:
                 a.animation = {"unavailable": "The AI budget ran out before this was animated."}
                 raise
+
+
+def _explain(run: _Run, result: SolveResult) -> None:
+    """The interview-style thought process, brute force to optimal, for the approaches that
+    were verified (explaining unverified code would teach something that may be wrong). A
+    reply that doesn't fit, or a provider error, leaves the page without it: the verified
+    results stand on their own."""
+    from algolens.pipeline.models import Explanation
+
+    shown = [a for a in result.approaches if a.status == "verified"]
+    if not shown:
+        return
+    with run.timed("writing the explanation"):
+        try:
+            reply = run.ask(
+                "explain",
+                prompts.EXPLAIN_SYSTEM,
+                prompts.explain_prompt(run.text, result.spec or {}, [_fields(a) for a in shown]),
+                Explanation,
+            )
+        except BudgetExhausted:
+            raise
+        except Exception as exc:  # AIError, a reply that never fit: no explanation, no failure
+            run.failures.append(f"explanation unavailable: {str(exc)[:200]}")
+            return
+    if len(reply.approaches) != len(shown):
+        run.failures.append("explanation unavailable: it didn't cover each approach once")
+        return
+    data = reply.model_dump()
+    for a, thinking in zip(shown, data["approaches"], strict=True):
+        thinking["name"] = a.name
+        thinking["time"] = a.time
+        thinking["space"] = a.space
+        thinking["is_brute"] = a.is_brute
+    result.explanation = data
 
 
 def _fields(a: GeneratedApproach | ApproachResult) -> dict:

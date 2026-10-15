@@ -9,7 +9,7 @@ from algolens.evaluation import run_eval, summarize
 from algolens.sandbox.client import SandboxClient
 from tests.test_solve import SOCKET, STATEMENT, happy
 
-ROLES = ("parse", "brute_a", "brute_b", "approaches", "checker", "repair", "narration")
+ROLES = ("parse", "brute_a", "brute_b", "approaches", "checker", "repair", "narration", "explain")
 REFERENCE = """
 def reference(nums):
     best, cur = nums[0], 0

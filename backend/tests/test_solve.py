@@ -132,11 +132,31 @@ class Script:
 
 def run(script: Script, limit: int = 200_000, max_repairs: int = 2):
     roles = {r: "fake:test" for r in ("parse", "brute_a", "brute_b", "approaches", "checker",
-                                       "repair", "narration")}  # fmt: skip
+                                       "repair", "narration", "explain")}  # fmt: skip
     progress: list[tuple] = []
     result = solve(STATEMENT, AIClient(roles, fake=script), SandboxClient(SOCKET), Budget(limit),
                    progress=lambda *a: progress.append(a), max_repairs=max_repairs)  # fmt: skip
     return result, progress
+
+
+def thinking(intuition: str, ds: dict | None = None) -> dict:
+    return {
+        "intuition": intuition,
+        "bottleneck": "It repeats work.",
+        "data_structure": ds,
+        "steps": ["Look at each value.", "Keep the best sum."],
+        "complexity_reasoning": "One loop.",
+    }
+
+
+EXPLANATION = {
+    "understanding": {"restated": "Find the biggest total of consecutive values.",
+                      "inputs_outputs": "A list of integers in, one integer out.",
+                      "observations": ["A run can start anywhere."], "edge_cases": ["All negative."]},
+    "approaches": [thinking("Try every start and end."), thinking("Extend or restart the run.")],
+    "pattern": "Kadane's algorithm",
+    "takeaway": "Keep the best run ending here.",
+}  # fmt: skip
 
 
 def happy(**overrides) -> Script:
@@ -146,6 +166,7 @@ def happy(**overrides) -> Script:
         "brute_b": {"restatement": "max sum of a contiguous run", "python_code": BRUTE_B_PY},
         "approaches": {"approaches": [kadane()]},
         "repair": kadane(),
+        "explain": EXPLANATION,
     }
     replies.update(overrides)
     return Script(**replies)
@@ -262,3 +283,33 @@ def test_strict_checker_lets_approaches_verify():
               + "\ndef check(nums, output):\n    return output == _best(nums)\n"}  # fmt: skip
     result, _ = run(happy(parse=spec, checker=strict))
     assert [a.status for a in result.approaches] == ["verified", "verified"], result.failures
+
+
+def test_the_thought_process_follows_the_verified_approaches():
+    script = happy()
+    result, progress = run(script)
+    e = result.explanation
+    assert e["pattern"] == "Kadane's algorithm"
+    assert [a["name"] for a in e["approaches"]] == ["Brute force", "Kadane"]
+    assert [a["is_brute"] for a in e["approaches"]] == [True, False]
+    assert e["approaches"][1]["time"] == "O(n)"
+    prompt = script.prompts["explain"][0]
+    assert "Approach 1: Brute force" in prompt and "Approach 2: Kadane" in prompt
+    assert "writing the explanation" in {p[0] for p in progress}
+
+
+def test_a_mismatched_explanation_is_left_out():
+    one = {**EXPLANATION, "approaches": EXPLANATION["approaches"][:1]}
+    result, _ = run(happy(explain=one))
+    assert result.explanation is None
+    assert any("explanation unavailable" in f for f in result.failures)
+    assert [a.status for a in result.approaches] == ["verified", "verified"]  # results still stand
+
+
+def test_unverified_approaches_are_not_explained():
+    buggy = kadane(best_init="0")
+    script = happy(approaches={"approaches": [buggy]}, repair=buggy,
+                   explain={**EXPLANATION, "approaches": EXPLANATION["approaches"][:1]})  # fmt: skip
+    result, _ = run(script)
+    assert [a["name"] for a in result.explanation["approaches"]] == ["Brute force"]
+    assert "Approach 2" not in script.prompts["explain"][0]

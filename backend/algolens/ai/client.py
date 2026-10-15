@@ -272,6 +272,7 @@ def client_from_settings(fake: Callable[[str, str, str], dict] | None = None) ->
     s = get_settings()
     names = ("parse", "brute_a", "brute_b", "approaches", "checker", "repair", "narration")
     roles = {r: getattr(s, f"model_{r}") for r in names}
+    roles["explain"] = s.model_explain or s.model_narration
     return AIClient(roles, fake=fake)
 
 

@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     model_checker: str = "gemini:gemini-3.8-flash"
     model_repair: str = "gemini:gemini-3.8-flash"
     model_narration: str = "gemini:gemini-3.8-flash"
+    # The thought-process explanation; empty means "same model as narration".
+    model_explain: str = ""
 
     # Per-problem AI budget, input + output tokens across all calls (plan §6.4).
     max_tokens_per_problem: int = Field(default=200_000, gt=0)

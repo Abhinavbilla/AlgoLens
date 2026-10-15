@@ -161,7 +161,7 @@ def store(session: Session, h: str, version: str, result: SolveResult) -> Proble
     )
     problem = Problem(
         id=uuid.uuid4(), text_hash=h, system_version=version, status=result.status,
-        spec=result.spec, rejection_reason=result.reason or None,
+        spec=_with_explanation(result), rejection_reason=result.reason or None,
     )  # fmt: skip
     session.add(problem)
     session.flush()
@@ -183,6 +183,13 @@ def store(session: Session, h: str, version: str, result: SolveResult) -> Proble
     return problem
 
 
+def _with_explanation(result: SolveResult) -> dict | None:
+    """The explanation is stored alongside the parsed problem (no schema change needed)."""
+    if result.spec is None:
+        return None
+    return {**result.spec, "explanation": result.explanation}
+
+
 def problem_view(session: Session, problem_id: uuid.UUID) -> dict | None:
     problem = session.get(Problem, problem_id)
     if problem is None:
@@ -201,6 +208,7 @@ def problem_view(session: Session, problem_id: uuid.UUID) -> dict | None:
         "examples": spec.get("examples", []),
         "comparator": (spec.get("comparator") or {}).get("kind", "exact"),
         "inputs": input_hints(spec),
+        "explanation": spec.get("explanation"),
         "approaches": [
             {
                 "id": str(a.id), "name": a.name, "key_idea": a.key_idea,

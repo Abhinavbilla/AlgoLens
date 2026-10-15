@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { App } from "../App";
@@ -330,4 +330,65 @@ test("an example statement can be filled in", async () => {
   );
   expect(screen.getByRole("button", { name: "Solve and verify" })).toBeEnabled();
   expect(screen.getByRole("complementary", { name: "What happens next" })).toBeInTheDocument();
+});
+
+const EXPLANATION = {
+  understanding: {
+    restated: "Find the biggest total of consecutive values.",
+    inputs_outputs: "A list of integers in, one integer out.",
+    observations: ["A run can start anywhere."],
+    edge_cases: ["Every value is negative."],
+  },
+  approaches: [
+    {
+      name: "Brute force",
+      time: "O(n^2)",
+      space: "O(1)",
+      is_brute: true,
+      intuition: "Try every start and end.",
+      bottleneck: "Each run's sum is recomputed from scratch.",
+      data_structure: null,
+      steps: ["Pick a start.", "Extend to every end."],
+      complexity_reasoning: "Two nested loops.",
+    },
+    {
+      name: "Kadane",
+      time: "O(n)",
+      space: "O(1)",
+      is_brute: false,
+      intuition: "Extend the current run or restart it.",
+      bottleneck: "One pass is the least possible: every value must be read.",
+      data_structure: { name: "Array", why: "We only walk the input once." },
+      steps: ["Keep the best run ending here."],
+      complexity_reasoning: "One loop over n values.",
+    },
+  ],
+  pattern: "Kadane's algorithm",
+  takeaway: "Keep the best run ending at each position.",
+};
+
+test("the thought process goes from brute force to optimal with the data structure linked", async () => {
+  mockApi((url) =>
+    url === "/api/problems/p1" ? { status: 200, body: { ...PROBLEM, explanation: EXPLANATION } } : undefined,
+  );
+  renderAt("/problems/p1");
+  const section = await screen.findByRole("region", { name: "How to think about it" });
+  expect(section).toHaveTextContent("Find the biggest total of consecutive values.");
+  expect(section).toHaveTextContent("2 · Brute force");
+  expect(section).toHaveTextContent("3 · Optimal");
+  expect(section).toHaveTextContent("The bottleneck: Each run's sum is recomputed from scratch.");
+  expect(section).toHaveTextContent("Why this is good enough:");
+  expect(within(section).getByRole("link", { name: /See how an array works/ })).toHaveAttribute(
+    "href",
+    "/learn/arrays",
+  );
+  expect(section).toHaveTextContent("Pattern: Kadane's algorithm");
+  expect(section).toHaveTextContent("Written by AI about the verified code");
+});
+
+test("without an explanation the page shows the approaches as before", async () => {
+  mockApi((url) => (url === "/api/problems/p1" ? { status: 200, body: PROBLEM } : undefined));
+  renderAt("/problems/p1");
+  expect(await screen.findByRole("heading", { name: /Brute force/ })).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "How to think about it" })).not.toBeInTheDocument();
 });
