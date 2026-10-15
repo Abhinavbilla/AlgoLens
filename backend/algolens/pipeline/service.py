@@ -13,6 +13,8 @@ import os
 import re
 import uuid
 from datetime import UTC, datetime
+from functools import lru_cache
+from pathlib import Path
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -51,10 +53,22 @@ def text_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode()).hexdigest()
 
 
+@lru_cache
+def code_fingerprint() -> str:
+    """The code that decides results (pipeline, schema, verification, AI client): a fix there
+    must not be hidden behind a result cached by the old code."""
+    root = Path(__file__).resolve().parents[1]
+    h = hashlib.sha256()
+    for folder in ("pipeline", "schema", "verification", "ai"):
+        for f in sorted((root / folder).glob("*.py")):
+            h.update(f.name.encode() + f.read_bytes())
+    return h.hexdigest()[:10]
+
+
 def system_version(ai: AIClient | None = None) -> str:
     roles = (ai or client_from_settings()).roles
     fp = hashlib.sha256(roles_fingerprint(roles).encode()).hexdigest()[:12]
-    return f"{__version__}:{prompt_set_hash()}:{fp}"
+    return f"{__version__}:{prompt_set_hash()}:{fp}:{code_fingerprint()}"
 
 
 def missing_keys(ai: AIClient | None = None) -> list[str]:

@@ -180,6 +180,7 @@
 
 .problem {
   max-width: 100ch;
+  min-width: 0;
 }
 
 .approaches {
@@ -187,7 +188,16 @@
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+}
+
+.approaches > li {
+  min-width: 0;
+}
+
+.approaches :global(p) {
+  overflow-wrap: anywhere;
 }
 
 .approach {
@@ -221,6 +231,23 @@
 
 .complexity code {
   font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.watch button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.watch button:hover {
+  border-color: var(--accent);
 }
 
 .reason {

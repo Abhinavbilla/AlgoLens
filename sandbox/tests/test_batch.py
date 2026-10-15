@@ -566,3 +566,26 @@ def test_cpp_without_the_helper_include_still_compiles_with_its_line_numbers():
     assert only(cpp(src)).value == [1, 2, 3]
     resp = cpp("int main() {\n    undefined_name();\n}\n")
     assert resp.status == "compile_error" and "solution.cpp:2:" in resp.compile_output
+
+
+def test_cpp_tree_and_list_helpers_round_trip():
+    src = (
+        "#include <algolens.h>\n"
+        "int depth(algolens::TreeNode* n) {\n"
+        "    return n ? 1 + std::max(depth(n->left), depth(n->right)) : 0;\n"
+        "}\n"
+        "int main() {\n"
+        "    auto in = algolens::Json::parse(algolens::read_input());\n"
+        '    auto* root = algolens::build_tree(in["args"][0]);\n'
+        '    auto* head = algolens::build_list(in["args"][1]);\n'
+        "    algolens::Json out = {depth(root), algolens::to_json(root),\n"
+        "                          algolens::to_json(head)};\n"
+        "    algolens::emit(out.dump());\n"
+        "}\n"
+    )
+    tests = [Case(id="t", input={"args": [[3, 9, 20, None, None, 15, 7], [1, 2]]}),
+             Case(id="e", input={"args": [[], []]})]  # fmt: skip
+    resp = run_batch(BatchRequest(language="cpp", source=src, tests=tests, per_test=FAST))
+    assert resp.status == "ok", resp
+    assert resp.results[0].value == [3, [3, 9, 20, None, None, 15, 7], [1, 2]]
+    assert resp.results[1].value == [0, [], []]

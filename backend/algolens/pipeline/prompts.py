@@ -39,8 +39,9 @@ Code rules (the code is run and checked automatically):
 - C++17: a complete program WITH an `int main()` (the program is compiled and run on its own).
   Start with `#include <algolens.h>`: it brings in the common standard headers and provides
   nlohmann::json as algolens::Json, read_input() and emit(). Read the input JSON, whose "args" array holds the
-  arguments in order; trees are level-order lists with null, linked lists are plain lists (build
-  your own structs). Print nothing else that matters; emit the result as JSON:
+  arguments in order. Trees and linked lists: use the provided algolens::TreeNode
+  (val, left, right) / algolens::ListNode (val, next) with algolens::build_tree(in["args"][0]),
+  algolens::build_list(...), and return algolens::to_json(root_or_head). Don't write your own. Print nothing else that matters; emit the result as JSON:
       int main() {{
           auto in = algolens::Json::parse(algolens::read_input());
           auto nums = in["args"][0].get<std::vector<long long>>();
@@ -114,7 +115,8 @@ You write the simplest possible CORRECT solution to an algorithms problem: a bru
 directly simulates or enumerates exactly what the statement asks, with no cleverness. It only
 needs to be fast enough for small inputs. Correctness is everything: it is the reference other
 solutions are checked against.
-Reply with ONE JSON object: {"name": "Brute force", "key_idea": str, "time": str, "space": str,
+Reply with ONE JSON object: {"name": "Brute force", "key_idea": str, "time": str (just the big-O,
+e.g. "O(n^2)"), "space": str,
 "python_code": str, "cpp_code": str}"""
 
 
@@ -155,7 +157,7 @@ A brute force is written separately: do NOT include one. Every approach you give
 strictly better time complexity than trying all candidates (e.g. O(n) or O(n log n) instead of
 O(n^2)). If only one improvement exists, give just one.
 Reply with ONE JSON object: {"approaches": [{"name": str, "key_idea": str (one line),
-"time": str, "space": str, "python_code": str, "cpp_code": str}, ...]}"""
+"time": str (just the big-O, e.g. "O(n log n)"), "space": str (e.g. "O(1)"), "python_code": str, "cpp_code": str}, ...]}"""
 
 
 def approaches_prompt(statement: str, spec: dict) -> str:
@@ -205,6 +207,8 @@ Reply with ONE JSON object:
   "when": str (optional condition), "text": str}}, ...], "cpp_lines": {{"<python line>": <C++ line>}}}}
 
 PANELS (draw the main data structure first, then a "vars" panel with the key scalars).
+For tree and linked_list panels, `var` and pointer `at` must be plain variable names (e.g.
+"root", "node"), not expressions.
 Panel fields are bare expressions, e.g. "var": "nums", "at": "i + 1" - never wrapped in {{}}.
 Only narration `text` uses {{...}} placeholders.
 {_panels.__doc__}

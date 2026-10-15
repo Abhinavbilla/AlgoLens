@@ -56,4 +56,73 @@ inline void emit(const std::string& json) {
     }
 }
 
+// Binary trees and linked lists, as the inputs describe them: a tree is a level-order list with
+// null for a missing child, a linked list is a plain list.
+struct TreeNode {
+    long long val;
+    TreeNode* left = nullptr;
+    TreeNode* right = nullptr;
+    explicit TreeNode(long long v) : val(v) {}
+};
+
+struct ListNode {
+    long long val;
+    ListNode* next = nullptr;
+    explicit ListNode(long long v) : val(v) {}
+};
+
+inline TreeNode* build_tree(const Json& items) {
+    if (!items.is_array() || items.empty() || items[0].is_null()) return nullptr;
+    auto* root = new TreeNode(items[0].get<long long>());
+    std::deque<TreeNode*> queue{root};
+    size_t i = 1;
+    while (!queue.empty() && i < items.size()) {
+        TreeNode* node = queue.front();
+        queue.pop_front();
+        for (TreeNode** child : {&node->left, &node->right}) {
+            if (i < items.size() && !items[i].is_null()) {
+                *child = new TreeNode(items[i].get<long long>());
+                queue.push_back(*child);
+            }
+            ++i;
+        }
+    }
+    return root;
+}
+
+// Level order with null for gaps, trailing nulls dropped (the format the checker expects).
+inline Json to_json(TreeNode* root) {
+    Json out = Json::array();
+    std::deque<TreeNode*> queue{root};
+    while (!queue.empty()) {
+        TreeNode* node = queue.front();
+        queue.pop_front();
+        if (node == nullptr) {
+            out.push_back(nullptr);
+            continue;
+        }
+        out.push_back(node->val);
+        queue.push_back(node->left);
+        queue.push_back(node->right);
+    }
+    while (!out.empty() && out.back().is_null()) out.erase(out.end() - 1);
+    return out;
+}
+
+inline ListNode* build_list(const Json& items) {
+    ListNode head(0);
+    ListNode* tail = &head;
+    for (const auto& v : items) {
+        tail->next = new ListNode(v.get<long long>());
+        tail = tail->next;
+    }
+    return head.next;
+}
+
+inline Json to_json(ListNode* head) {
+    Json out = Json::array();
+    for (; head != nullptr; head = head->next) out.push_back(head->val);
+    return out;
+}
+
 }  // namespace algolens
