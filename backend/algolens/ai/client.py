@@ -34,6 +34,9 @@ ENDPOINTS = {
 # Minimum seconds between calls to one provider (free tiers: Gemini ~15/min, Groq ~30/min).
 MIN_INTERVAL = {"gemini": 4.2, "groq": 2.1, "openai": 0.0, "anthropic": 0.0, "fake": 0.0}
 RETRIES = 5
+# Largest output to ask for. Groq's free tier counts prompt + max_tokens against 8000 tokens a
+# minute, and solutions here are far shorter than this.
+MAX_OUTPUT = {"groq": 4096}
 MAX_WAIT_S = 120  # a provider asking us to wait longer than this has run out of quota
 TIMEOUT_S = 180
 
@@ -152,15 +155,17 @@ class AIClient:
                 {"role": "user", "content": prompt},
             ],
             "response_format": {"type": "json_object"},
-            "max_tokens": max_tokens,
+            "max_tokens": min(max_tokens, MAX_OUTPUT.get(provider, max_tokens)),
             "temperature": 0.2,
         }
         headers = {"Authorization": f"Bearer {key}"}
+        last = ""
         for _ in range(3):
             try:
                 resp = self._post(f"{base}/chat/completions", body, headers)
                 break
             except (_Retryable, AIError) as exc:
+                last = str(exc)
                 smaller = _fitting_max_tokens(str(exc), body["max_tokens"])
                 if smaller is not None:
                     body["max_tokens"] = smaller
@@ -171,7 +176,7 @@ class AIClient:
                 else:
                     raise
         else:
-            raise AIError(f"{provider} kept rejecting the request size for {model}")
+            raise AIError(f"{provider} kept rejecting the request size for {model}: {last[:300]}")
         choice = resp["choices"][0]["message"].get("content") or ""
         usage = resp.get("usage") or {}
         return choice, (usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0))

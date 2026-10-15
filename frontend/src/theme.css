@@ -1,10 +1,13 @@
 /* Design tokens. Light by default; dark follows the OS unless the user picks a theme. */
 :root {
-  --bg: #f7f8fa;
-  --surface: #ffffff;
-  --text: #1b1f27;
-  --text-muted: #5b6372;
-  --border: #d9dde5;
+  --bg: #f6f3ec;
+  --surface: #fffdf8;
+  --text: #1f1c17;
+  --text-muted: #5c564c;
+  --border: #e2dccf;
+  --border-strong: #c9c1b1;
+  --shadow: 0 1px 2px rgb(60 45 20 / 6%), 0 8px 24px rgb(60 45 20 / 8%);
+  --bar: #d9d1c1;
   --accent: #2f5bd3;
   --accent-text: #ffffff;
   --ok: #1f7a4a;
@@ -13,6 +16,7 @@
   --radius: 8px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --changed: #b4400e;
   --pointer: #2f5bd3;
   --pointer-text: #ffffff;
@@ -29,11 +33,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #12151b;
-    --surface: #1b1f27;
-    --text: #e8ebf1;
-    --text-muted: #a0a8b8;
-    --border: #323846;
+    --bg: #15140f;
+    --surface: #1e1c17;
+    --text: #ece7dc;
+    --text-muted: #aaa294;
+    --border: #34302a;
+    --border-strong: #4a453c;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 35%);
+    --bar: #4a453c;
     --accent: #7c9cff;
     --accent-text: #0d1117;
     --ok: #5fd39a;
@@ -55,11 +62,14 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #12151b;
-  --surface: #1b1f27;
-  --text: #e8ebf1;
-  --text-muted: #a0a8b8;
-  --border: #323846;
+  --bg: #15140f;
+  --surface: #1e1c17;
+  --text: #ece7dc;
+  --text-muted: #aaa294;
+  --border: #34302a;
+  --border-strong: #4a453c;
+  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 35%);
+  --bar: #4a453c;
   --accent: #7c9cff;
   --accent-text: #0d1117;
   --ok: #5fd39a;
@@ -104,6 +114,27 @@ body {
   color: var(--text);
   font-family: var(--font);
   line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+h1,
+h2 {
+  font-family: var(--serif);
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--accent);
 }
 
 :focus-visible {

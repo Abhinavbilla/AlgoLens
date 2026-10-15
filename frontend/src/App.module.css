@@ -8,15 +8,54 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 24px;
-  padding: 12px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  gap: 8px 28px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-family: var(--serif);
+  font-size: 1.3125rem;
   font-weight: 700;
-  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.logo rect {
+  fill: var(--text);
+}
+
+.logo circle,
+.logo line {
+  stroke: var(--accent);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 32px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.footer a {
+  color: var(--text-muted);
+}
+
+.notFound {
+  padding: 48px 0;
 }
 
 .nav {
@@ -37,7 +76,8 @@
 
 .nav a.active {
   color: var(--text);
-  background: var(--bg);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
   font-weight: 600;
 }
 
@@ -54,4 +94,20 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 16px;
+}
+
+.tools button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.tools button:hover {
+  background: var(--surface);
 }

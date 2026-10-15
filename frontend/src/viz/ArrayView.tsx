@@ -25,10 +25,17 @@ export function ArrayView({
         <h3 className={styles.title}>{panel.label}</h3>
         {reserveRange && <RangeLegend />}
         <div className={styles.scroll}>
-          <ol className={styles.array} style={{ "--slots": 1, "--pointer-rows": pointerRows, minWidth: 0 } as React.CSSProperties}>
+          <ol
+            className={styles.array}
+            style={
+              { "--slots": 1, "--pointer-rows": pointerRows, width: "max-content" } as React.CSSProperties
+            }
+          >
             <li className={styles.slot}>
               <span className={styles.index}>&nbsp;</span>
-              <span className={`${styles.cell} ${styles.placeholderCell}`}>{panel.defined ? "empty" : "not defined yet"}</span>
+              <span className={`${styles.cell} ${styles.placeholderCell}`}>
+                {panel.defined ? "empty" : "not defined yet"}
+              </span>
               <span className={styles.pointers} />
             </li>
           </ol>

@@ -311,9 +311,23 @@ test("the comparison runs on request and shows a chart, a legend and the numbers
 test("an exhaustively tested approach says so", async () => {
   mockApi((url) =>
     url === "/api/problems/p1"
-      ? { status: 200, body: { ...PROBLEM, approaches: [{ ...APPROACH, exhaustive: true, tests_passed: 45 }] } }
+      ? {
+          status: 200,
+          body: { ...PROBLEM, approaches: [{ ...APPROACH, exhaustive: true, tests_passed: 45 }] },
+        }
       : undefined,
   );
   renderAt("/problems/p1");
   expect(await screen.findByText(/all 45 possible inputs/)).toBeInTheDocument();
+});
+
+test("an example statement can be filled in", async () => {
+  mockApi(() => undefined);
+  renderAt("/solve");
+  await userEvent.click(screen.getByRole("button", { name: "Try an example" }));
+  expect((screen.getByLabelText("Problem statement") as HTMLTextAreaElement).value).toContain(
+    "Longest Run of Ones",
+  );
+  expect(screen.getByRole("button", { name: "Solve and verify" })).toBeEnabled();
+  expect(screen.getByRole("complementary", { name: "What happens next" })).toBeInTheDocument();
 });

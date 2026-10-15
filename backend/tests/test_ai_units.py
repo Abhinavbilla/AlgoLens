@@ -234,6 +234,7 @@ def test_request_too_large_retries_within_the_output_limit(monkeypatch):
 
     monkeypatch.setenv("GROQ_API_KEY", "x")
     monkeypatch.setattr(cl, "MIN_INTERVAL", {**cl.MIN_INTERVAL, "groq": 0})
+    monkeypatch.setattr(cl, "MAX_OUTPUT", {})
     sizes = []
 
     def fake_post(self, url, body, headers):
@@ -253,6 +254,7 @@ def test_request_over_the_per_minute_limit_shrinks_max_tokens(monkeypatch):
 
     monkeypatch.setenv("GROQ_API_KEY", "x")
     monkeypatch.setattr(cl, "MIN_INTERVAL", {**cl.MIN_INTERVAL, "groq": 0})
+    monkeypatch.setattr(cl, "MAX_OUTPUT", {})
     sizes = []
 
     def fake_post(self, url, body, headers):
@@ -265,3 +267,33 @@ def test_request_over_the_per_minute_limit_shrinks_max_tokens(monkeypatch):
     monkeypatch.setattr(cl.AIClient, "_post", fake_post)
     reply = cl.AIClient({"parse": "groq:m"}).complete_json("parse", "s", "p", Budget(100_000))
     assert reply.data == {"ok": True} and sizes == [8000, 7770]
+
+
+def test_groq_output_is_capped(monkeypatch):
+    from algolens.ai import client as cl
+
+    monkeypatch.setenv("GROQ_API_KEY", "x")
+    monkeypatch.setattr(cl, "MIN_INTERVAL", {**cl.MIN_INTERVAL, "groq": 0})
+    seen = []
+
+    def fake_post(self, url, body, headers):
+        seen.append(body["max_tokens"])
+        return {"choices": [{"message": {"content": '{"ok": true}'}}], "usage": {}}
+
+    monkeypatch.setattr(cl.AIClient, "_post", fake_post)
+    cl.AIClient({"parse": "groq:m"}).complete_json("parse", "s", "p", Budget(100_000))
+    assert seen == [4096]
+
+
+def test_not_sorted_spellings():
+    from algolens.schema.model import compile_schema
+
+    for v in ("false", "None", "", False, None):
+        t = compile_schema(
+            {
+                "params": [
+                    {"name": "a", "type": {"kind": "array", "of": {"kind": "int"}, "sorted": v}}
+                ]
+            }
+        )
+        assert t.params[0].type.sorted is None

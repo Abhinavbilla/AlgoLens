@@ -233,6 +233,8 @@ def _type(raw: Any, where: str, earlier: list[str]) -> TypeSpec:
             return StringT(r("len", 0, 20), "".join(dict.fromkeys(chars)), name, parens)
         case "array":
             srt = raw.get("sorted")
+            if isinstance(srt, str) and srt.strip().lower() in ("", "false", "none", "no"):
+                srt = None  # models often spell "not sorted" this way
             srt = "asc" if srt is True else (None if srt in (None, False) else srt)
             if srt not in (None, "asc", "desc"):
                 raise SchemaError(f'{where}.sorted must be "asc", "desc" or true')

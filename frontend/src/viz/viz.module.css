@@ -630,8 +630,9 @@ td.mark3,
 /* --- placeholders: same size as the real thing ------------------------------------------- */
 
 .placeholderCell {
-  width: auto;
+  width: max-content;
   min-width: 52px;
+  overflow: visible;
   padding: 0 10px;
   border-style: dashed;
   color: var(--text-muted);

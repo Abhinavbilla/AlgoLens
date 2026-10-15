@@ -1,9 +1,23 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { App } from "./App";
 
 const LIBRARY = [
+  {
+    slug: "bubble-sort",
+    title: "Bubble sort",
+    category: "Sorting",
+    summary: "Swap neighbours.",
+    verification: { status: "verified", tests: 310 },
+  },
+  {
+    slug: "dijkstra",
+    title: "Dijkstra's shortest paths",
+    category: "Graphs and grids",
+    summary: "Cheapest first.",
+    verification: { status: "unverified" },
+  },
   {
     slug: "two-pointers",
     title: "Two pointers",
@@ -53,14 +67,18 @@ test("shows a text label when the server is unreachable", async () => {
 test("lists library entries with their verification status in text", async () => {
   mockApi();
   renderAt("/");
-  expect(await screen.findByRole("link", { name: "Two pointers" })).toHaveAttribute("href", "/library/two-pointers");
-  expect(screen.getByText(/Verified · passed 11 tests/)).toBeInTheDocument();
+  expect(await screen.findByRole("link", { name: "Two pointers" })).toHaveAttribute(
+    "href",
+    "/library/two-pointers",
+  );
+  expect(screen.getByText(/Verified · 11 tests/)).toBeInTheDocument();
 });
 
 test("navigates to the paste page", async () => {
   mockApi();
   renderAt("/");
-  await userEvent.click(screen.getByRole("link", { name: "Paste a problem" }));
+  const nav = screen.getByRole("navigation", { name: "Main" });
+  await userEvent.click(within(nav).getByRole("link", { name: "Paste a problem" }));
   expect(screen.getByRole("heading", { name: "Paste a problem" })).toBeInTheDocument();
 });
 
@@ -83,4 +101,39 @@ test("description markdown renders as elements, never as raw HTML", async () => 
   expect(container.querySelector("em")).toHaveTextContent("lower bound");
   expect(container.querySelector("b")).toBeNull();
   expect(container).toHaveTextContent("<b>not bold</b>");
+});
+
+test("the library is grouped into sections with a jump bar", async () => {
+  mockApi();
+  renderAt("/");
+  const sorting = await screen.findByRole("region", { name: "Sorting" });
+  expect(within(sorting).getByRole("link", { name: "Bubble sort" })).toBeInTheDocument();
+  expect(
+    within(screen.getByRole("region", { name: "Array techniques" })).getByText("Two pointers", {
+      selector: "a",
+    }),
+  ).toBeInTheDocument();
+  const jump = screen.getByRole("navigation", { name: "Library sections" });
+  expect(within(jump).getByRole("link", { name: /Graphs and grids/ })).toHaveAttribute("href", "#graphs");
+  expect(screen.getByText(/3 algorithms, 2 verified/)).toBeInTheDocument();
+  expect(screen.getByText("Not verified yet")).toBeInTheDocument();
+});
+
+test("search filters the library", async () => {
+  mockApi();
+  renderAt("/");
+  await screen.findByRole("region", { name: "Sorting" });
+  await userEvent.type(screen.getByRole("searchbox", { name: "Search the library" }), "cheapest");
+  expect(screen.getByRole("link", { name: "Dijkstra's shortest paths" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Bubble sort" })).not.toBeInTheDocument();
+  await userEvent.clear(screen.getByRole("searchbox", { name: "Search the library" }));
+  await userEvent.type(screen.getByRole("searchbox", { name: "Search the library" }), "zzz");
+  expect(screen.getByText(/Nothing matches/)).toBeInTheDocument();
+});
+
+test("the hero shows a real bubble sort with narration", async () => {
+  mockApi();
+  renderAt("/");
+  const preview = screen.getByRole("figure", { name: /bubble sort running/ });
+  expect(preview).toHaveTextContent("Unsorted. Let's bubble.");
 });
