@@ -53,7 +53,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 test("shows server OK when health check passes", async () => {
   mockApi("ok");
-  renderAt("/");
+  renderAt("/library");
   expect(screen.getByRole("heading", { name: "Algorithm library" })).toBeInTheDocument();
   expect(await screen.findByText("Server OK")).toBeInTheDocument();
 });
@@ -66,7 +66,7 @@ test("shows a text label when the server is unreachable", async () => {
 
 test("lists library entries with their verification status in text", async () => {
   mockApi();
-  renderAt("/");
+  renderAt("/topics/array-techniques");
   expect(await screen.findByRole("link", { name: "Two pointers" })).toHaveAttribute(
     "href",
     "/library/two-pointers",
@@ -103,28 +103,41 @@ test("description markdown renders as elements, never as raw HTML", async () => 
   expect(container).toHaveTextContent("<b>not bold</b>");
 });
 
-test("the library is grouped into sections with a jump bar", async () => {
+test("the home page shows topics, not every algorithm", async () => {
   mockApi();
   renderAt("/");
-  const sorting = await screen.findByRole("region", { name: "Sorting" });
-  expect(within(sorting).getByRole("link", { name: "Bubble sort" })).toBeInTheDocument();
-  expect(
-    within(screen.getByRole("region", { name: "Array techniques" })).getByText("Two pointers", {
-      selector: "a",
-    }),
-  ).toBeInTheDocument();
-  const jump = screen.getByRole("navigation", { name: "Library sections" });
-  expect(within(jump).getByRole("link", { name: /Graphs and grids/ })).toHaveAttribute("href", "#graphs");
-  expect(screen.getByText(/3 algorithms, 2 verified/)).toBeInTheDocument();
-  expect(screen.getByText("Not verified yet")).toBeInTheDocument();
+  const sorting = await screen.findByRole("link", { name: "Sorting" });
+  expect(sorting).toHaveAttribute("href", "/topics/sorting");
+  expect(screen.getByRole("link", { name: "Graphs and grids" })).toHaveAttribute("href", "/topics/graphs");
+  expect(screen.queryByRole("link", { name: "Bubble sort" })).not.toBeInTheDocument();
+  expect(screen.getByText(/3 algorithms in 3 topics/)).toBeInTheDocument();
 });
 
-test("search filters the library", async () => {
+test("a topic page lists its algorithms and links to the next topic", async () => {
   mockApi();
-  renderAt("/");
-  await screen.findByRole("region", { name: "Sorting" });
+  renderAt("/topics/sorting");
+  expect(await screen.findByRole("heading", { level: 1, name: "Sorting" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Bubble sort" })).toHaveAttribute("href", "/library/bubble-sort");
+  expect(screen.queryByRole("link", { name: "Two pointers" })).not.toBeInTheDocument();
+  const pager = screen.getByRole("navigation", { name: "Other topics" });
+  await userEvent.click(within(pager).getByRole("link", { name: /Next topic/ }));
+  expect(await screen.findByRole("heading", { level: 1, name: "Array techniques" })).toBeInTheDocument();
+});
+
+test("an unknown topic says so", async () => {
+  mockApi();
+  renderAt("/topics/nope");
+  expect(await screen.findByRole("heading", { name: "No such topic" })).toBeInTheDocument();
+});
+
+test("search on the library page finds algorithms across topics", async () => {
+  mockApi();
+  renderAt("/library");
+  expect(await screen.findByRole("link", { name: "Sorting" })).toBeInTheDocument();
+  expect(screen.getByText(/3 algorithms, 2 verified/)).toBeInTheDocument();
   await userEvent.type(screen.getByRole("searchbox", { name: "Search the library" }), "cheapest");
   expect(screen.getByRole("link", { name: "Dijkstra's shortest paths" })).toBeInTheDocument();
+  expect(screen.getByText("Not verified yet")).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Bubble sort" })).not.toBeInTheDocument();
   await userEvent.clear(screen.getByRole("searchbox", { name: "Search the library" }));
   await userEvent.type(screen.getByRole("searchbox", { name: "Search the library" }), "zzz");

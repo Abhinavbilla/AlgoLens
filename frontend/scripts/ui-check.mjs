@@ -36,12 +36,20 @@ async function measure(page) {
     const overlaps = [];
     for (let i = 0; i < rects.length; i++)
       for (let j = i + 1; j < rects.length; j++) {
-        const a = rects[i].r, b = rects[j].r;
-        if (a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5)
+        const a = rects[i].r,
+          b = rects[j].r;
+        if (
+          a.left < b.right - 0.5 &&
+          b.left < a.right - 0.5 &&
+          a.top < b.bottom - 0.5 &&
+          b.top < a.bottom - 0.5
+        )
           overlaps.push(`${rects[i].label}/${rects[j].label}`);
       }
     const narration = document.querySelector("[data-current-narration]")?.closest("[aria-live]");
-    const firstPanel = document.querySelector('section[aria-label]:not([aria-label="Code"]):not([aria-label="Call stack"])');
+    const firstPanel = document.querySelector(
+      'section[aria-label]:not([aria-label="Code"]):not([aria-label="Call stack"])',
+    );
     const controls = document.querySelector('[role="group"][aria-label="Playback"]');
     return {
       overflow: doc.scrollWidth - window.innerWidth,
@@ -64,10 +72,34 @@ for (const theme of THEMES) {
     const page = await context.newPage();
     const tag = `${theme}-${width}`;
 
-    await page.goto(`${base}/`);
-    await page.getByRole("heading", { name: "Algorithm library" }).waitFor();
-    await page.locator("li a").first().waitFor();
-    if ((await measure(page)).overflow > 0) report(`library ${tag}`, "page scrolls sideways");
+    // The site's own pages: home, library index, every topic, the path and every primer.
+    const topicIds = await (async () => {
+      await page.goto(`${base}/library`);
+      await page.getByRole("heading", { name: "Algorithm library" }).waitFor();
+      await page.locator("li a").first().waitFor();
+      return page.$$eval('a[href^="/topics/"]', (as) => [...new Set(as.map((a) => a.getAttribute("href")))]);
+    })();
+    const primers = [
+      "arrays",
+      "big-o",
+      "recursion",
+      "strings",
+      "hashing",
+      "sets",
+      "numbers",
+      "bits",
+      "stable-sorting",
+      "stacks-queues",
+      "linked-lists",
+      "trees",
+      "graphs",
+    ].map((p) => `/learn/${p}`);
+    for (const path of ["/", "/library", ...topicIds, "/path", ...primers, "/solve"]) {
+      await page.goto(`${base}${path}`);
+      await page.waitForLoadState("networkidle");
+      if ((await measure(page)).overflow > 0) report(`${path} ${tag}`, "page scrolls sideways");
+    }
+    await page.goto(`${base}/library`);
     await page.screenshot({ path: join(out, `library-${tag}.png`), fullPage: true });
 
     for (const slug of SLUGS) {
@@ -76,7 +108,9 @@ for (const theme of THEMES) {
       const count = Number(await page.getByRole("slider", { name: "Step" }).getAttribute("max")) + 1;
       await page.screenshot({ path: join(out, `${slug}-${tag}-start.png`), fullPage: true });
       const first = await measure(page);
-      const heights = new Set(), panelTops = new Set(), controlTops = new Set();
+      const heights = new Set(),
+        panelTops = new Set(),
+        controlTops = new Set();
       let longest = "";
       for (let i = 0; i < count; i++) {
         const m = await measure(page);
@@ -89,14 +123,23 @@ for (const theme of THEMES) {
         controlTops.add(Math.round(m.controlsTop));
         if (m.text.length > longest.length) longest = m.text;
         if (m.overlaps.length && !problems.some((p) => p.startsWith(`${slug} ${tag}`) && p.includes("shot")))
-          await page.screenshot({ path: join(out, `${slug}-${tag}-overlap-step${i + 1}.png`), fullPage: true });
+          await page.screenshot({
+            path: join(out, `${slug}-${tag}-overlap-step${i + 1}.png`),
+            fullPage: true,
+          });
         await page.keyboard.press("ArrowRight");
       }
-      if (heights.size > 1) report(`${slug} ${tag}`, `narration box changes height between steps: ${[...heights].join(", ")}px`);
-      if (panelTops.size > 1) report(`${slug} ${tag}`, `panels move between steps: tops ${[...panelTops].join(", ")}px`);
-      if (controlTops.size > 1) report(`${slug} ${tag}`, `controls move between steps: tops ${[...controlTops].join(", ")}px`);
+      if (heights.size > 1)
+        report(`${slug} ${tag}`, `narration box changes height between steps: ${[...heights].join(", ")}px`);
+      if (panelTops.size > 1)
+        report(`${slug} ${tag}`, `panels move between steps: tops ${[...panelTops].join(", ")}px`);
+      if (controlTops.size > 1)
+        report(`${slug} ${tag}`, `controls move between steps: tops ${[...controlTops].join(", ")}px`);
       await page.screenshot({ path: join(out, `${slug}-${tag}-end.png`), fullPage: true });
-      writeFileSync(join(out, `${slug}-${tag}.txt`), `${count} steps; first: ${first.text}\nlongest: ${longest}\n`);
+      writeFileSync(
+        join(out, `${slug}-${tag}.txt`),
+        `${count} steps; first: ${first.text}\nlongest: ${longest}\n`,
+      );
     }
     await context.close();
   }
@@ -104,4 +147,8 @@ for (const theme of THEMES) {
 await browser.close();
 
 writeFileSync(join(out, "problems.txt"), problems.join("\n") + "\n");
-console.log(problems.length ? `${problems.length} problem(s):\n` + [...new Set(problems)].slice(0, 60).join("\n") : "no problems found");
+console.log(
+  problems.length
+    ? `${problems.length} problem(s):\n` + [...new Set(problems)].slice(0, 60).join("\n")
+    : "no problems found",
+);

@@ -43,7 +43,7 @@ function EntryContent({ slug }: { slug: string }) {
     return (
       <section>
         <p role="alert">{entry.message}</p>
-        <Link to="/">Back to the library</Link>
+        <Link to="/library">Back to the library</Link>
       </section>
     );
   }
@@ -73,7 +73,8 @@ function EntryContent({ slug }: { slug: string }) {
     <article className={styles.entry}>
       <header className={styles.entryHeader}>
         <p className={styles.crumbs}>
-          <Link to="/">Library</Link> / {e.category}
+          <Link to="/library">Library</Link> /{" "}
+          <Link to={`/topics/${sectionFor(e.category)}`}>{e.category}</Link>
         </p>
         <h1 className={styles.entryTitle}>
           <TopicIcon topic={sectionFor(e.category)} size={44} />

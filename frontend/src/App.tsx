@@ -6,7 +6,9 @@ import { PathPage } from "./learn/PathPage";
 import { PrimerPage } from "./learn/PrimerPage";
 import { EntryPage } from "./pages/EntryPage";
 import { JobPage } from "./pages/JobPage";
+import { HomePage } from "./pages/HomePage";
 import { LibraryPage } from "./pages/LibraryPage";
+import { TopicPage } from "./pages/TopicPage";
 import { ProblemPage } from "./pages/ProblemPage";
 import { SolvePage } from "./pages/SolvePage";
 
@@ -21,10 +23,8 @@ export function App() {
         </Link>
         <nav aria-label="Main" className={styles.nav}>
           <NavLink
-            to="/"
-            className={({ isActive }) =>
-              isActive && !/^\/(solve|jobs|problems|path|learn)/.test(location.pathname) ? styles.active : ""
-            }
+            to="/library"
+            className={() => (/^\/(library|topics)/.test(location.pathname) ? styles.active : "")}
           >
             Library
           </NavLink>
@@ -42,7 +42,9 @@ export function App() {
       </header>
       <main className={styles.main}>
         <Routes>
-          <Route path="/" element={<LibraryPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/library" element={<LibraryPage />} />
+          <Route path="/topics/:id" element={<TopicPage />} />
           <Route path="/library/:slug" element={<EntryPage />} />
           <Route path="/solve" element={<SolvePage />} />
           <Route path="/path" element={<PathPage />} />
@@ -56,7 +58,7 @@ export function App() {
                 <h1>Nothing here</h1>
                 <p>
                   We couldn't find that page. It may have moved, or the link has a typo.{" "}
-                  <Link to="/">Back to the library</Link>
+                  <Link to="/library">Back to the library</Link>
                 </p>
               </section>
             }
@@ -69,7 +71,8 @@ export function App() {
           code, really running.
         </span>
         <span>
-          <Link to="/">Library</Link> · <Link to="/solve">Paste a problem</Link>
+          <Link to="/library">Library</Link> · <Link to="/path">Learning path</Link> ·{" "}
+          <Link to="/solve">Paste a problem</Link>
         </span>
       </footer>
     </div>
