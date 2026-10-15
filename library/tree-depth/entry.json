@@ -1,0 +1,177 @@
+{
+  "title": "Maximum depth of a binary tree",
+  "category": "Binary trees",
+  "summary": "A tree's depth is one more than the deeper of its two subtrees: let recursion do the rest.",
+  "order": 54,
+  "entry": "max_depth",
+  "schema": {
+    "params": [
+      {
+        "name": "root",
+        "type": {
+          "kind": "binary_tree",
+          "of": {
+            "kind": "int",
+            "min": -50,
+            "max": 50
+          },
+          "nodes": {
+            "min": 0,
+            "max": 12
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      [
+        3,
+        9,
+        20,
+        null,
+        null,
+        15,
+        7
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        []
+      ]
+    },
+    {
+      "args": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          null,
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          9,
+          20,
+          null,
+          null,
+          15,
+          7
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4,
+          null,
+          null,
+          5,
+          6
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2,
+          null,
+          3,
+          null,
+          4
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "6": 4,
+    "7": 5,
+    "8": 7,
+    "9": 8,
+    "10": 9,
+    "2": 13
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "tree",
+        "var": "root",
+        "label": "Tree",
+        "pointers": [
+          {
+            "label": "node",
+            "at": "node"
+          }
+        ]
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "left",
+          "right"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "That's the depth of the whole tree."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "text": "An empty subtree."
+    },
+    {
+      "line": 6,
+      "next": 8,
+      "text": "At {node.val}: first find how deep its left subtree goes."
+    },
+    {
+      "line": 7,
+      "text": "An empty subtree has no levels."
+    },
+    {
+      "line": 8,
+      "text": "Back at {node.val}: its left subtree is {left} deep. Now the right one."
+    },
+    {
+      "line": 9,
+      "text": "Its right subtree is {right} deep."
+    },
+    {
+      "line": 10,
+      "when": "left >= right",
+      "text": "So the tree under {node.val} is one level more than its left side: {left + 1}."
+    },
+    {
+      "line": 10,
+      "when": "left < right",
+      "text": "So the tree under {node.val} is one level more than its right side: {right + 1}."
+    }
+  ]
+}

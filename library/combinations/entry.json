@@ -1,0 +1,176 @@
+{
+  "title": "Backtracking: combinations",
+  "category": "Backtracking",
+  "summary": "Choose numbers in increasing order, recurse to choose the rest, then undo and try the next choice.",
+  "order": 71,
+  "entry": "combine",
+  "schema": {
+    "params": [
+      {
+        "name": "n",
+        "type": {
+          "kind": "int",
+          "min": 1,
+          "max": 5
+        }
+      },
+      {
+        "name": "k",
+        "type": {
+          "kind": "int",
+          "min": 0,
+          "max": "n"
+        }
+      }
+    ]
+  },
+  "note": "Every way to choose k different numbers from 1 to n.",
+  "default_input": {
+    "args": [
+      4,
+      2
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        1,
+        0
+      ]
+    },
+    {
+      "args": [
+        1,
+        1
+      ]
+    },
+    {
+      "args": [
+        3,
+        1
+      ]
+    },
+    {
+      "args": [
+        3,
+        3
+      ]
+    },
+    {
+      "args": [
+        4,
+        2
+      ]
+    },
+    {
+      "args": [
+        5,
+        3
+      ]
+    },
+    {
+      "args": [
+        5,
+        0
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "6": 4,
+    "7": 5,
+    "8": 6,
+    "9": 8,
+    "10": 9,
+    "11": 10,
+    "12": 11,
+    "2": 16,
+    "3": 17,
+    "14": 18,
+    "15": 19
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "stack",
+        "var": "path",
+        "label": "Chosen so far (path)"
+      },
+      {
+        "kind": "list",
+        "var": "result",
+        "label": "Combinations found"
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "n",
+          "k",
+          "start",
+          "x"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "No combinations found yet."
+    },
+    {
+      "line": 3,
+      "text": "Nothing is chosen yet."
+    },
+    {
+      "line": 5,
+      "text": "Define backtrack: it chooses one more number, starting from start, then recurses."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "text": "{path} has {k} numbers: a complete combination."
+    },
+    {
+      "line": 6,
+      "next": 9,
+      "text": "{path} needs more numbers. Try each one from {start} to {n}."
+    },
+    {
+      "line": 7,
+      "text": "Record it: {len(result)} found so far."
+    },
+    {
+      "line": 8,
+      "text": "Go back and change an earlier choice."
+    },
+    {
+      "line": 9,
+      "next": 10,
+      "text": "Try choosing {x}."
+    },
+    {
+      "line": 9,
+      "next": "return",
+      "text": "Every number from {start} on has been tried here: go back."
+    },
+    {
+      "line": 10,
+      "text": "Chosen so far: {path}."
+    },
+    {
+      "line": 11,
+      "text": "Back from every combination that starts with {path}."
+    },
+    {
+      "line": 12,
+      "text": "Undo: take {x} out again, giving {path}."
+    },
+    {
+      "line": 14,
+      "text": "Every combination has been found."
+    },
+    {
+      "line": 15,
+      "text": "There are {len(result)} ways to choose {k} numbers from {n}."
+    }
+  ]
+}

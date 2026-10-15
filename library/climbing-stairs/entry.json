@@ -1,0 +1,122 @@
+{
+  "title": "1D DP: climbing stairs",
+  "category": "Dynamic programming",
+  "summary": "The ways to reach a step are the ways to reach the step below plus the ways to reach two below.",
+  "order": 57,
+  "entry": "climb_stairs",
+  "schema": {
+    "params": [
+      {
+        "name": "n",
+        "type": {
+          "kind": "int",
+          "min": 1,
+          "max": 30
+        }
+      }
+    ]
+  },
+  "note": "Each move climbs one step or two.",
+  "default_input": {
+    "args": [
+      5
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        1
+      ]
+    },
+    {
+      "args": [
+        2
+      ]
+    },
+    {
+      "args": [
+        3
+      ]
+    },
+    {
+      "args": [
+        4
+      ]
+    },
+    {
+      "args": [
+        5
+      ]
+    },
+    {
+      "args": [
+        10
+      ]
+    },
+    {
+      "args": [
+        30
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 8
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "ways",
+        "label": "ways[i]: ways to reach step i",
+        "pointers": [
+          {
+            "label": "i",
+            "at": "i"
+          },
+          {
+            "label": "i-1",
+            "at": "i - 1"
+          },
+          {
+            "label": "i-2",
+            "at": "i - 2"
+          }
+        ]
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "n",
+          "i"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "ways[i] will count the ways to reach step i. There's exactly one way to be at the bottom, and one way to reach the first step."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "Step {i}: you get there either from step {i - 1} or from step {i - 2}."
+    },
+    {
+      "line": 3,
+      "next": 5,
+      "text": "Every step is counted."
+    },
+    {
+      "line": 4,
+      "text": "So the ways to reach step {i} are {ways[i - 1] + ways[i - 2]}."
+    },
+    {
+      "line": 5,
+      "text": "There are {ways[n]} ways to climb {n} steps."
+    }
+  ]
+}

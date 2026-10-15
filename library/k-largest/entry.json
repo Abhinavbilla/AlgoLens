@@ -1,0 +1,191 @@
+{
+  "title": "Heap: the k largest values",
+  "category": "Heaps",
+  "summary": "Keep a small min-heap of the best k seen so far; anything smaller than its top can't make the cut.",
+  "order": 41,
+  "entry": "k_largest",
+  "schema": {
+    "params": [
+      {
+        "name": "nums",
+        "type": {
+          "kind": "array",
+          "of": {
+            "kind": "int",
+            "min": -50,
+            "max": 50
+          },
+          "len": {
+            "min": 1,
+            "max": 10
+          }
+        }
+      },
+      {
+        "name": "k",
+        "type": {
+          "kind": "int",
+          "min": 1,
+          "max": "len(nums)"
+        }
+      }
+    ]
+  },
+  "note": "Returns the k largest values, largest first.",
+  "default_input": {
+    "args": [
+      [
+        3,
+        1,
+        5,
+        12,
+        2,
+        11,
+        7
+      ],
+      3
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        [
+          5
+        ],
+        1
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2
+        ],
+        1
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2
+        ],
+        2
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          1,
+          5,
+          12,
+          2,
+          11,
+          7
+        ],
+        3
+      ]
+    },
+    {
+      "args": [
+        [
+          4,
+          4,
+          4,
+          1
+        ],
+        2
+      ]
+    },
+    {
+      "args": [
+        [
+          -3,
+          -1,
+          -7
+        ],
+        2
+      ]
+    },
+    {
+      "args": [
+        [
+          9,
+          8,
+          7,
+          6,
+          5,
+          4
+        ],
+        4
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "5": 4,
+    "6": 5,
+    "7": 6,
+    "8": 7,
+    "9": 8,
+    "10": 11
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "nums"
+      },
+      {
+        "kind": "array",
+        "var": "heap",
+        "label": "Min-heap of the best k so far (smallest first)"
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "k",
+          "x"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 5,
+      "text": "The team of the best values starts empty."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "text": "Next value: {x}."
+    },
+    {
+      "line": 6,
+      "next": 10,
+      "text": "Every value has had its chance."
+    },
+    {
+      "line": 7,
+      "text": "Add {x} to the heap: {heap}."
+    },
+    {
+      "line": 8,
+      "next": 9,
+      "text": "That's {len(heap)} values, one more than {k}: the smallest has to go."
+    },
+    {
+      "line": 8,
+      "next": 6,
+      "text": "The heap still has room for up to {k} values."
+    },
+    {
+      "line": 9,
+      "text": "Removed the smallest. The best {k} so far: {heap}."
+    },
+    {
+      "line": 10,
+      "text": "The {k} largest values, biggest first."
+    }
+  ]
+}

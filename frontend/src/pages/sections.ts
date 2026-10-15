@@ -34,7 +34,14 @@ export const SECTIONS: Section[] = [
     title: "Array techniques",
     intro:
       "Small patterns that turn a nested loop into one pass: pointers moving inward, a window that slides, totals you compute once.",
-    categories: ["Two pointers", "Sliding window", "Prefix sums", "Monotonic stack"],
+    categories: ["Two pointers", "Sliding window", "Prefix sums", "Arrays"],
+  },
+  {
+    id: "stacks",
+    title: "Stacks and queues",
+    intro:
+      "Last in, first out: matching brackets, undo buttons, and the stack trick that finds the next bigger value.",
+    categories: ["Stacks", "Monotonic stack"],
   },
   {
     id: "heaps",

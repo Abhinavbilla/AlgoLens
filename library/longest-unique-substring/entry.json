@@ -1,0 +1,172 @@
+{
+  "title": "Sliding window: longest substring without repeats",
+  "category": "Strings",
+  "summary": "Grow a window to the right; when a character repeats, shrink it from the left until it doesn't.",
+  "order": 38,
+  "entry": "longest_unique",
+  "schema": {
+    "params": [
+      {
+        "name": "s",
+        "type": {
+          "kind": "string",
+          "chars": "abc",
+          "len": {
+            "min": 0,
+            "max": 10
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      "abcabcbb"
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        ""
+      ]
+    },
+    {
+      "args": [
+        "a"
+      ]
+    },
+    {
+      "args": [
+        "aa"
+      ]
+    },
+    {
+      "args": [
+        "ab"
+      ]
+    },
+    {
+      "args": [
+        "abcabcbb"
+      ]
+    },
+    {
+      "args": [
+        "bbbbb"
+      ]
+    },
+    {
+      "args": [
+        "abcab"
+      ]
+    },
+    {
+      "args": [
+        "abba"
+      ]
+    },
+    {
+      "args": [
+        "cabcbca"
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 8,
+    "7": 9,
+    "8": 10,
+    "9": 12,
+    "10": 13,
+    "11": 15
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "s",
+        "label": "s",
+        "pointers": [
+          {
+            "label": "left",
+            "at": "left"
+          },
+          {
+            "label": "right",
+            "at": "right"
+          }
+        ],
+        "range": {
+          "label": "window",
+          "from": "left",
+          "to": "right + 1"
+        }
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "left",
+          "right",
+          "best"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "The window starts empty, so it holds no characters yet."
+    },
+    {
+      "line": 3,
+      "text": "Its left edge starts at position {left}."
+    },
+    {
+      "line": 4,
+      "text": "The longest window so far has length {best}."
+    },
+    {
+      "line": 5,
+      "next": 6,
+      "text": "Grow the window to include {s[right]}."
+    },
+    {
+      "line": 5,
+      "next": 11,
+      "text": "The window has reached the end of the string."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "text": "{s[right]} is already in the window: shrink it from the left until it isn't."
+    },
+    {
+      "line": 6,
+      "next": 9,
+      "text": "{s[right]} isn't in the window, so no repeats."
+    },
+    {
+      "line": 7,
+      "text": "Drop {s[left]} from the left edge."
+    },
+    {
+      "line": 8,
+      "text": "The window now starts at position {left}."
+    },
+    {
+      "line": 9,
+      "text": "Add {s[right]} to the window."
+    },
+    {
+      "line": 10,
+      "text": "This window has length {right - left + 1}. The best so far is {best}."
+    },
+    {
+      "line": 11,
+      "text": "The longest stretch with no repeated character has length {best}."
+    }
+  ]
+}

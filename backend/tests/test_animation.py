@@ -106,13 +106,17 @@ def texts(animation):
 def test_all_library_entries_load():
     entries = load_all(LIBRARY)
     assert [e.slug for e in entries] == [
-        "bubble-sort", "insertion-sort", "merge-sort", "quick-sort", "binary-search",
-        "two-pointers", "sliding-window", "prefix-sums", "hash-map-counting", "monotonic-stack",
-        "valid-anagram", "count-bits", "heap-operations", "grid-bfs", "graph-dfs", "dijkstra",
-        "topological-sort", "union-find", "reverse-linked-list", "fast-slow-pointers",
-        "level-order", "preorder-traversal", "inorder-traversal", "postorder-traversal",
-        "bst-insert-search", "house-robber", "lcs", "coin-change", "knapsack", "merge-intervals",
-        "subsets", "permutations", "segment-tree",
+        "bubble-sort", "insertion-sort", "merge-sort", "quick-sort", "selection-sort",
+        "counting-sort", "binary-search-exact", "binary-search", "integer-sqrt", "kadane",
+        "two-pointers", "dutch-flag", "sliding-window", "prefix-sums", "hash-map-counting",
+        "majority-vote", "monotonic-stack", "valid-anagram", "count-bits", "heap-operations",
+        "valid-palindrome", "longest-unique-substring", "valid-parentheses", "grid-bfs",
+        "graph-bfs", "k-largest", "graph-dfs", "dijkstra", "topological-sort", "union-find",
+        "reverse-linked-list", "fast-slow-pointers", "level-order", "merge-sorted-lists",
+        "preorder-traversal", "inorder-traversal", "postorder-traversal", "tree-depth",
+        "bst-insert-search", "climbing-stairs", "house-robber", "lcs", "lis", "coin-change",
+        "knapsack", "merge-intervals", "jump-game", "subsets", "combinations", "permutations",
+        "segment-tree",
     ]  # fmt: skip
 
 

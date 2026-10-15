@@ -1,0 +1,192 @@
+{
+  "title": "Greedy: jump game",
+  "category": "Greedy",
+  "summary": "Walk forward keeping track of the farthest position you could reach; if you ever pass it, you're stuck.",
+  "order": 65,
+  "entry": "can_jump",
+  "schema": {
+    "params": [
+      {
+        "name": "nums",
+        "type": {
+          "kind": "array",
+          "of": {
+            "kind": "int",
+            "min": 0,
+            "max": 4
+          },
+          "len": {
+            "min": 1,
+            "max": 10
+          }
+        }
+      }
+    ]
+  },
+  "note": "nums[i] is the longest jump allowed from position i. Can you reach the last position?",
+  "default_input": {
+    "args": [
+      [
+        2,
+        3,
+        1,
+        1,
+        4
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        [
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          3,
+          1,
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          2,
+          1,
+          0,
+          4
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          1,
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          4,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          0,
+          0,
+          1
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 9,
+    "7": 11
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "nums",
+        "pointers": [
+          {
+            "label": "i",
+            "at": "i"
+          },
+          {
+            "label": "reach",
+            "at": "reach"
+          }
+        ],
+        "range": {
+          "label": "reachable",
+          "from": "0",
+          "to": "reach + 1"
+        }
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "i",
+          "reach"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "Before any jump, the farthest we can reach is position {reach}."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "Now at position {i}."
+    },
+    {
+      "line": 3,
+      "next": 7,
+      "text": "We made it past every position."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "Position {i} is beyond the farthest reachable, {reach}: we're stuck."
+    },
+    {
+      "line": 4,
+      "next": 6,
+      "text": "Position {i} is reachable."
+    },
+    {
+      "line": 5,
+      "text": "The last position can't be reached."
+    },
+    {
+      "line": 6,
+      "text": "From here we can jump up to {nums[i]}, as far as position {i + nums[i]}. The farthest reachable is now {reach}."
+    },
+    {
+      "line": 7,
+      "text": "The last position is reachable."
+    }
+  ]
+}

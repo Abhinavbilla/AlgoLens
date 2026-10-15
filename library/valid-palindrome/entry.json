@@ -1,0 +1,156 @@
+{
+  "title": "Strings: palindrome check with two pointers",
+  "category": "Strings",
+  "summary": "Compare the first and last characters, then move both ends inward.",
+  "order": 37,
+  "entry": "is_palindrome",
+  "schema": {
+    "params": [
+      {
+        "name": "s",
+        "type": {
+          "kind": "string",
+          "chars": "ab",
+          "len": {
+            "min": 0,
+            "max": 9
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      "abba"
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        ""
+      ]
+    },
+    {
+      "args": [
+        "a"
+      ]
+    },
+    {
+      "args": [
+        "ab"
+      ]
+    },
+    {
+      "args": [
+        "aa"
+      ]
+    },
+    {
+      "args": [
+        "aba"
+      ]
+    },
+    {
+      "args": [
+        "abba"
+      ]
+    },
+    {
+      "args": [
+        "abab"
+      ]
+    },
+    {
+      "args": [
+        "aabaa"
+      ]
+    },
+    {
+      "args": [
+        "abbab"
+      ]
+    },
+    {
+      "args": [
+        "babbab"
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 9,
+    "7": 10,
+    "8": 12
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "s",
+        "label": "s",
+        "pointers": [
+          {
+            "label": "left",
+            "at": "left"
+          },
+          {
+            "label": "right",
+            "at": "right"
+          }
+        ]
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "left",
+          "right"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "One finger on each end: positions {left} and {right}."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "The fingers haven't met yet."
+    },
+    {
+      "line": 3,
+      "next": 8,
+      "text": "The fingers have met in the middle."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "{s[left]} and {s[right]} are different: it isn't a palindrome."
+    },
+    {
+      "line": 4,
+      "next": 6,
+      "text": "{s[left]} matches {s[right]}."
+    },
+    {
+      "line": 5,
+      "text": "Not a palindrome."
+    },
+    {
+      "line": 6,
+      "text": "Move the left finger inward."
+    },
+    {
+      "line": 7,
+      "text": "And the right finger: now comparing positions {left} and {right}."
+    },
+    {
+      "line": 8,
+      "text": "Every pair matched: it reads the same both ways."
+    }
+  ]
+}

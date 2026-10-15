@@ -1,0 +1,150 @@
+{
+  "title": "Binary search on the answer: integer square root",
+  "category": "Binary search",
+  "summary": "Guess the answer, check it, and halve the range of possible answers each time.",
+  "order": 22,
+  "entry": "int_sqrt",
+  "schema": {
+    "params": [
+      {
+        "name": "x",
+        "type": {
+          "kind": "int",
+          "min": 0,
+          "max": 299
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      40
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        0
+      ]
+    },
+    {
+      "args": [
+        1
+      ]
+    },
+    {
+      "args": [
+        2
+      ]
+    },
+    {
+      "args": [
+        3
+      ]
+    },
+    {
+      "args": [
+        4
+      ]
+    },
+    {
+      "args": [
+        8
+      ]
+    },
+    {
+      "args": [
+        15
+      ]
+    },
+    {
+      "args": [
+        16
+      ]
+    },
+    {
+      "args": [
+        40
+      ]
+    },
+    {
+      "args": [
+        99
+      ]
+    },
+    {
+      "args": [
+        100
+      ]
+    },
+    {
+      "args": [
+        299
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 8,
+    "8": 10,
+    "9": 13
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "vars",
+        "vars": [
+          "x",
+          "lo",
+          "mid",
+          "hi"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "The answer is somewhere from {lo} to {hi}."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "Candidates from {lo} to {hi} are still possible."
+    },
+    {
+      "line": 3,
+      "next": 9,
+      "text": "Only one candidate is left: {lo}."
+    },
+    {
+      "line": 4,
+      "text": "Try the middle candidate, {mid}."
+    },
+    {
+      "line": 5,
+      "next": 6,
+      "text": "{mid * mid} isn't more than {x}, so the answer is at least {mid}."
+    },
+    {
+      "line": 5,
+      "next": 8,
+      "text": "{mid * mid} is more than {x}, so the answer is below {mid}."
+    },
+    {
+      "line": 6,
+      "text": "Now the range is {lo} to {hi}."
+    },
+    {
+      "line": 8,
+      "text": "Now the range is {lo} to {hi}."
+    },
+    {
+      "line": 9,
+      "text": "The integer square root of {x} is {lo}."
+    }
+  ]
+}

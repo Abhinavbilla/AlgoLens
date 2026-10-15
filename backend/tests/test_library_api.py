@@ -47,7 +47,7 @@ def test_list_and_entry(client):
     # Listed in the entries' declared order (test_animation pins the full list).
     expected = sorted(load_all(get_settings().library_dir), key=lambda e: (e.order, e.slug))
     assert [e["slug"] for e in entries] == [e.slug for e in expected]
-    assert len(entries) == 33
+    assert len(entries) == 51
     assert entries[0]["verification"]["status"] == "unverified"  # until `library verify` runs
     entry = client.get("/api/library/binary-search").json()
     assert entry["python_code"].startswith("def lower_bound")

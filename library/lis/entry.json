@@ -1,0 +1,229 @@
+{
+  "title": "Longest increasing subsequence",
+  "category": "Dynamic programming",
+  "summary": "For each position, the longest increasing run ending there is one more than the best earlier run it can extend.",
+  "order": 60,
+  "entry": "lis",
+  "schema": {
+    "params": [
+      {
+        "name": "nums",
+        "type": {
+          "kind": "array",
+          "of": {
+            "kind": "int",
+            "min": 0,
+            "max": 20
+          },
+          "len": {
+            "min": 0,
+            "max": 8
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      [
+        3,
+        1,
+        4,
+        1,
+        5,
+        9,
+        2,
+        6
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        []
+      ]
+    },
+    {
+      "args": [
+        [
+          7
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          1,
+          4,
+          1,
+          5,
+          9,
+          2,
+          6
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          5,
+          5,
+          5
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          9,
+          7,
+          5,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          0,
+          8,
+          4,
+          12,
+          2
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 8,
+    "7": 12
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "nums",
+        "pointers": [
+          {
+            "label": "i",
+            "at": "i"
+          },
+          {
+            "label": "j",
+            "at": "j"
+          }
+        ]
+      },
+      {
+        "kind": "array",
+        "var": "best",
+        "label": "best[i]: longest increasing run ending at i",
+        "pointers": [
+          {
+            "label": "i",
+            "at": "i"
+          },
+          {
+            "label": "j",
+            "at": "j"
+          }
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "when": "len(nums) == 0",
+      "text": "There are no values, so there's no run."
+    },
+    {
+      "line": 2,
+      "when": "len(nums) > 0",
+      "text": "best[i] will be the longest increasing run ending at position i. Every value on its own is a run of length {best[0]}."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "Find the longest run that can end at {nums[i]}."
+    },
+    {
+      "line": 3,
+      "next": 7,
+      "text": "Every position is done: {best}."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "Could {nums[i]} extend the run ending at {nums[j]}?"
+    },
+    {
+      "line": 4,
+      "next": 3,
+      "text": "Done with {nums[i]}: the longest run ending there has length {best[i]}."
+    },
+    {
+      "line": 5,
+      "next": 6,
+      "text": "Yes: {nums[j]} < {nums[i]}, and that makes a longer run, {best[j] + 1}."
+    },
+    {
+      "line": 5,
+      "next": 4,
+      "when": "nums[j] >= nums[i]",
+      "text": "No: {nums[j]} isn't smaller than {nums[i]}."
+    },
+    {
+      "line": 5,
+      "next": 4,
+      "when": "nums[j] < nums[i]",
+      "text": "It could, but that run wouldn't be longer than {best[i]}."
+    },
+    {
+      "line": 6,
+      "text": "The longest run ending at {nums[i]} is now {best[i]}."
+    },
+    {
+      "line": 7,
+      "when": "len(nums) == 0",
+      "text": "No values, so the answer is zero."
+    },
+    {
+      "line": 7,
+      "when": "len(nums) > 0",
+      "text": "The answer is the largest entry of best."
+    }
+  ]
+}

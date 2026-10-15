@@ -1,0 +1,175 @@
+{
+  "title": "Stacks: matching brackets",
+  "category": "Stacks",
+  "summary": "Push every opening bracket; each closing bracket must match the one on top of the stack.",
+  "order": 39,
+  "entry": "is_valid",
+  "schema": {
+    "params": [
+      {
+        "name": "s",
+        "type": {
+          "kind": "string",
+          "chars": "()[]",
+          "len": {
+            "min": 0,
+            "max": 10
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      "([])[]"
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        ""
+      ]
+    },
+    {
+      "args": [
+        "()"
+      ]
+    },
+    {
+      "args": [
+        "(]"
+      ]
+    },
+    {
+      "args": [
+        "([])"
+      ]
+    },
+    {
+      "args": [
+        "([)]"
+      ]
+    },
+    {
+      "args": [
+        "(("
+      ]
+    },
+    {
+      "args": [
+        "))"
+      ]
+    },
+    {
+      "args": [
+        "([])[]"
+      ]
+    },
+    {
+      "args": [
+        "[(])"
+      ]
+    },
+    {
+      "args": [
+        "[[]]()"
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 8,
+    "7": 9,
+    "8": 11,
+    "10": 13,
+    "11": 16
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "stack",
+        "var": "stack",
+        "label": "Open brackets (top is the most recent)"
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "s",
+          "c"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "Each closing bracket must match its own kind of opening bracket."
+    },
+    {
+      "line": 3,
+      "text": "No brackets are open yet."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "Next character: {c}."
+    },
+    {
+      "line": 4,
+      "next": 11,
+      "text": "Every character has been read."
+    },
+    {
+      "line": 5,
+      "next": 6,
+      "text": "{c} is a closing bracket."
+    },
+    {
+      "line": 5,
+      "next": 10,
+      "text": "{c} is an opening bracket."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "when": "len(stack) == 0",
+      "text": "Nothing is open, so {c} has nothing to close."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "when": "len(stack) > 0",
+      "text": "The most recently opened bracket is {stack[len(stack) - 1]}, the wrong kind for {c}."
+    },
+    {
+      "line": 6,
+      "next": 8,
+      "text": "It matches the most recently opened bracket, {stack[len(stack) - 1]}."
+    },
+    {
+      "line": 7,
+      "text": "So the brackets aren't balanced."
+    },
+    {
+      "line": 8,
+      "text": "Close it by popping it off the stack."
+    },
+    {
+      "line": 10,
+      "text": "Push it: it's now the bracket that must close first."
+    },
+    {
+      "line": 11,
+      "when": "len(stack) == 0",
+      "text": "Every bracket was closed in the right order: balanced."
+    },
+    {
+      "line": 11,
+      "when": "len(stack) > 0",
+      "text": "Some brackets were never closed: {stack}."
+    }
+  ]
+}

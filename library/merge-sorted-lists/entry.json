@@ -1,0 +1,238 @@
+{
+  "title": "Merge two sorted linked lists",
+  "category": "Linked lists",
+  "summary": "Repeatedly take the smaller front node of the two lists and attach it to the end of the result.",
+  "order": 50,
+  "entry": "merge_lists",
+  "result_kind": "linked_list",
+  "schema": {
+    "params": [
+      {
+        "name": "a",
+        "type": {
+          "kind": "linked_list",
+          "of": {
+            "kind": "int",
+            "min": 0,
+            "max": 9
+          },
+          "len": {
+            "min": 0,
+            "max": 4
+          }
+        }
+      },
+      {
+        "name": "b",
+        "type": {
+          "kind": "linked_list",
+          "of": {
+            "kind": "int",
+            "min": 0,
+            "max": 9
+          },
+          "len": {
+            "min": 0,
+            "max": 4
+          }
+        }
+      }
+    ]
+  },
+  "note": "Both lists are sorted from smallest to largest.",
+  "default_input": {
+    "args": [
+      [
+        1,
+        4,
+        6
+      ],
+      [
+        2,
+        3,
+        7
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        [],
+        []
+      ]
+    },
+    {
+      "args": [
+        [
+          1
+        ],
+        []
+      ]
+    },
+    {
+      "args": [
+        [],
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          4
+        ],
+        [
+          1,
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          4,
+          6
+        ],
+        [
+          2,
+          3,
+          7
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          2
+        ],
+        [
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          0,
+          5,
+          9
+        ],
+        [
+          1
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 8,
+    "7": 9,
+    "9": 11,
+    "10": 12,
+    "11": 14,
+    "12": 16,
+    "13": 17
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "linked_list",
+        "var": "a",
+        "label": "What's left of list a"
+      },
+      {
+        "kind": "linked_list",
+        "var": "b",
+        "label": "What's left of list b"
+      },
+      {
+        "kind": "linked_list",
+        "var": "dummy",
+        "label": "Result (after a dummy start node)",
+        "pointers": [
+          {
+            "label": "tail",
+            "at": "tail"
+          }
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "A dummy node to hang the result on, so the first node isn't a special case."
+    },
+    {
+      "line": 3,
+      "text": "tail marks the end of the result, where the next node goes."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "Both lists still have nodes: compare their fronts, {a.val} and {b.val}."
+    },
+    {
+      "line": 4,
+      "next": 12,
+      "text": "One list has run out."
+    },
+    {
+      "line": 5,
+      "next": 6,
+      "text": "{a.val} ≤ {b.val}: take the front of list a."
+    },
+    {
+      "line": 5,
+      "next": 9,
+      "text": "{b.val} < {a.val}: take the front of list b."
+    },
+    {
+      "line": 6,
+      "text": "Attach it to the end of the result."
+    },
+    {
+      "line": 7,
+      "text": "Step past it in list a."
+    },
+    {
+      "line": 9,
+      "text": "Attach it to the end of the result."
+    },
+    {
+      "line": 10,
+      "text": "Step past it in list b."
+    },
+    {
+      "line": 11,
+      "text": "The result now ends at {tail.val}."
+    },
+    {
+      "line": 12,
+      "text": "Attach whatever is left of the other list: it's already sorted."
+    },
+    {
+      "line": 13,
+      "text": "The merged list starts after the dummy node."
+    }
+  ]
+}

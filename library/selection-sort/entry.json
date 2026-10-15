@@ -1,0 +1,218 @@
+{
+  "title": "Selection sort",
+  "category": "Sorting",
+  "summary": "Find the smallest value that's left and swap it into the next position, again and again.",
+  "order": 14,
+  "entry": "selection_sort",
+  "schema": {
+    "params": [
+      {
+        "name": "arr",
+        "type": {
+          "kind": "array",
+          "of": {
+            "kind": "int",
+            "min": -100,
+            "max": 100
+          },
+          "len": {
+            "min": 0,
+            "max": 12
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      [
+        29,
+        10,
+        14,
+        37,
+        13
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        []
+      ]
+    },
+    {
+      "args": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          29,
+          10,
+          14,
+          37,
+          13
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          4,
+          4,
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          -3,
+          7,
+          -9,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          5,
+          1,
+          4,
+          2,
+          8,
+          0
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 8,
+    "7": 9,
+    "8": 12,
+    "9": 14
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "arr",
+        "pointers": [
+          {
+            "label": "i",
+            "at": "i"
+          },
+          {
+            "label": "j",
+            "at": "j"
+          },
+          {
+            "label": "min",
+            "at": "smallest"
+          }
+        ],
+        "range": {
+          "label": "sorted",
+          "from": "0",
+          "to": "i"
+        }
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "n",
+          "i",
+          "j",
+          "smallest"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "The array has {n} values."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "Position {i} needs the smallest value that's left."
+    },
+    {
+      "line": 3,
+      "next": 9,
+      "text": "Every position is filled: the array is sorted."
+    },
+    {
+      "line": 4,
+      "text": "Start by assuming it's {arr[i]}, the value already at position {i}."
+    },
+    {
+      "line": 5,
+      "next": 6,
+      "text": "Compare {arr[j]} with the smallest so far, {arr[smallest]}."
+    },
+    {
+      "line": 5,
+      "next": 8,
+      "text": "Every remaining value has been checked."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "text": "{arr[j]} < {arr[smallest]}: a new smallest."
+    },
+    {
+      "line": 6,
+      "next": 5,
+      "text": "{arr[j]} isn't smaller than {arr[smallest]}."
+    },
+    {
+      "line": 7,
+      "text": "The smallest so far is now at position {smallest}."
+    },
+    {
+      "line": 8,
+      "text": "Swap it into place: position {i} now holds {arr[i]}, and it won't move again."
+    },
+    {
+      "line": 9,
+      "text": "Done: {arr}."
+    }
+  ]
+}

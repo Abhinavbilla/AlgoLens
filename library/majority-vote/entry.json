@@ -1,0 +1,180 @@
+{
+  "title": "Boyer–Moore majority vote",
+  "category": "Arrays",
+  "summary": "Pair off different values so they cancel out; the value that survives is the majority.",
+  "order": 34,
+  "entry": "majority",
+  "schema": {
+    "params": [
+      {
+        "name": "nums",
+        "type": {
+          "kind": "array",
+          "of": {
+            "kind": "int",
+            "min": 1,
+            "max": 3
+          },
+          "len": {
+            "min": 1,
+            "max": 9
+          }
+        }
+      }
+    ]
+  },
+  "note": "Some value appears more than half the time.",
+  "default_input": {
+    "args": [
+      [
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        2
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          1,
+          3,
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          1,
+          1,
+          2,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          1,
+          2,
+          1,
+          2
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 6,
+    "4": 7,
+    "5": 8,
+    "6": 10,
+    "7": 12
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "nums"
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "x",
+          "candidate",
+          "count"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "No candidate yet, and no votes."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "Next value: {x}."
+    },
+    {
+      "line": 3,
+      "next": 7,
+      "text": "Every value has voted."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "The votes have all cancelled out, so {x} becomes the new candidate."
+    },
+    {
+      "line": 4,
+      "next": 6,
+      "text": "The candidate is {candidate}, with {count} votes."
+    },
+    {
+      "line": 5,
+      "text": "New candidate: {candidate}."
+    },
+    {
+      "line": 6,
+      "when": "x == candidate",
+      "text": "{x} matches the candidate: one more vote, so {count}."
+    },
+    {
+      "line": 6,
+      "when": "x != candidate",
+      "text": "{x} is different: it cancels one vote, leaving {count}."
+    },
+    {
+      "line": 7,
+      "text": "The majority value is {candidate}."
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "title": "Dutch national flag: sort 0s, 1s and 2s",
+  "category": "Arrays",
+  "summary": "Three markers sort an array of 0s, 1s and 2s in a single pass, by swapping each value to its zone.",
+  "order": 31,
+  "entry": "sort_colors",
+  "schema": {
+    "params": [
+      {
+        "name": "nums",
+        "type": {
+          "kind": "array",
+          "of": {
+            "kind": "int",
+            "min": 0,
+            "max": 2
+          },
+          "len": {
+            "min": 0,
+            "max": 12
+          }
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      [
+        2,
+        0,
+        2,
+        1,
+        1,
+        0
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        []
+      ]
+    },
+    {
+      "args": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          0,
+          2,
+          1,
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          2,
+          1,
+          1,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          1,
+          0,
+          1,
+          2,
+          0,
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          0,
+          1,
+          2
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 7,
+    "6": 8,
+    "7": 9,
+    "8": 10,
+    "9": 11,
+    "11": 13,
+    "12": 14,
+    "13": 17
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "nums",
+        "pointers": [
+          {
+            "label": "low",
+            "at": "low"
+          },
+          {
+            "label": "mid",
+            "at": "mid"
+          },
+          {
+            "label": "high",
+            "at": "high"
+          }
+        ],
+        "range": {
+          "label": "unknown",
+          "from": "mid",
+          "to": "high + 1"
+        }
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "low",
+          "mid",
+          "high"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "Three markers: zeros will collect before low, twos after high, and mid scans what's in between."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "mid hasn't passed high: look at {nums[mid]}."
+    },
+    {
+      "line": 3,
+      "next": 13,
+      "text": "mid has passed high: every value is in its zone."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "It's a zero: swap it down to position {low}."
+    },
+    {
+      "line": 4,
+      "next": 8,
+      "text": "It isn't a zero."
+    },
+    {
+      "line": 5,
+      "text": "Swapped: {nums}."
+    },
+    {
+      "line": 6,
+      "text": "The zeros now fill everything before position {low}."
+    },
+    {
+      "line": 7,
+      "text": "Move on to position {mid}."
+    },
+    {
+      "line": 8,
+      "next": 9,
+      "text": "It's a one: ones belong in the middle, so it stays."
+    },
+    {
+      "line": 8,
+      "next": 11,
+      "text": "It's a two: swap it up to position {high}."
+    },
+    {
+      "line": 9,
+      "text": "Move on to position {mid}."
+    },
+    {
+      "line": 11,
+      "text": "Swapped: {nums}."
+    },
+    {
+      "line": 12,
+      "text": "The twos now fill everything after position {high}. The value that just arrived at position {mid} still needs a look."
+    },
+    {
+      "line": 13,
+      "text": "Sorted in a single pass: {nums}."
+    }
+  ]
+}

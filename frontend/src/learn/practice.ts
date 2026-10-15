@@ -176,6 +176,99 @@ export const PRACTICE: Record<string, Practice[]> = {
     lc("Single Number", "single-number", "Easy"),
     lc("Counting Bits", "counting-bits", "Easy"),
   ],
+  "selection-sort": SORTING,
+  "counting-sort": [
+    lc("Sort Colors", "sort-colors", "Medium"),
+    lc("Relative Sort Array", "relative-sort-array", "Easy"),
+    lc("H-Index", "h-index", "Medium"),
+  ],
+  "binary-search-exact": [
+    lc("Binary Search", "binary-search", "Easy"),
+    lc("Guess Number Higher or Lower", "guess-number-higher-or-lower", "Easy"),
+    lc("Search a 2D Matrix", "search-a-2d-matrix", "Medium"),
+  ],
+  "integer-sqrt": [
+    lc("Sqrt(x)", "sqrtx", "Easy"),
+    lc("Valid Perfect Square", "valid-perfect-square", "Easy"),
+    lc("Koko Eating Bananas", "koko-eating-bananas", "Medium"),
+    lc("Capacity To Ship Packages Within D Days", "capacity-to-ship-packages-within-d-days", "Medium"),
+  ],
+  "valid-palindrome": [
+    lc("Valid Palindrome", "valid-palindrome", "Easy"),
+    lc("Reverse String", "reverse-string", "Easy"),
+    lc("Valid Palindrome II", "valid-palindrome-ii", "Easy"),
+  ],
+  "longest-unique-substring": [
+    lc(
+      "Longest Substring Without Repeating Characters",
+      "longest-substring-without-repeating-characters",
+      "Medium",
+    ),
+    lc("Longest Repeating Character Replacement", "longest-repeating-character-replacement", "Medium"),
+    lc("Permutation in String", "permutation-in-string", "Medium"),
+  ],
+  kadane: [
+    lc("Maximum Subarray", "maximum-subarray", "Medium"),
+    lc("Best Time to Buy and Sell Stock", "best-time-to-buy-and-sell-stock", "Easy"),
+    lc("Maximum Product Subarray", "maximum-product-subarray", "Medium"),
+  ],
+  "dutch-flag": [
+    lc("Sort Colors", "sort-colors", "Medium"),
+    lc("Move Zeroes", "move-zeroes", "Easy"),
+    lc("Sort Array By Parity", "sort-array-by-parity", "Easy"),
+  ],
+  "majority-vote": [
+    lc("Majority Element", "majority-element", "Easy"),
+    lc("Majority Element II", "majority-element-ii", "Medium"),
+  ],
+  "valid-parentheses": [
+    lc("Valid Parentheses", "valid-parentheses", "Easy"),
+    lc("Min Stack", "min-stack", "Medium"),
+    lc("Evaluate Reverse Polish Notation", "evaluate-reverse-polish-notation", "Medium"),
+    lc("Generate Parentheses", "generate-parentheses", "Medium"),
+  ],
+  "k-largest": [
+    lc("Kth Largest Element in an Array", "kth-largest-element-in-an-array", "Medium"),
+    lc("Top K Frequent Elements", "top-k-frequent-elements", "Medium"),
+    lc("K Closest Points to Origin", "k-closest-points-to-origin", "Medium"),
+  ],
+  "merge-sorted-lists": [
+    lc("Merge Two Sorted Lists", "merge-two-sorted-lists", "Easy"),
+    lc("Sort List", "sort-list", "Medium"),
+    lc("Merge k Sorted Lists", "merge-k-sorted-lists", "Hard"),
+  ],
+  "graph-bfs": [
+    lc("Find if Path Exists in Graph", "find-if-path-exists-in-graph", "Easy"),
+    lc("Shortest Path in Binary Matrix", "shortest-path-in-binary-matrix", "Medium"),
+    lc("Word Ladder", "word-ladder", "Hard"),
+  ],
+  "tree-depth": [
+    lc("Maximum Depth of Binary Tree", "maximum-depth-of-binary-tree", "Easy"),
+    lc("Minimum Depth of Binary Tree", "minimum-depth-of-binary-tree", "Easy"),
+    lc("Balanced Binary Tree", "balanced-binary-tree", "Easy"),
+    lc("Diameter of Binary Tree", "diameter-of-binary-tree", "Easy"),
+  ],
+  "climbing-stairs": [
+    lc("Climbing Stairs", "climbing-stairs", "Easy"),
+    lc("Fibonacci Number", "fibonacci-number", "Easy"),
+    lc("Min Cost Climbing Stairs", "min-cost-climbing-stairs", "Easy"),
+    lc("Decode Ways", "decode-ways", "Medium"),
+  ],
+  lis: [
+    lc("Longest Increasing Subsequence", "longest-increasing-subsequence", "Medium"),
+    lc("Number of Longest Increasing Subsequence", "number-of-longest-increasing-subsequence", "Medium"),
+    lc("Russian Doll Envelopes", "russian-doll-envelopes", "Hard"),
+  ],
+  "jump-game": [
+    lc("Jump Game", "jump-game", "Medium"),
+    lc("Jump Game II", "jump-game-ii", "Medium"),
+    lc("Gas Station", "gas-station", "Medium"),
+  ],
+  combinations: [
+    lc("Combinations", "combinations", "Medium"),
+    lc("Combination Sum III", "combination-sum-iii", "Medium"),
+    lc("Letter Combinations of a Phone Number", "letter-combinations-of-a-phone-number", "Medium"),
+  ],
   "reverse-linked-list": [
     lc("Reverse Linked List", "reverse-linked-list", "Easy"),
     lc("Merge Two Sorted Lists", "merge-two-sorted-lists", "Easy"),

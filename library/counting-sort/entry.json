@@ -1,0 +1,223 @@
+{
+  "title": "Counting sort",
+  "category": "Sorting",
+  "summary": "Count how many times each value appears, then write the values back out in order. No comparisons.",
+  "order": 15,
+  "entry": "counting_sort",
+  "schema": {
+    "params": [
+      {
+        "name": "arr",
+        "type": {
+          "kind": "array",
+          "of": {
+            "kind": "int",
+            "min": 0,
+            "max": 9
+          },
+          "len": {
+            "min": 0,
+            "max": 12
+          }
+        }
+      }
+    ]
+  },
+  "note": "Values are small whole numbers, 0 to 9.",
+  "default_input": {
+    "args": [
+      [
+        4,
+        1,
+        3,
+        1,
+        0,
+        3
+      ]
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        []
+      ]
+    },
+    {
+      "args": [
+        [
+          5
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          4,
+          1,
+          3,
+          1,
+          0,
+          3
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          9,
+          9,
+          9
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          0,
+          9,
+          0,
+          9
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          3,
+          2,
+          1,
+          0
+        ]
+      ]
+    },
+    {
+      "args": [
+        [
+          7,
+          3,
+          7,
+          1,
+          1,
+          5,
+          0,
+          9
+        ]
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "2": 4,
+    "3": 5,
+    "4": 7,
+    "5": 9,
+    "6": 10,
+    "7": 11,
+    "8": 13,
+    "9": 14,
+    "10": 15,
+    "11": 17
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "arr"
+      },
+      {
+        "kind": "array",
+        "var": "counts",
+        "label": "counts (one per value, from low to high)",
+        "pointers": [
+          {
+            "label": "x",
+            "at": "x - low"
+          },
+          {
+            "label": "v",
+            "at": "v - low"
+          }
+        ]
+      },
+      {
+        "kind": "list",
+        "var": "out",
+        "label": "Written out so far"
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "low",
+          "high"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "next": 3,
+      "text": "The array is empty: nothing to sort."
+    },
+    {
+      "line": 2,
+      "next": 4,
+      "text": "Find the smallest and largest values."
+    },
+    {
+      "line": 3,
+      "text": "Return the empty array."
+    },
+    {
+      "line": 4,
+      "text": "The values run from {low} to {high}."
+    },
+    {
+      "line": 5,
+      "text": "One counter for every value from {low} to {high}, all starting at zero."
+    },
+    {
+      "line": 6,
+      "next": 7,
+      "text": "Next value: {x}."
+    },
+    {
+      "line": 6,
+      "next": 8,
+      "text": "Every value has been counted: {counts}."
+    },
+    {
+      "line": 7,
+      "text": "Count it: {x} has been seen {counts[x - low]} times so far."
+    },
+    {
+      "line": 8,
+      "text": "Now write the values back out, smallest first."
+    },
+    {
+      "line": 9,
+      "next": 10,
+      "text": "{v} appeared {counts[v - low]} times."
+    },
+    {
+      "line": 9,
+      "next": 11,
+      "text": "Every value has been written out."
+    },
+    {
+      "line": 10,
+      "text": "So far: {out}."
+    },
+    {
+      "line": 11,
+      "text": "Sorted without comparing any two values: {out}."
+    }
+  ]
+}
