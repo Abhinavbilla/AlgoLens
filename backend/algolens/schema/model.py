@@ -298,6 +298,10 @@ def _type(raw: Any, where: str, earlier: list[str]) -> TypeSpec:
 
 def _flag(raw: dict, key: str, where: str) -> bool:
     v = raw.get(key, False)
+    if v is None:
+        v = False
+    if isinstance(v, str) and v.strip().lower() in ("true", "false", "yes", "no", ""):
+        v = v.strip().lower() in ("true", "yes")  # models often quote booleans
     if not isinstance(v, bool):
         raise SchemaError(f"{where}.{key} must be true or false")
     return v

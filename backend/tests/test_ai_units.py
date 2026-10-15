@@ -297,3 +297,19 @@ def test_not_sorted_spellings():
             }
         )
         assert t.params[0].type.sorted is None
+
+
+def test_quoted_boolean_flags():
+    from algolens.schema.model import compile_schema
+
+    def arr(**kw):
+        return (
+            compile_schema(
+                {"params": [{"name": "a", "type": {"kind": "array", "of": {"kind": "int"}, **kw}}]}
+            )
+            .params[0]
+            .type
+        )
+
+    assert arr(distinct="false").distinct is False and arr(distinct="True").distinct is True
+    assert arr(distinct=None).distinct is False
