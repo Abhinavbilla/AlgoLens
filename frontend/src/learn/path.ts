@@ -16,6 +16,26 @@ export const PRIMERS: Record<string, { title: string; summary: string }> = {
     title: "Recursion and the call stack",
     summary: "A function that calls itself, and how the computer keeps track.",
   },
+  hashing: {
+    title: "Hash maps",
+    summary: "How a dictionary finds anything in one jump, instead of searching.",
+  },
+  "stacks-queues": {
+    title: "Stacks and queues",
+    summary: "Last in, first out versus first in, first out, and why both are useful.",
+  },
+  "linked-lists": {
+    title: "Linked lists",
+    summary: "Nodes joined by arrows: cheap to change at the front, slow to search.",
+  },
+  trees: {
+    title: "Trees",
+    summary: "Roots, children, leaves and depth: the vocabulary every tree problem uses.",
+  },
+  graphs: {
+    title: "Graphs",
+    summary: "Things and the connections between them, and how a program stores them.",
+  },
 };
 
 export const PATH: Stage[] = [
@@ -30,9 +50,9 @@ export const PATH: Stage[] = [
     items: ["bubble-sort", "insertion-sort", "binary-search"],
   },
   {
-    title: "Array patterns",
-    why: "The patterns behind a large share of easy and medium interview questions.",
-    items: ["two-pointers", "sliding-window", "prefix-sums", "hash-map-counting"],
+    title: "Array patterns and hashing",
+    why: "Small ideas that turn slow nested loops into a single pass.",
+    items: ["two-pointers", "sliding-window", "prefix-sums", "primer:hashing", "hash-map-counting"],
   },
   {
     title: "Recursion in action",
@@ -40,16 +60,20 @@ export const PATH: Stage[] = [
     items: ["merge-sort", "quick-sort", "subsets", "permutations"],
   },
   {
-    title: "Stacks and heaps",
-    why: "Structures that remember the right thing at the right time.",
-    items: ["monotonic-stack", "heap-operations"],
+    title: "Stacks, queues and heaps",
+    why: "Structures that hand things back in a particular order.",
+    items: ["primer:stacks-queues", "monotonic-stack", "heap-operations"],
   },
   {
-    title: "Linked lists and trees",
-    why: "Nodes that point to other nodes: the step from arrays to real data structures.",
+    title: "Linked lists",
+    why: "Your first data structure built from nodes and pointers instead of a row of boxes.",
+    items: ["primer:linked-lists", "reverse-linked-list", "fast-slow-pointers"],
+  },
+  {
+    title: "Trees",
+    why: "Nodes with children: the shape behind file systems, search trees and heaps.",
     items: [
-      "reverse-linked-list",
-      "fast-slow-pointers",
+      "primer:trees",
       "preorder-traversal",
       "inorder-traversal",
       "postorder-traversal",
@@ -60,7 +84,7 @@ export const PATH: Stage[] = [
   {
     title: "Graphs",
     why: "Maps, networks and dependencies: exploring everything that's connected.",
-    items: ["grid-bfs", "graph-dfs", "topological-sort", "union-find", "dijkstra"],
+    items: ["primer:graphs", "grid-bfs", "graph-dfs", "topological-sort", "union-find", "dijkstra"],
   },
   {
     title: "Dynamic programming and greedy",

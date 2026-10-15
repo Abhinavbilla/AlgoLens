@@ -33,6 +33,12 @@ function renderAt(path: string) {
 }
 
 beforeEach(() => localStorage.clear());
+
+const said = () =>
+  screen
+    .getAllByRole("status")
+    .map((e) => e.textContent)
+    .join(" | ");
 afterEach(() => vi.unstubAllGlobals());
 
 test("the path lists stages in order, skips what isn't in the library, and tracks progress", async () => {
@@ -40,11 +46,11 @@ test("the path lists stages in order, skips what isn't in the library, and track
   renderAt("/path");
   expect(await screen.findByText("Foundations")).toBeInTheDocument();
   expect(screen.getByText("Your first algorithms")).toBeInTheDocument();
-  expect(screen.queryByText("Graphs")).not.toBeInTheDocument(); // none of its entries are here
-  expect(screen.getByText(/0 of 7 done/)).toBeInTheDocument(); // 3 primers + 4 present entries
+  expect(screen.queryByText("Going further")).not.toBeInTheDocument(); // none of its entries are here
+  expect(screen.getByText(/0 of 12 done/)).toBeInTheDocument(); // 8 primers + 4 present entries
   expect(screen.getByText(/Next up:/)).toHaveTextContent("Arrays and indexes");
   await userEvent.click(screen.getByRole("button", { name: "Arrays and indexes: not done" }));
-  expect(screen.getByText(/1 of 7 done/)).toBeInTheDocument();
+  expect(screen.getByText(/1 of 12 done/)).toBeInTheDocument();
   expect(screen.getByText(/Next up:/)).toHaveTextContent("Big-O");
   expect(JSON.parse(localStorage.getItem("algolens.done") ?? "[]")).toEqual(["primer:arrays"]);
 });
@@ -80,4 +86,49 @@ test("every path item and practice list points at something real", () => {
         /^https:\/\/(leetcode\.com\/problems\/[a-z0-9-]+\/|codeforces\.com\/problemset\/problem\/\d+\/[A-Z])$/,
       );
   }
+});
+
+test("stack and queue hand things back in opposite orders", async () => {
+  mockApi();
+  renderAt("/learn/stacks-queues");
+  await userEvent.click(screen.getByRole("button", { name: "Take one out of each" }));
+  expect(
+    screen.getByText(/stack gave back 3, the last one in.*queue gave back 1, the first one in/),
+  ).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Add 4 to both" }));
+  expect(screen.getByRole("list", { name: /Stack, bottom to top: 1, 2, 4/ })).toBeInTheDocument();
+  expect(screen.getByRole("list", { name: /Queue, front to back: 2, 3, 4/ })).toBeInTheDocument();
+});
+
+test("the hash demo shows the arithmetic and the bucket", async () => {
+  mockApi();
+  renderAt("/learn/hashing");
+  const input = screen.getByRole("textbox", { name: "Word" });
+  await userEvent.clear(input);
+  await userEvent.type(input, "ab");
+  expect(screen.getByText(/97 \+ 98 = 195; 195 mod 7 =/)).toHaveTextContent("bucket 6");
+  await userEvent.click(screen.getByRole("button", { name: "Store it" }));
+  expect(said()).toContain('"ab"');
+});
+
+test("linked list: reaching the end means following every arrow", async () => {
+  mockApi();
+  renderAt("/learn/linked-lists");
+  await userEvent.click(screen.getByRole("button", { name: "Add 5 at the front" }));
+  await userEvent.click(screen.getByRole("button", { name: "Find the last node" }));
+  expect(said()).toContain("follow 4 arrows");
+});
+
+test("graph demo lists each node's neighbours", async () => {
+  mockApi();
+  renderAt("/learn/graphs");
+  await userEvent.click(screen.getByRole("button", { name: "1" }));
+  expect(said()).toContain("Node 1 is connected to 0, 2 and 4");
+});
+
+test("tree demo names a node's role", async () => {
+  mockApi();
+  renderAt("/learn/trees");
+  await userEvent.click(screen.getByRole("button", { name: "8" }));
+  expect(said()).toContain("the root");
 });

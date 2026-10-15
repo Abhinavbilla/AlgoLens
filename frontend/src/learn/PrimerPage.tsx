@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
+import { GraphDemo, HashDemo, LinkedListDemo, StackQueueDemo, TreeDemo } from "./demos";
 import { PATH, PRIMERS } from "./path";
 import styles from "./learn.module.css";
 import { useProgress } from "./progress";
@@ -30,7 +31,7 @@ export function PrimerPage() {
   return (
     <article className={styles.primer}>
       <p className={styles.crumbs}>
-        <Link to="/path">Learning path</Link> / Foundations
+        <Link to="/path">Learning path</Link> / {PATH.find((s) => s.items.includes(id))?.title ?? "Primers"}
       </p>
       <p className={styles.eyebrow}>Primer</p>
       <h1>{primer.title}</h1>
@@ -254,6 +255,158 @@ const BODIES: Record<string, ReactNode> = {
             Then they return one by one, top first.
           </>
         }
+      />
+    </div>
+  ),
+  hashing: (
+    <div className={styles.prose}>
+      <h2>Finding things without searching</h2>
+      <p>
+        To check whether a word is in a list, you'd normally compare it with every item. A{" "}
+        <strong>hash map</strong> skips the search. It turns the key into a number (its <em>hash</em>) and
+        uses that number to pick a bucket. To find the key again, compute the same number and jump straight
+        there.
+      </p>
+      <HashDemo />
+      <h2>What to remember</h2>
+      <ul>
+        <li>
+          Looking up, adding and removing take <strong>O(1)</strong> time on average, whatever the size.
+        </li>
+        <li>
+          Two keys can land in the same bucket, a <strong>collision</strong>. The bucket keeps a short list,
+          so it still works; a good hash function keeps those lists short.
+        </li>
+        <li>
+          In Python it's <code>dict</code> and <code>set</code>; in C++ it's <code>unordered_map</code> and{" "}
+          <code>unordered_set</code>.
+        </li>
+        <li>The trade: extra memory for speed. That trade solves a huge number of problems.</li>
+      </ul>
+      <Check
+        question="You need to know whether any value in an array appears twice. What's the hash map idea?"
+        answer="Walk the array once, putting each value in a set. If a value is already in the set when you reach it, it's a duplicate. That's O(n) instead of comparing every pair, O(n²)."
+      />
+    </div>
+  ),
+  "stacks-queues": (
+    <div className={styles.prose}>
+      <h2>Two ways to hand things back</h2>
+      <p>
+        A <strong>stack</strong> is a pile of plates: you add to the top and take from the top, so the last
+        thing in is the first out. A <strong>queue</strong> is a line at a counter: you join at the back and
+        leave from the front, so the first in is the first out.
+      </p>
+      <StackQueueDemo />
+      <h2>Where you'll meet them</h2>
+      <ul>
+        <li>
+          <strong>Stacks:</strong> undo buttons, matching brackets, the call stack itself, and the monotonic
+          stack pattern.
+        </li>
+        <li>
+          <strong>Queues:</strong> processing in arrival order, and breadth-first search, which explores
+          nearest things first.
+        </li>
+        <li>
+          In Python, a <code>list</code> with <code>append</code> and <code>pop</code> is a stack, and{" "}
+          <code>collections.deque</code> with <code>append</code> and <code>popleft</code> is a queue. In C++:{" "}
+          <code>stack</code>, <code>queue</code> and <code>deque</code>.
+        </li>
+      </ul>
+      <Check
+        question="You push 1, 2, 3 onto a stack, pop once, then push 4. What's on top?"
+        answer="4. After popping, the stack holds 1, 2 (3 came off), then 4 goes on top."
+      />
+    </div>
+  ),
+  "linked-lists": (
+    <div className={styles.prose}>
+      <h2>A chain instead of a row</h2>
+      <p>
+        An array keeps values side by side. A <strong>linked list</strong> keeps each value in its own{" "}
+        <em>node</em>, which also holds an arrow (<code>next</code>) to the following node. The list is just a
+        pointer to the first node, the <strong>head</strong>, and the last node points at nothing (
+        <code>null</code> / <code>None</code>).
+      </p>
+      <LinkedListDemo />
+      <h2>The trade-offs</h2>
+      <ul>
+        <li>
+          Adding or removing at the front is <strong>O(1)</strong>: change one or two arrows, move nothing.
+        </li>
+        <li>
+          Reaching the k-th node is <strong>O(k)</strong>: you have to follow the arrows. There's no jumping
+          to an index.
+        </li>
+        <li>
+          The golden rule when rewiring: save <code>node.next</code> before you overwrite it, or you lose the
+          rest of the list.
+        </li>
+      </ul>
+      <Check
+        question="A list has 1,000 nodes. How many arrows do you follow to read the 500th value?"
+        answer="499: start at the head (the 1st node) and follow next 499 times. An array would read it in one step."
+      />
+    </div>
+  ),
+  trees: (
+    <div className={styles.prose}>
+      <h2>Nodes with children</h2>
+      <p>
+        A <strong>tree</strong> starts from one node, the <strong>root</strong>. Each node can have children,
+        and every node except the root has exactly one parent. In a <strong>binary tree</strong>, each node
+        has at most two children: left and right.
+      </p>
+      <TreeDemo />
+      <h2>The words you'll keep hearing</h2>
+      <ul>
+        <li>
+          <strong>Leaf:</strong> a node with no children.
+        </li>
+        <li>
+          <strong>Depth:</strong> how many steps a node is from the root. The root is at depth 0.
+        </li>
+        <li>
+          <strong>Height:</strong> the depth of the deepest leaf. This tree's height is 2.
+        </li>
+        <li>
+          <strong>Subtree:</strong> any node together with everything below it. Most tree code is recursion on
+          subtrees: solve the left one, solve the right one, combine.
+        </li>
+      </ul>
+      <Check
+        question="In the tree above, which nodes are leaves, and what is the depth of 6?"
+        answer="The leaves are 1, 6 and 14 (no children). 6 is two steps below the root (8 → 3 → 6), so its depth is 2."
+      />
+    </div>
+  ),
+  graphs: (
+    <div className={styles.prose}>
+      <h2>Things and the connections between them</h2>
+      <p>
+        A <strong>graph</strong> is a set of <strong>nodes</strong> (cities, people, web pages) and{" "}
+        <strong>edges</strong> connecting pairs of them (roads, friendships, links). Edges can be one-way (
+        <em>directed</em>) and can carry a cost (<em>weighted</em>). Trees and grids are special graphs.
+      </p>
+      <GraphDemo />
+      <h2>How a program stores a graph</h2>
+      <p>
+        Usually as an <strong>adjacency list</strong>: for every node, the list of its neighbours. Problems
+        often hand you a list of edges like <code>[[0, 1], [1, 2]]</code>, and your first few lines build this
+        list:
+      </p>
+      <pre className={styles.code}>
+        <code>{`adj = [[] for _ in range(n)]\nfor a, b in edges:\n    adj[a].append(b)\n    adj[b].append(a)   # leave out for one-way edges`}</code>
+      </pre>
+      <p>
+        From there, every graph algorithm in the library comes down to the same question: which neighbour do
+        you visit next? Nearest first gives breadth-first search, deepest first gives depth-first search, and
+        cheapest first gives Dijkstra.
+      </p>
+      <Check
+        question="In the graph above, which nodes can you reach from node 2 in exactly two steps?"
+        answer="Node 2's only neighbour is 1. From 1 you can go to 0 or 4 (or back to 2), so two steps from 2 reaches 0, 2 and 4."
       />
     </div>
   ),

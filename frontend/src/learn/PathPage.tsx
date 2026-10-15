@@ -53,11 +53,12 @@ export function PathPage() {
     <div className={styles.page}>
       <header className={styles.head}>
         <p className={styles.eyebrow}>Learning path</p>
-        <h1>From zero to interview-ready basics</h1>
+        <h1>Every DSA foundation, one picture at a time</h1>
         <p className={styles.lead}>
-          A route through the library in the order that makes sense when you're starting out. Each step builds
-          on the one before. Watch it, try your own input, test yourself with <em>Predict the next step</em>,
-          then mark it done.
+          The building blocks of data structures and algorithms, in the order that makes sense when you're
+          starting out. Each step builds on the one before: see it run, try your own input, test yourself with{" "}
+          <em>Predict the next step</em>, and mark it done. Then take on the matching problems on LeetCode or
+          Codeforces, linked from every algorithm.
         </p>
         {entries && (
           <div className={styles.progress}>
@@ -79,7 +80,9 @@ export function PathPage() {
                   · Next up: <Link to={next.href}>{next.title}</Link>
                 </>
               )}
-              {!next && all.length > 0 && " · You've finished the path. Time for practice problems!"}
+              {!next &&
+                all.length > 0 &&
+                " · You've finished the path. The foundations are yours: on to LeetCode and Codeforces!"}
             </p>
           </div>
         )}
