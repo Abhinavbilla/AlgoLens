@@ -313,3 +313,10 @@ def test_quoted_boolean_flags():
 
     assert arr(distinct="false").distinct is False and arr(distinct="True").distinct is True
     assert arr(distinct=None).distinct is False
+
+
+def test_output_described_as_a_type_is_kept_as_text():
+    p = ParsedProblem.model_validate({"in_scope": True, "function_name": "lcp",
+                                      "output": {"kind": "string", "len": {"min": 0, "max": 200}}})  # fmt: skip
+    assert '"kind": "string"' in p.output
+    assert ParsedProblem.model_validate({"in_scope": True, "output": None}).output == ""

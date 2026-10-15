@@ -44,7 +44,11 @@ function ProblemContent({ problemId }: { problemId: string }) {
     return (
       <section className={styles.solve}>
         <h1>
-          {p.status === "rejected" ? "This problem isn't supported" : "This problem couldn't be finished"}
+          {p.status !== "rejected"
+            ? "This problem couldn't be finished"
+            : p.reason.startsWith("We couldn't read")
+              ? "We couldn't read this problem"
+              : "This problem isn't supported"}
         </h1>
         <p role="alert">{p.reason}</p>
         <Link to="/solve">Paste another problem</Link>

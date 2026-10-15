@@ -66,7 +66,7 @@ PARSE_SYSTEM = f"""\
 You read a data-structures-and-algorithms problem statement and describe it precisely as JSON.
 Reply with ONE JSON object:
 {{"in_scope": bool, "rejection_reason": str, "title": str, "function_name": str,
-  "params": [...], "constraints": [...], "output": str,
+  "params": [...], "constraints": [...], "output": str (a plain sentence, e.g. "the longest common prefix"),
   "result_kind": null | "binary_tree" | "linked_list",
   "comparator": {{"kind": "exact"|"float"|"unordered"|"unordered_nested"|"checker", "tolerance": 1e-6}},
   "examples": [{{"args": [...], "expected": ...}}], "patterns": [str],

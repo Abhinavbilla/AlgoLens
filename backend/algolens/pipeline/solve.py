@@ -158,7 +158,10 @@ class _Run:
             if not problem:
                 schema = compile_schema(spec.schema_json())
                 return spec, InputRules(schema, spec.extra_rules_python or None)
-        raise Rejected(f"Couldn't pin down the problem's input format precisely ({problem}).")
+        raise Rejected(
+            "We couldn't read this problem reliably, so nothing was run. Try pasting it again, "
+            f"perhaps with the examples written out clearly. (Details: {problem})"
+        )
 
     def _check_spec(self, spec: ParsedProblem) -> str:
         if not spec.function_name or not spec.params:

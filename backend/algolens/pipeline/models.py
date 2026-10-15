@@ -34,6 +34,19 @@ class ParsedProblem(BaseModel):
     patterns: list[str] = []
     extra_rules_python: str = ""  # validate(*args) -> str | None, for rules the schema can't say
 
+    @field_validator("title", "output", "rejection_reason", mode="before")
+    @classmethod
+    def _text(cls, v: Any) -> Any:
+        """Models sometimes describe the output as a type ({"kind": "string", ...}) instead of
+        a sentence. That's still a description, so keep it as text rather than reject it."""
+        if v is None:
+            return ""
+        if isinstance(v, dict | list):
+            import json
+
+            return json.dumps(v)
+        return v
+
     @field_validator("function_name")
     @classmethod
     def _identifier(cls, v: str) -> str:
