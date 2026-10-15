@@ -1,0 +1,43 @@
+{
+  "title": "Reverse a linked list",
+  "category": "Linked lists",
+  "summary": "Walk the list once, turning each node's arrow around to point at the part already reversed.",
+  "order": 48,
+  "entry": "reverse_list",
+  "result_kind": "linked_list",
+  "schema": {
+    "params": [
+      {"name": "head", "type": {"kind": "linked_list", "of": {"kind": "int", "min": -50, "max": 50}, "len": {"min": 0, "max": 8}}}
+    ]
+  },
+  "default_input": {"args": [[1, 2, 3, 4]]},
+  "tests": [
+    {"args": [[]]},
+    {"args": [[1]]},
+    {"args": [[1, 2]]},
+    {"args": [[1, 2, 3, 4]]},
+    {"args": [[5, 5, 5]]},
+    {"args": [[-3, 0, 3, 6, 9]]},
+    {"args": [[8, 7, 6, 5, 4, 3, 2, 1]]}
+  ],
+  "cpp_lines": {"1": 3, "2": 4, "3": 5, "4": 6, "5": 7, "6": 8, "7": 9, "8": 10, "9": 12},
+  "visual": {
+    "panels": [
+      {"kind": "linked_list", "var": "prev", "label": "Reversed so far (prev)"},
+      {"kind": "linked_list", "var": "curr", "label": "Still to reverse (curr)", "pointers": [{"label": "nxt", "at": "nxt"}]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "Nothing is reversed yet, so the reversed part is empty."},
+    {"line": 3, "text": "Start at the head of the list."},
+    {"line": 4, "next": 5, "text": "There's still a node to handle: the one holding {curr.val}."},
+    {"line": 4, "next": 9, "text": "No nodes left: everything has been reversed."},
+    {"line": 5, "next": 6, "when": "nxt == None", "text": "Remember what comes after {curr.val}: nothing, it's the last node."},
+    {"line": 5, "next": 6, "when": "nxt != None", "text": "Remember what comes after {curr.val}: the node holding {nxt.val}. Otherwise we'd lose it."},
+    {"line": 6, "text": "Turn the arrow around: {curr.val} now points back at the reversed part."},
+    {"line": 7, "text": "The reversed part now starts at {prev.val}."},
+    {"line": 8, "text": "Move on to the rest of the list."},
+    {"line": 9, "when": "prev == None", "text": "The list was empty, so the reversed list is empty too."},
+    {"line": 9, "when": "prev != None", "text": "The reversed list starts at {prev.val}, the old last node."}
+  ]
+}

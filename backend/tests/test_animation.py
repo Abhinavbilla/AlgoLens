@@ -107,10 +107,11 @@ def test_all_library_entries_load():
     entries = load_all(LIBRARY)
     assert [e.slug for e in entries] == [
         "bubble-sort", "insertion-sort", "merge-sort", "quick-sort", "binary-search",
-        "two-pointers", "sliding-window", "prefix-sums", "monotonic-stack", "heap-operations",
-        "grid-bfs", "graph-dfs", "dijkstra", "topological-sort", "union-find", "level-order",
-        "preorder-traversal", "inorder-traversal", "postorder-traversal", "house-robber", "lcs",
-        "knapsack", "subsets", "permutations", "segment-tree",
+        "two-pointers", "sliding-window", "prefix-sums", "hash-map-counting", "monotonic-stack",
+        "heap-operations", "grid-bfs", "graph-dfs", "dijkstra", "topological-sort", "union-find",
+        "reverse-linked-list", "fast-slow-pointers", "level-order", "preorder-traversal",
+        "inorder-traversal", "postorder-traversal", "bst-insert-search", "house-robber", "lcs",
+        "coin-change", "knapsack", "merge-intervals", "subsets", "permutations", "segment-tree",
     ]  # fmt: skip
 
 

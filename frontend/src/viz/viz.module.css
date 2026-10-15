@@ -27,6 +27,8 @@
 }
 
 .scroll {
+  /* Positioned so absolutely placed children (screen-reader text) are clipped here too. */
+  position: relative;
   overflow-x: auto;
   padding-bottom: 4px;
   /* Room for a scrollbar is kept even when there isn't one, so one appearing can't move
@@ -697,4 +699,8 @@ td.mark3,
   height: 16px;
   margin-right: 4px;
   vertical-align: -3px;
+}
+
+.placeholderRow {
+  visibility: hidden;
 }

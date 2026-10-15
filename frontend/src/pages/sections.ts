@@ -22,13 +22,19 @@ export const SECTIONS: Section[] = [
     title: "Array techniques",
     intro:
       "Small patterns that turn a nested loop into one pass: pointers moving inward, a window that slides, totals you compute once.",
-    categories: ["Two pointers", "Sliding window", "Prefix sums", "Monotonic stack"],
+    categories: ["Two pointers", "Sliding window", "Prefix sums", "Hashing", "Monotonic stack"],
   },
   {
     id: "heaps",
     title: "Heaps",
     intro: "Always know the smallest item, even while items keep arriving.",
     categories: ["Heaps"],
+  },
+  {
+    id: "linked-lists",
+    title: "Linked lists",
+    intro: "Nodes joined by arrows. Most of the trick is never losing track of the next node.",
+    categories: ["Linked lists"],
   },
   {
     id: "graphs",
@@ -47,6 +53,12 @@ export const SECTIONS: Section[] = [
     title: "Dynamic programming",
     intro: "Solve each small question once, write the answer down, and build the big answer out of them.",
     categories: ["Dynamic programming"],
+  },
+  {
+    id: "greedy",
+    title: "Greedy",
+    intro: "Take the obvious best step and never look back, once sorting has made that safe.",
+    categories: ["Greedy"],
   },
   {
     id: "backtracking",

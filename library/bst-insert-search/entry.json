@@ -1,0 +1,54 @@
+{
+  "title": "Binary search tree: insert and search",
+  "category": "Binary trees",
+  "summary": "Build a tree where left is smaller and right is larger, then find a value by going left or right at each node.",
+  "order": 55,
+  "entry": "bst_contains",
+  "schema": {
+    "params": [
+      {"name": "values", "type": {"kind": "array", "of": {"kind": "int", "min": 0, "max": 99}, "len": {"min": 0, "max": 7}, "distinct": true}},
+      {"name": "target", "type": {"kind": "int", "min": 0, "max": 99}}
+    ]
+  },
+  "note": "The values are inserted in the order given, then the tree is searched for the target.",
+  "default_input": {"args": [[50, 30, 70, 20, 40, 60], 40]},
+  "tests": [
+    {"args": [[], 5]},
+    {"args": [[5], 5]},
+    {"args": [[5], 4]},
+    {"args": [[50, 30, 70, 20, 40, 60], 40]},
+    {"args": [[50, 30, 70, 20, 40, 60], 65]},
+    {"args": [[1, 2, 3, 4, 5], 5]},
+    {"args": [[5, 4, 3, 2, 1], 0]},
+    {"args": [[8, 3, 10, 1, 6, 14, 4], 4]}
+  ],
+  "cpp_lines": {"1": 16, "2": 17, "3": 18, "4": 19, "5": 21, "6": 22, "7": 23, "8": 25, "11": 4, "12": 5, "13": 6, "14": 8, "15": 9, "17": 11, "18": 13},
+  "visual": {
+    "panels": [
+      {"kind": "tree", "var": "root", "label": "The search tree", "pointers": [{"label": "node", "at": "node"}]},
+      {"kind": "array", "var": "values", "label": "Values, inserted in this order"},
+      {"kind": "vars", "vars": ["v", "target"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "The tree starts empty."},
+    {"line": 3, "next": 4, "text": "Insert {v}."},
+    {"line": 3, "next": 5, "text": "Every value is in the tree. Now search it for {target}."},
+    {"line": 4, "text": "{v} is in place."},
+    {"line": 5, "text": "Start the search at the root."},
+    {"line": 6, "next": 7, "text": "{node.val} isn't {target}, so keep looking."},
+    {"line": 6, "next": 8, "when": "node == None", "text": "We've run out of tree: {target} isn't here."},
+    {"line": 6, "next": 8, "when": "node != None", "text": "Found {target}."},
+    {"line": 7, "when": "node == None", "text": "That side is empty."},
+    {"line": 7, "when": "node != None", "text": "Move to {node.val}: smaller values are on the left, larger on the right."},
+    {"line": 8, "text": "Done searching."},
+    {"line": 12, "next": 13, "text": "An empty spot: {v} goes here."},
+    {"line": 12, "next": 14, "text": "Compare {v} with {node.val}."},
+    {"line": 13, "text": "A new node holding {v}."},
+    {"line": 14, "next": 15, "text": "{v} < {node.val}, so it belongs in the left subtree."},
+    {"line": 14, "next": 17, "text": "{v} > {node.val}, so it belongs in the right subtree."},
+    {"line": 15, "text": "The left subtree of {node.val} now holds {v}."},
+    {"line": 17, "text": "The right subtree of {node.val} now holds {v}."},
+    {"line": 18, "text": "Return the subtree rooted at {node.val}, now including {v}."}
+  ]
+}

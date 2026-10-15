@@ -17,7 +17,14 @@ export function TreeView({ panel, reserve }: { panel: TreePanel; reserve?: Reser
   const height = 2 * (PAD + R) + (depth - 1) * ROW + 20;
   const order = reserve?.marks.length ? reserve.marks : markOrder(nodes.map((n) => n.marks));
   if (!panel.defined || nodes.length === 0) {
-    return <Empty panel={panel} width={width} height={height} text={panel.defined ? "Empty tree." : "Not defined yet."} />;
+    return (
+      <Empty
+        panel={panel}
+        width={width}
+        height={height}
+        text={panel.defined ? "Empty tree." : "Not defined yet."}
+      />
+    );
   }
   const pos = new Map(nodes.map((n) => [n.id, { x: PAD + R + n.x * COL, y: PAD + R + n.y * ROW }]));
   const pointersAt = (id: number) => (panel.pointers ?? []).filter((p) => p.node === id);
@@ -37,7 +44,9 @@ export function TreeView({ panel, reserve }: { panel: TreePanel; reserve?: Reser
           {(panel.edges ?? []).map((e) => {
             const a = pos.get(e.from)!;
             const b = pos.get(e.to)!;
-            return <line key={`${e.from}-${e.to}`} className={styles.edge} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
+            return (
+              <line key={`${e.from}-${e.to}`} className={styles.edge} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+            );
           })}
           {nodes.map((n) => {
             const p = pos.get(n.id)!;
@@ -48,7 +57,13 @@ export function TreeView({ panel, reserve }: { panel: TreePanel; reserve?: Reser
                   {n.text}
                 </text>
                 {pointersAt(n.id).map((ptr, i) => (
-                  <text key={ptr.label} x={p.x} y={p.y + R + 14 + i * 14} className={styles.svgPointer} data-pointer={ptr.label}>
+                  <text
+                    key={ptr.label}
+                    x={p.x}
+                    y={p.y + R + 14 + i * 14}
+                    className={styles.svgPointer}
+                    data-pointer={ptr.label}
+                  >
                     ▲ {ptr.label}
                   </text>
                 ))}
@@ -60,7 +75,16 @@ export function TreeView({ panel, reserve }: { panel: TreePanel; reserve?: Reser
       <p className="sr-only">
         In order:{" "}
         {inOrder
-          .map((n) => `${n.text}${n.marks.length ? ` (${n.marks.join(", ")})` : ""}${pointersAt(n.id).length ? ` [${pointersAt(n.id).map((p) => p.label).join(", ")}]` : ""}`)
+          .map(
+            (n) =>
+              `${n.text}${n.marks.length ? ` (${n.marks.join(", ")})` : ""}${
+                pointersAt(n.id).length
+                  ? ` [${pointersAt(n.id)
+                      .map((p) => p.label)
+                      .join(", ")}]`
+                  : ""
+              }`,
+          )
           .join(", ")}
       </p>
       <MarkLegend items={inOrder.map((n) => ({ name: n.text, marks: n.marks }))} order={order} shape="node" />
@@ -68,15 +92,34 @@ export function TreeView({ panel, reserve }: { panel: TreePanel; reserve?: Reser
   );
 }
 
-function Empty({ panel, text, width, height }: { panel: { label: string }; text: string; width: number; height: number }) {
+function Empty({
+  panel,
+  text,
+  width,
+  height,
+}: {
+  panel: { label: string };
+  text: string;
+  width: number;
+  height: number;
+}) {
   return (
     <section className={styles.panel} aria-label={panel.label}>
       <h3 className={styles.title}>{panel.label}</h3>
-      <svg className={styles.svg} viewBox={`0 0 ${width} ${height}`} width={width} style={{ maxWidth: "100%" }} role="img" aria-label={`${panel.label}: ${text}`}>
-        <text x={width / 2} y={height / 2} className={styles.nodeLabel}>
-          {text}
-        </text>
-      </svg>
+      <div className={styles.scroll}>
+        <svg
+          className={styles.svg}
+          viewBox={`0 0 ${width} ${height}`}
+          width={width}
+          style={{ maxWidth: "100%" }}
+          role="img"
+          aria-label={`${panel.label}: ${text}`}
+        >
+          <text x={width / 2} y={height / 2} className={styles.nodeLabel}>
+            {text}
+          </text>
+        </svg>
+      </div>
     </section>
   );
 }

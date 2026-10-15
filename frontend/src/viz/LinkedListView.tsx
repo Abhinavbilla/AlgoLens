@@ -9,12 +9,15 @@ export function LinkedListView({ panel }: { panel: LinkedListPanel }) {
     <section className={styles.panel} aria-label={panel.label}>
       <h3 className={styles.title}>{panel.label}</h3>
       {!panel.defined ? (
-        <ol className={styles.linked}>
-          <li className={styles.linkedItem}>
-            <span className={`${styles.linkedNode} ${styles.nullNode}`}>not defined yet</span>
-            <span className={styles.pointers} />
-          </li>
-        </ol>
+        // Same wrapper as a real list, so the panel is the same height either way.
+        <div className={styles.scroll}>
+          <ol className={styles.linked}>
+            <li className={styles.linkedItem}>
+              <span className={`${styles.linkedNode} ${styles.nullNode}`}>not defined yet</span>
+              <span className={styles.pointers} />
+            </li>
+          </ol>
+        </div>
       ) : (
         <div className={styles.scroll}>
           <ol className={styles.linked}>
@@ -27,7 +30,9 @@ export function LinkedListView({ panel }: { panel: LinkedListPanel }) {
                 <span className={styles.pointers}>
                   {at(n.id).map((p) => (
                     <span key={p.label} className={styles.pointer} data-pointer={p.label}>
-                      <span className={styles.arrow} aria-hidden="true">▲</span>
+                      <span className={styles.arrow} aria-hidden="true">
+                        ▲
+                      </span>
                       <span className={styles.pointerLabel}>{p.label}</span>
                     </span>
                   ))}
@@ -43,7 +48,9 @@ export function LinkedListView({ panel }: { panel: LinkedListPanel }) {
                 {panel.cycle_to == null &&
                   at(null).map((p) => (
                     <span key={p.label} className={styles.pointer} data-pointer={p.label}>
-                      <span className={styles.arrow} aria-hidden="true">▲</span>
+                      <span className={styles.arrow} aria-hidden="true">
+                        ▲
+                      </span>
                       <span className={styles.pointerLabel}>{p.label}</span>
                     </span>
                   ))}

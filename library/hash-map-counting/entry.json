@@ -1,0 +1,46 @@
+{
+  "title": "Hash map: Two Sum in one pass",
+  "category": "Hashing",
+  "summary": "Remember every value you've passed in a hash map, so each value's partner is one lookup away.",
+  "order": 34,
+  "entry": "two_sum",
+  "schema": {
+    "params": [
+      {"name": "nums", "type": {"kind": "array", "of": {"kind": "int", "min": -20, "max": 20}, "len": {"min": 0, "max": 10}}},
+      {"name": "target", "type": {"kind": "int", "min": -40, "max": 40}}
+    ]
+  },
+  "note": "Returns the positions [i, j] of the first pair found scanning left to right, or [] if none.",
+  "default_input": {"args": [[2, 7, 11, 15], 9]},
+  "tests": [
+    {"args": [[], 5]},
+    {"args": [[5], 5]},
+    {"args": [[2, 7, 11, 15], 9]},
+    {"args": [[3, 2, 4], 6]},
+    {"args": [[3, 3], 6]},
+    {"args": [[1, 2, 3], 7]},
+    {"args": [[-1, -2, -3, -4, -5], -8]},
+    {"args": [[0, 4, 3, 0], 0]},
+    {"args": [[1, 5, 1, 5], 6]},
+    {"args": [[4, 6, 8, 2, 7], 9]}
+  ],
+  "cpp_lines": {"1": 5, "2": 6, "3": 7, "4": 8, "5": 9, "6": 10, "7": 12, "8": 14},
+  "visual": {
+    "panels": [
+      {"kind": "array", "var": "nums", "pointers": [{"label": "j", "at": "j"}]},
+      {"kind": "map", "var": "seen", "label": "seen: value → position"},
+      {"kind": "vars", "vars": ["target", "j", "need"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "text": "The map starts empty: no values seen yet."},
+    {"line": 3, "next": 4, "text": "Look at position {j}, holding {nums[j]}."},
+    {"line": 3, "next": 8, "text": "Every value has been checked."},
+    {"line": 4, "text": "Its partner would have to be {target - nums[j]}."},
+    {"line": 5, "next": 6, "text": "{need} is already in the map: its partner was at position {seen[need]}."},
+    {"line": 5, "next": 7, "text": "{need} isn't in the map, so no earlier value pairs with {nums[j]}."},
+    {"line": 6, "text": "Found it: positions {seen[need]} and {j}."},
+    {"line": 7, "text": "Remember {nums[j]} at position {j}, for the values still to come."},
+    {"line": 8, "text": "No two values add up to {target}."}
+  ]
+}
