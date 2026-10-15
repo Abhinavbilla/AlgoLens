@@ -83,6 +83,15 @@
   color: var(--text);
 }
 
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  color: var(--text);
+  font-weight: 600;
+}
+
 .primary:hover,
 .secondary:hover {
   transform: translateY(-1px);

@@ -1,0 +1,83 @@
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
+import { App } from "../App";
+import { PATH, PRIMERS } from "./path";
+import { PRACTICE } from "./practice";
+
+const LIBRARY = ["bubble-sort", "insertion-sort", "binary-search", "two-pointers"].map((slug) => ({
+  slug,
+  title: slug.replace("-", " "),
+  category: "Sorting",
+  summary: `About ${slug}.`,
+  verification: { status: "verified", tests: 310 },
+}));
+
+function mockApi() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url === "/api/health") return { ok: true, json: async () => ({ status: "ok" }) };
+      if (url === "/api/library") return { ok: true, json: async () => LIBRARY };
+      return { ok: false, status: 404, json: async () => ({ detail: "not found" }) };
+    }),
+  );
+}
+
+function renderAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <App />
+    </MemoryRouter>,
+  );
+}
+
+beforeEach(() => localStorage.clear());
+afterEach(() => vi.unstubAllGlobals());
+
+test("the path lists stages in order, skips what isn't in the library, and tracks progress", async () => {
+  mockApi();
+  renderAt("/path");
+  expect(await screen.findByText("Foundations")).toBeInTheDocument();
+  expect(screen.getByText("Your first algorithms")).toBeInTheDocument();
+  expect(screen.queryByText("Graphs")).not.toBeInTheDocument(); // none of its entries are here
+  expect(screen.getByText(/0 of 7 done/)).toBeInTheDocument(); // 3 primers + 4 present entries
+  expect(screen.getByText(/Next up:/)).toHaveTextContent("Arrays and indexes");
+  await userEvent.click(screen.getByRole("button", { name: "Arrays and indexes: not done" }));
+  expect(screen.getByText(/1 of 7 done/)).toBeInTheDocument();
+  expect(screen.getByText(/Next up:/)).toHaveTextContent("Big-O");
+  expect(JSON.parse(localStorage.getItem("algolens.done") ?? "[]")).toEqual(["primer:arrays"]);
+});
+
+test("a primer explains, checks understanding, and links onward", async () => {
+  mockApi();
+  renderAt("/learn/arrays");
+  expect(screen.getByRole("heading", { level: 1, name: "Arrays and indexes" })).toBeInTheDocument();
+  const check = screen.getByRole("complementary", { name: "Check yourself" });
+  await userEvent.click(within(check).getByRole("button", { name: "Show the answer" }));
+  expect(check).toHaveTextContent("the last index is 4");
+  expect(screen.getByRole("link", { name: "Next on the path →" })).toHaveAttribute("href", "/learn/big-o");
+  await userEvent.click(screen.getByRole("button", { name: "Mark as done" }));
+  expect(screen.getByRole("button", { name: "✓ Marked as done" })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("the Big-O table is computed, not typed in", () => {
+  mockApi();
+  renderAt("/learn/big-o");
+  expect(screen.getByRole("table")).toHaveTextContent("10,000,000,000"); // 100,000²
+});
+
+test("every path item and practice list points at something real", () => {
+  for (const stage of PATH) {
+    for (const item of stage.items) {
+      if (item.startsWith("primer:")) expect(PRIMERS[item.slice(7)]).toBeDefined();
+    }
+  }
+  for (const [slug, list] of Object.entries(PRACTICE)) {
+    expect(list.length, slug).toBeGreaterThan(0);
+    for (const p of list)
+      expect(p.url).toMatch(
+        /^https:\/\/(leetcode\.com\/problems\/[a-z0-9-]+\/|codeforces\.com\/problemset\/problem\/\d+\/[A-Z])$/,
+      );
+  }
+});

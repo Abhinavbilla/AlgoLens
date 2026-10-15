@@ -48,10 +48,13 @@ export function LibraryPage() {
             solutions, each one tested before you see it.
           </p>
           <div className={styles.heroActions}>
-            <a href="#library" className={styles.primary}>
+            <Link to="/path" className={styles.primary}>
+              New to DSA? Start the path
+            </Link>
+            <a href="#library" className={styles.secondary}>
               Browse the library
             </a>
-            <Link to="/solve" className={styles.secondary}>
+            <Link to="/solve" className={styles.textLink}>
               Paste a problem →
             </Link>
           </div>

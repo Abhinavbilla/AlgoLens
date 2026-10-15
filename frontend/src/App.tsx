@@ -2,6 +2,8 @@ import { Link, NavLink, Route, Routes, useLocation } from "react-router";
 import styles from "./App.module.css";
 import { HealthBadge } from "./HealthBadge";
 import { ThemeToggle } from "./ThemeToggle";
+import { PathPage } from "./learn/PathPage";
+import { PrimerPage } from "./learn/PrimerPage";
 import { EntryPage } from "./pages/EntryPage";
 import { JobPage } from "./pages/JobPage";
 import { LibraryPage } from "./pages/LibraryPage";
@@ -21,10 +23,13 @@ export function App() {
           <NavLink
             to="/"
             className={({ isActive }) =>
-              isActive && !/^\/(solve|jobs|problems)/.test(location.pathname) ? styles.active : ""
+              isActive && !/^\/(solve|jobs|problems|path|learn)/.test(location.pathname) ? styles.active : ""
             }
           >
             Library
+          </NavLink>
+          <NavLink to="/path" className={({ isActive }) => (isActive ? styles.active : "")}>
+            Learning path
           </NavLink>
           <NavLink to="/solve" className={({ isActive }) => (isActive ? styles.active : "")}>
             Paste a problem
@@ -40,6 +45,8 @@ export function App() {
           <Route path="/" element={<LibraryPage />} />
           <Route path="/library/:slug" element={<EntryPage />} />
           <Route path="/solve" element={<SolvePage />} />
+          <Route path="/path" element={<PathPage />} />
+          <Route path="/learn/:topic" element={<PrimerPage />} />
           <Route path="/jobs/:jobId" element={<JobPage />} />
           <Route path="/problems/:problemId" element={<ProblemPage />} />
           <Route

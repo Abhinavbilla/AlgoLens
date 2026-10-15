@@ -60,3 +60,99 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* --- predict mode ------------------------------------------------------------------------ */
+
+.modeBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.modeOn,
+.modeOff {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modeOn {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.score {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.question {
+  margin: 0;
+  padding: 14px 16px;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.question legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.question code {
+  font-family: var(--mono);
+  font-size: 0.875em;
+}
+
+.questionHint {
+  margin: 4px 0 10px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.choices {
+  display: grid;
+  gap: 8px;
+}
+
+.choices button {
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.choices button:hover {
+  border-color: var(--accent);
+}
+
+.right,
+.wrong {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.right {
+  border: 1px solid var(--ok);
+  color: var(--ok);
+}
+
+.wrong {
+  border: 1px solid var(--warn);
+  color: var(--warn);
+}

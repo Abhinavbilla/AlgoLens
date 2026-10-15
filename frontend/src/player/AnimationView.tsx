@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Animation, Panel } from "../api";
 import { ArrayView } from "../viz/ArrayView";
 import { CallStack } from "../viz/CallStack";
@@ -12,6 +12,7 @@ import { TreeView } from "../viz/TreeView";
 import { VarsView } from "../viz/VarsView";
 import styles from "./AnimationView.module.css";
 import { Controls } from "./Controls";
+import { decisionTargets, questionAt, type Question, type Target } from "./predict";
 import { computeReserves, NO_RESERVE, type Reserve } from "./reserve";
 import { usePlayer } from "./usePlayer";
 
@@ -25,12 +26,66 @@ export function AnimationView({ animation, python, cpp }: Props) {
   // The largest size each panel needs anywhere in this run, so panels never change height.
   const reserves = useMemo(() => computeReserves(frames), [frames]);
 
+  // Predict mode: at steps where the code could have gone more than one way, ask where it
+  // goes next before showing the sentence (which would give the answer away).
+  const [predict, setPredict] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, Target>>({});
+  const targets = useMemo(() => decisionTargets(frames), [frames]);
+  const question = predict ? questionAt(frames, targets, state.index) : null;
+  const pending = question !== null && answers[question.index] === undefined;
+  const answered = Object.entries(answers);
+  const right = answered.filter(([i, t]) => frames[Number(i)].next === t).length;
+  const sourceLines = useMemo(() => python.split("\n"), [python]);
+
+  useEffect(() => {
+    if (pending && state.playing) dispatch({ type: "pause" });
+  }, [pending, state.playing, dispatch]);
+
   return (
     <div className={styles.layout}>
       <div className={styles.main}>
+        <div className={styles.modeBar}>
+          <button
+            type="button"
+            aria-pressed={predict}
+            className={predict ? styles.modeOn : styles.modeOff}
+            onClick={() => setPredict((p) => !p)}
+          >
+            {predict ? "Predict mode: on" : "Predict the next step"}
+          </button>
+          {predict && (
+            <span className={styles.score} role="status">
+              {answered.length === 0
+                ? "At each decision, guess where the code goes next."
+                : `${right} of ${answered.length} predicted right`}
+            </span>
+          )}
+        </div>
+        {pending && question && (
+          <QuestionCard
+            question={question}
+            code={frame.code}
+            lineText={(n) => sourceLines[n - 1]?.trim() ?? ""}
+            onAnswer={(t) => setAnswers((a) => ({ ...a, [question.index]: t }))}
+          />
+        )}
+        {predict && question && !pending && (
+          <p
+            className={answers[question.index] === question.answer ? styles.right : styles.wrong}
+            role="status"
+          >
+            {answers[question.index] === question.answer
+              ? "✓ Right."
+              : `✗ Not quite: it went to ${describe(question.answer)}.`}
+          </p>
+        )}
         {/* Every step's sentence is laid out in the same cell, so the box is always as tall
             as the longest one and nothing below it moves. Only the current one is visible. */}
-        <div className={styles.narration} aria-live={state.playing ? "off" : "polite"}>
+        <div
+          className={styles.narration}
+          aria-live={state.playing ? "off" : "polite"}
+          hidden={pending || undefined}
+        >
           <div className={styles.stackCell}>
             {frames.map((f, i) => (
               <div
@@ -58,6 +113,42 @@ export function AnimationView({ animation, python, cpp }: Props) {
         <CallStack stack={frame.stack} />
       </div>
     </div>
+  );
+}
+
+const describe = (t: Target) => (t === "return" ? "the end of the function (return)" : `line ${t}`);
+
+function QuestionCard({
+  question,
+  code,
+  lineText,
+  onAnswer,
+}: {
+  question: Question;
+  code: string;
+  lineText: (n: number) => string;
+  onAnswer: (t: Target) => void;
+}) {
+  return (
+    <fieldset className={styles.question}>
+      <legend>
+        Line {question.line} just ran: <code>{code}</code>. Where does the code go next?
+      </legend>
+      <p className={styles.questionHint}>Look at the values on screen, then choose.</p>
+      <div className={styles.choices}>
+        {question.choices.map((t) => (
+          <button key={String(t)} type="button" onClick={() => onAnswer(t)}>
+            {t === "return" ? (
+              "Leave the function (return)"
+            ) : (
+              <>
+                Line {t}: <code>{lineText(t)}</code>
+              </>
+            )}
+          </button>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 

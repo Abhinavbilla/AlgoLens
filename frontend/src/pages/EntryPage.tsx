@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ApiError, api, type Animation, type Entry } from "../api";
 import { InputEditor } from "../input/InputEditor";
+import { EntryExtras } from "../learn/EntryExtras";
 import { InlineMarkdown } from "../InlineMarkdown";
 import { AnimationView } from "../player/AnimationView";
 import { VerificationBadge } from "../VerificationBadge";
@@ -54,7 +55,9 @@ function EntryContent({ slug }: { slug: string }) {
       setAnimation({ status: "ok", data });
       // The editor is below the player; bring the new run into view.
       const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById("player")?.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      document
+        .getElementById("player")
+        ?.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "start" });
       return null;
     } catch (err) {
       if (err instanceof ApiError) return { message: err.message, issues: err.issues };
@@ -106,6 +109,7 @@ function EntryContent({ slug }: { slug: string }) {
           </p>
         ))}
       </section>
+      <EntryExtras slug={slug} />
     </article>
   );
 }
