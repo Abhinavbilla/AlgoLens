@@ -7,13 +7,17 @@ import { TreeView } from "./TreeView";
 
 test("a stack names its bottom and top, a queue its front and back", () => {
   const { unmount } = render(
-    <SequenceView panel={{ kind: "stack", label: "Stack", defined: true, items: ["4", "7", "9"], changed: [2] }} />,
+    <SequenceView
+      panel={{ kind: "stack", label: "Stack", defined: true, items: ["4", "7", "9"], changed: [2] }}
+    />,
   );
   expect(screen.getByText("bottom")).toBeInTheDocument();
   expect(screen.getByText("top")).toBeInTheDocument();
   expect(screen.getByText("(changed)")).toBeInTheDocument();
   unmount();
-  render(<SequenceView panel={{ kind: "queue", label: "Queue", defined: true, items: ["(0, 1)"], changed: [] }} />);
+  render(
+    <SequenceView panel={{ kind: "queue", label: "Queue", defined: true, items: ["(0, 1)"], changed: [] }} />,
+  );
   expect(screen.getByText("front · back")).toBeInTheDocument();
 });
 
@@ -26,9 +30,18 @@ test("a linked list ends in null, with pointers under their nodes", () => {
   render(
     <LinkedListView
       panel={{
-        kind: "linked_list", label: "List", defined: true, cycle_to: null,
-        nodes: [{ id: 3, text: "1" }, { id: 4, text: "2" }],
-        pointers: [{ label: "prev", node: 3 }, { label: "cur", node: null }],
+        kind: "linked_list",
+        label: "List",
+        defined: true,
+        cycle_to: null,
+        nodes: [
+          { id: 3, text: "1" },
+          { id: 4, text: "2" },
+        ],
+        pointers: [
+          { label: "prev", node: 3 },
+          { label: "cur", node: null },
+        ],
       }}
     />,
   );
@@ -41,8 +54,17 @@ test("a linked list ends in null, with pointers under their nodes", () => {
 test("a cyclic linked list says where it loops back to", () => {
   render(
     <LinkedListView
-      panel={{ kind: "linked_list", label: "List", defined: true, cycle_to: 0, pointers: [],
-               nodes: [{ id: 1, text: "5" }, { id: 2, text: "6" }] }}
+      panel={{
+        kind: "linked_list",
+        label: "List",
+        defined: true,
+        cycle_to: 0,
+        pointers: [],
+        nodes: [
+          { id: 1, text: "5" },
+          { id: 2, text: "6" },
+        ],
+      }}
     />,
   );
   expect(screen.getByText("↺ back to 5")).toBeInTheDocument();
@@ -52,13 +74,20 @@ test("a tree lists its nodes in order with marks, in text", () => {
   render(
     <TreeView
       panel={{
-        kind: "tree", label: "Tree", defined: true, width: 3, height: 2,
+        kind: "tree",
+        label: "Tree",
+        defined: true,
+        width: 3,
+        height: 2,
         nodes: [
           { id: 1, text: "9", x: 0, y: 1, marks: [] },
           { id: 0, text: "3", x: 1, y: 0, marks: [] },
           { id: 2, text: "20", x: 2, y: 1, marks: ["in queue"] },
         ],
-        edges: [{ from: 0, to: 1 }, { from: 0, to: 2 }],
+        edges: [
+          { from: 0, to: 1 },
+          { from: 0, to: 2 },
+        ],
         pointers: [{ label: "node", node: 0 }],
       }}
     />,
@@ -72,7 +101,10 @@ test("a graph shows weights, node labels and a legend of marks", () => {
   render(
     <GraphView
       panel={{
-        kind: "graph", label: "Graph", defined: true, directed: false,
+        kind: "graph",
+        label: "Graph",
+        defined: true,
+        directed: false,
         nodes: [
           { id: 0, x: 0.5, y: 0.08, label: "0", marks: ["reached"] },
           { id: 1, x: 0.9, y: 0.6, label: "4", marks: ["in heap", "reached"] },
@@ -93,11 +125,20 @@ test("a grid shows headers, marks in text, and pointers in their cell", () => {
   render(
     <GridView
       panel={{
-        kind: "grid", label: "dp", defined: true,
-        col_header: ["", "B"], row_header: ["", "A"],
+        kind: "grid",
+        label: "dp",
+        defined: true,
+        col_header: ["", "B"],
+        row_header: ["", "A"],
         rows: [
-          [{ text: "0", marks: [], changed: false }, { text: "0", marks: [], changed: false }],
-          [{ text: "0", marks: [], changed: false }, { text: "1", marks: ["match"], changed: true }],
+          [
+            { text: "0", marks: [], changed: false },
+            { text: "0", marks: [], changed: false },
+          ],
+          [
+            { text: "0", marks: [], changed: false },
+            { text: "1", marks: ["match"], changed: true },
+          ],
         ],
         pointers: [{ label: "i, j", row: 1, col: 1 }],
       }}

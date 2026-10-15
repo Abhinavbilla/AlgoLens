@@ -35,8 +35,8 @@ export function EntryExtras({ slug }: { slug: string }) {
         <>
           <h2 id="practice-h">Practice next</h2>
           <p className={styles.why}>
-            Problems that use the same idea, easiest first. Try to solve them yourself before reading any
-            solution.
+            Now try it on your own. These use the same idea, easiest first. Give each one a real attempt
+            before you look anything up: that struggle is where the learning happens.
           </p>
           <ul className={styles.practice}>
             {practice.map((p) => (

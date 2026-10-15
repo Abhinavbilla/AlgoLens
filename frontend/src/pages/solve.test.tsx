@@ -383,7 +383,7 @@ test("the thought process goes from brute force to optimal with the data structu
     "/learn/arrays",
   );
   expect(section).toHaveTextContent("Pattern: Kadane's algorithm");
-  expect(section).toHaveTextContent("Written by AI about the verified code");
+  expect(section).toHaveTextContent("This walkthrough is written by AI, based on code that's been run and checked");
 });
 
 test("without an explanation the page shows the approaches as before", async () => {

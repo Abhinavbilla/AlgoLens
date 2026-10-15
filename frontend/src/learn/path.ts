@@ -1,7 +1,7 @@
 // The beginner path: an order to learn in, each stage building on the last. Items are library
 // slugs or primers ("primer:<id>"); library slugs that aren't in the library yet are skipped.
 
-export type Stage = { title: string; why: string; items: string[] };
+export type Stage = { title: string; why: string; items: string[]; icon: string };
 
 export const PRIMERS: Record<string, { title: string; summary: string }> = {
   arrays: {
@@ -61,46 +61,55 @@ export const PRIMERS: Record<string, { title: string; summary: string }> = {
 export const PATH: Stage[] = [
   {
     title: "Foundations",
+    icon: "foundations",
     why: "Three ideas every later topic leans on. Ten minutes here saves hours later.",
     items: ["primer:arrays", "primer:big-o", "primer:recursion"],
   },
   {
     title: "Your first algorithms",
+    icon: "sorting",
     why: "Simple loops over an array, so you get used to reading code step by step.",
     items: ["bubble-sort", "insertion-sort", "primer:stable-sorting", "binary-search"],
   },
   {
     title: "Strings, hashing and sets",
+    icon: "strings-hashing",
     why: "Text, and the structures that find anything in a single step.",
     items: ["primer:strings", "primer:hashing", "primer:sets", "hash-map-counting", "valid-anagram"],
   },
   {
     title: "Array patterns",
+    icon: "array-techniques",
     why: "Small ideas that turn slow nested loops into a single pass.",
     items: ["two-pointers", "sliding-window", "prefix-sums"],
   },
   {
     title: "Numbers and bits",
+    icon: "bits",
     why: "Remainders, digits and binary: the maths behind many tricks.",
     items: ["primer:numbers", "primer:bits", "count-bits"],
   },
   {
     title: "Recursion in action",
+    icon: "recursion",
     why: "Split a problem, solve the pieces, combine. Watch the call stack grow and shrink.",
     items: ["merge-sort", "quick-sort", "subsets", "permutations"],
   },
   {
     title: "Stacks, queues and heaps",
+    icon: "stacks",
     why: "Structures that hand things back in a particular order.",
     items: ["primer:stacks-queues", "monotonic-stack", "heap-operations"],
   },
   {
     title: "Linked lists",
+    icon: "linked-lists",
     why: "Your first data structure built from nodes and pointers instead of a row of boxes.",
     items: ["primer:linked-lists", "reverse-linked-list", "fast-slow-pointers"],
   },
   {
     title: "Trees",
+    icon: "trees",
     why: "Nodes with children: the shape behind file systems, search trees and heaps.",
     items: [
       "primer:trees",
@@ -113,16 +122,19 @@ export const PATH: Stage[] = [
   },
   {
     title: "Graphs",
+    icon: "graphs",
     why: "Maps, networks and dependencies: exploring everything that's connected.",
     items: ["primer:graphs", "grid-bfs", "graph-dfs", "topological-sort", "union-find", "dijkstra"],
   },
   {
     title: "Dynamic programming and greedy",
+    icon: "dynamic-programming",
     why: "Answer big questions by reusing small answers, or by always taking the best next step.",
     items: ["house-robber", "coin-change", "knapsack", "lcs", "merge-intervals"],
   },
   {
     title: "Going further",
+    icon: "range-queries",
     why: "For when the basics feel easy.",
     items: ["segment-tree"],
   },

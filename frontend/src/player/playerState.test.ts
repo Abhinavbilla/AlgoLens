@@ -1,4 +1,10 @@
-import { initialState, playerReducer, stepDurationMs, type PlayerAction, type PlayerState } from "./playerState";
+import {
+  initialState,
+  playerReducer,
+  stepDurationMs,
+  type PlayerAction,
+  type PlayerState,
+} from "./playerState";
 
 const run = (s: PlayerState, ...actions: PlayerAction[]) => actions.reduce(playerReducer, s);
 

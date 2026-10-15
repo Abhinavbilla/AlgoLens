@@ -33,7 +33,7 @@
 
 .logo circle,
 .logo line {
-  stroke: var(--accent);
+  stroke: var(--brand);
 }
 
 .footer {

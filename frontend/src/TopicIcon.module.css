@@ -1,0 +1,21 @@
+.icon {
+  flex: none;
+  overflow: visible;
+}
+
+.ink,
+.accent {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ink {
+  stroke: var(--text);
+}
+
+.accent {
+  stroke: var(--brand);
+  stroke-width: 2.6;
+}

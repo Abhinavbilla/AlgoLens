@@ -580,7 +580,13 @@ tr.changed td {
 /* 0: hatched */
 td.mark0,
 .swatch.mark0 {
-  background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 4px, var(--border) 4px, var(--border) 6px);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--bg),
+    var(--bg) 4px,
+    var(--border) 4px,
+    var(--border) 6px
+  );
 }
 
 /* Keep values readable on top of the hatching. */

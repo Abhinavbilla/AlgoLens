@@ -18,23 +18,32 @@ export function CodeView({ python, cpp, pythonLine, cppLine }: Props) {
           C++
         </button>
       </div>
-      {lang === "cpp" && <p className={styles.legend}>The highlighted C++ line is the closest match to the Python line.</p>}
+      {lang === "cpp" && (
+        <p className={styles.legend}>The highlighted C++ line is the closest match to the Python line.</p>
+      )}
       <pre className={styles.code}>
-        {source.replace(/\n$/, "").split("\n").map((text, i) => {
-          const n = i + 1;
-          const isCurrent = n === current;
-          return (
-            <div key={n} className={isCurrent ? styles.currentLine : styles.line} aria-current={isCurrent ? "step" : undefined}>
-              <span className={styles.gutter} aria-hidden="true">
-                {isCurrent ? "▶" : ""}
-              </span>
-              <span className={styles.lineNo} aria-hidden="true">
-                {n}
-              </span>
-              <code>{text ? <HighlightedLine text={text} lang={lang} /> : " "}</code>
-            </div>
-          );
-        })}
+        {source
+          .replace(/\n$/, "")
+          .split("\n")
+          .map((text, i) => {
+            const n = i + 1;
+            const isCurrent = n === current;
+            return (
+              <div
+                key={n}
+                className={isCurrent ? styles.currentLine : styles.line}
+                aria-current={isCurrent ? "step" : undefined}
+              >
+                <span className={styles.gutter} aria-hidden="true">
+                  {isCurrent ? "▶" : ""}
+                </span>
+                <span className={styles.lineNo} aria-hidden="true">
+                  {n}
+                </span>
+                <code>{text ? <HighlightedLine text={text} lang={lang} /> : " "}</code>
+              </div>
+            );
+          })}
       </pre>
     </section>
   );

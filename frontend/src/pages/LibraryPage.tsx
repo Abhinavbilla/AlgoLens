@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { api, type EntrySummary } from "../api";
-import styles from "./home.module.css";
 import { PATH } from "../learn/path";
+import { TopicIcon } from "../TopicIcon";
+import styles from "./home.module.css";
 import { SECTIONS, sectionFor, type Section } from "./sections";
 import { SortingPreview } from "./SortingPreview";
 
@@ -39,60 +40,92 @@ export function LibraryPage() {
     <div className={styles.home}>
       <section className={styles.hero} aria-labelledby="hero-title">
         <div className={styles.heroText}>
-          <p className={styles.eyebrow}>Algorithms, step by step</p>
+          <p className={styles.eyebrow}>Data structures &amp; algorithms, made visible</p>
           <h1 id="hero-title" className={styles.heroTitle}>
-            See what your code is <em>actually</em> doing.
+            See what your code is{" "}
+            <span className={styles.scribbled}>
+              <em>actually</em>
+              <svg viewBox="0 0 200 18" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M3 12 C 40 4, 90 3, 130 7 S 186 14, 197 6" />
+              </svg>
+            </span>{" "}
+            doing.
           </h1>
           <p className={styles.heroLead}>
-            Every animation here is a recording of real code running, never a drawing of what it should do.
-            Each step comes with one plain sentence explaining it. Paste your own problem and get working
-            solutions, each one tested before you see it.
+            Most tutorials draw a picture of an algorithm and hope it matches the code. We do it the other way
+            round: we run real code and show you every step it takes, with one plain sentence about what just
+            happened. Build the foundations here, then take on LeetCode and Codeforces knowing exactly what's
+            going on.
           </p>
           <div className={styles.heroActions}>
             <Link to="/path" className={styles.primary}>
-              New to DSA? Start the path
+              Start from the beginning
             </Link>
             <a href="#library" className={styles.secondary}>
               Browse the library
             </a>
             <Link to="/solve" className={styles.textLink}>
-              Paste a problem →
+              Or paste a problem →
             </Link>
           </div>
         </div>
-        <SortingPreview />
+        <div className={styles.heroArt}>
+          <p className={styles.note} aria-hidden="true">
+            real code,
+            <br />
+            really running
+            <svg viewBox="0 0 80 60" className={styles.noteArrow}>
+              <path d="M6 6 C 20 30, 40 44, 70 50" />
+              <path d="M58 42 L71 50 L57 56" />
+            </svg>
+          </p>
+          <SortingPreview />
+        </div>
       </section>
 
       <ul className={styles.points}>
         <li>
-          <strong>Recorded, not drawn.</strong> We trace the program line by line. Step back and forward and
-          you see exactly the same state.
+          <TopicIcon topic="searching" />
+          <div>
+            <strong>It's the real thing.</strong> Every frame is a recording of code actually running. Step
+            back and forward as often as you like: you'll always see exactly the same state.
+          </div>
         </li>
         <li>
-          <strong>Tested before it's shown.</strong> Solutions run against the worked examples and hundreds of
-          random inputs. Anything that fails is labelled, never passed off as right.
+          <TopicIcon topic="foundations" />
+          <div>
+            <strong>Nothing wrong gets through.</strong> Every solution is run against its examples and
+            hundreds of random inputs before you see it. If something fails, we say so.
+          </div>
         </li>
         <li>
-          <strong>Python and C++, side by side.</strong> The current line is highlighted in both, so you can
-          read along in either language.
+          <TopicIcon topic="recursion" />
+          <div>
+            <strong>You do, not just watch.</strong> Try your own inputs, guess the next step before it
+            happens, and play with every data structure before you use it.
+          </div>
         </li>
       </ul>
 
       <section className={styles.journey} aria-labelledby="journey-title">
         <div className={styles.journeyHead}>
+          <p className={styles.eyebrow}>The learning path</p>
           <h2 id="journey-title" className={styles.sectionTitle}>
-            What you'll learn
+            From your first loop to graphs and DP
           </h2>
           <p>
-            Every foundation of data structures and algorithms, in an order that builds up. Each stage starts
-            with a hands-on primer, then shows real code running. Then you're ready for LeetCode and
-            Codeforces.
+            Twelve stages, each building on the last. Every stage opens with a hands-on primer, then lets you
+            watch the algorithms run. When you reach the end, the problems on LeetCode and Codeforces will
+            look a lot friendlier.
           </p>
         </div>
         <ol className={styles.journeySteps}>
           {PATH.map((stage, i) => (
             <li key={stage.title}>
-              <span className={styles.journeyNum}>{i + 1}</span>
+              <span className={styles.journeyIcon}>
+                <TopicIcon topic={stage.icon} size={34} />
+                <span className={styles.journeyNum}>{i + 1}</span>
+              </span>
               <span className={styles.journeyTitle}>{stage.title}</span>
               <span className={styles.journeyWhy}>{stage.why}</span>
             </li>
@@ -106,12 +139,13 @@ export function LibraryPage() {
       <section id="library" className={styles.library} aria-labelledby="library-title">
         <div className={styles.libraryHead}>
           <div>
+            <p className={styles.eyebrow}>The library</p>
             <h2 id="library-title" className={styles.sectionTitle}>
               Algorithm library
             </h2>
             <p className={styles.libraryMeta}>
               {entries
-                ? `${entries.length} algorithms, ${verified} verified. All of them play offline.`
+                ? `${entries.length} algorithms, ${verified} verified against hundreds of tests each. All of them work offline.`
                 : "Loading the library…"}
             </p>
           </div>
@@ -119,7 +153,7 @@ export function LibraryPage() {
             <span className="sr-only">Search the library</span>
             <input
               type="search"
-              placeholder="Search: “heap”, “tree”, “window”…"
+              placeholder="Search: heap, tree, sliding window…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -138,7 +172,7 @@ export function LibraryPage() {
 
         {error && <p role="alert">{error}</p>}
         {!entries && !error && <p role="status">Loading…</p>}
-        {entries && groups.length === 0 && <p>Nothing matches “{query}”.</p>}
+        {entries && groups.length === 0 && <p>Nothing matches “{query}”. Try a shorter word.</p>}
 
         {groups.map(({ section, items }) => (
           <section
@@ -148,7 +182,10 @@ export function LibraryPage() {
             aria-labelledby={`${section.id}-h`}
           >
             <header className={styles.groupHead}>
-              <h3 id={`${section.id}-h`}>{section.title}</h3>
+              <div className={styles.groupTitle}>
+                <TopicIcon topic={section.id} />
+                <h3 id={`${section.id}-h`}>{section.title}</h3>
+              </div>
               {section.intro && <p>{section.intro}</p>}
             </header>
             <ul className={styles.cards}>
@@ -168,7 +205,7 @@ export function LibraryPage() {
                       <span className={styles.cardUnverified}>Not verified yet</span>
                     )}
                     <span className={styles.cardGo} aria-hidden="true">
-                      Watch →
+                      Watch it run →
                     </span>
                   </span>
                 </li>

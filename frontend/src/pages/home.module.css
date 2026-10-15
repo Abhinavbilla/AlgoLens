@@ -25,7 +25,7 @@
 
 .eyebrow {
   margin: 0 0 12px;
-  color: var(--accent);
+  color: var(--brand);
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -43,7 +43,82 @@
 
 .heroTitle em {
   font-style: italic;
-  color: var(--accent);
+  color: var(--brand);
+}
+
+/* A hand-drawn underline under one word: the only flourish in the headline. */
+.scribbled {
+  position: relative;
+  display: inline-block;
+}
+
+.scribbled svg {
+  position: absolute;
+  left: -2%;
+  bottom: -0.12em;
+  width: 104%;
+  height: 0.32em;
+  overflow: visible;
+}
+
+.scribbled path {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+  animation: draw 900ms 400ms ease-out forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The live demo sits on graph paper, with a hand-written note pointing at it. */
+.heroArt {
+  position: relative;
+  padding: 28px;
+  border-radius: 22px;
+  background-color: color-mix(in srgb, var(--brand-soft) 55%, transparent);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--brand) 12%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--brand) 12%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.note {
+  position: absolute;
+  top: -34px;
+  right: 18px;
+  z-index: 1;
+  margin: 0;
+  color: var(--brand);
+  font-family: var(--hand);
+  font-size: 1.5rem;
+  line-height: 1;
+  text-align: right;
+  transform: rotate(-4deg);
+}
+
+.noteArrow {
+  position: absolute;
+  top: 40px;
+  right: 70px;
+  width: 64px;
+  height: 48px;
+  transform: scaleX(-1) rotate(-10deg);
+  overflow: visible;
+}
+
+.noteArrow path {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .heroLead {
@@ -171,11 +246,11 @@
 }
 
 .barCompare {
-  background: var(--accent);
+  background: var(--brand);
 }
 
 .barSwap {
-  background: var(--changed);
+  background: var(--text);
 }
 
 .barDone {
@@ -191,7 +266,7 @@
 }
 
 .previewArrow {
-  color: var(--accent);
+  color: var(--brand);
 }
 
 .previewControls {
@@ -199,6 +274,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .scribbled path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
   .bar,
   .primary,
   .secondary {
@@ -207,6 +287,12 @@
 }
 
 /* --- three points --------------------------------------------------------------------- */
+
+.points li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
 
 .points {
   display: grid;
@@ -257,25 +343,38 @@
 }
 
 .journeySteps li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 2px 12px;
-  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
 }
 
-.journeyNum {
-  grid-row: span 2;
+.journeyIcon {
+  position: relative;
+  margin-bottom: 6px;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+}
+
+.journeyNum {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--text);
   color: var(--bg);
-  font-family: var(--serif);
+  font-size: 0.6875rem;
   font-weight: 700;
 }
 
@@ -383,6 +482,12 @@
   margin-bottom: 16px;
 }
 
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .groupHead h3 {
   margin: 0;
   font-family: var(--serif);
@@ -419,6 +524,23 @@
     border-color 120ms ease,
     box-shadow 120ms ease,
     transform 120ms ease;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 18px;
+  right: 18px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--brand);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.card:hover::before {
+  opacity: 1;
 }
 
 .card:hover {
@@ -487,7 +609,7 @@
 }
 
 .cardGo {
-  color: var(--accent);
+  color: var(--brand);
   font-weight: 600;
 }
 
@@ -504,6 +626,19 @@
 /* --- narrow screens ----------------------------------------------------------------------- */
 
 @media (max-width: 860px) {
+  .heroArt {
+    padding: 18px 12px;
+  }
+
+  .note {
+    top: -26px;
+    font-size: 1.25rem;
+  }
+
+  .noteArrow {
+    display: none;
+  }
+
   .hero {
     grid-template-columns: minmax(0, 1fr);
     gap: 32px;

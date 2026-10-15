@@ -96,3 +96,9 @@
   background: var(--surface);
   border: 1px solid var(--border);
 }
+
+.entryTitle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}

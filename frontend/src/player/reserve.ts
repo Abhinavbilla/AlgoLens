@@ -16,8 +16,16 @@ export type Reserve = {
 };
 
 export const NO_RESERVE: Reserve = {
-  pointerRows: 1, hasRange: false, marks: [], treeWidth: 1, treeHeight: 1, gridRows: 0, gridCols: 0,
-  gridRowHeader: false, gridColHeader: false, mapRows: 0,
+  pointerRows: 1,
+  hasRange: false,
+  marks: [],
+  treeWidth: 1,
+  treeHeight: 1,
+  gridRows: 0,
+  gridCols: 0,
+  gridRowHeader: false,
+  gridColHeader: false,
+  mapRows: 0,
 };
 
 export function computeReserves(frames: Frame[]): Reserve[] {

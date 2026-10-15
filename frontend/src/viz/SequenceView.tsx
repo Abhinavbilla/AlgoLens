@@ -18,7 +18,9 @@ export function SequenceView({ panel }: { panel: SequencePanel }) {
       {!panel.defined || items.length === 0 ? (
         <div className={styles.scroll}>
           <ol className={styles.sequence}>
-            <li className={`${styles.chip} ${styles.placeholderChip}`}>{panel.defined ? "Empty." : "Not defined yet."}</li>
+            <li className={`${styles.chip} ${styles.placeholderChip}`}>
+              {panel.defined ? "Empty." : "Not defined yet."}
+            </li>
           </ol>
         </div>
       ) : (
@@ -37,7 +39,9 @@ export function SequenceView({ panel }: { panel: SequencePanel }) {
                 )}
                 {ends && (i === 0 || i === items.length - 1) && (
                   <span className={styles.endLabel}>
-                    {[i === 0 ? ends.first : "", i === items.length - 1 ? ends.last : ""].filter(Boolean).join(" · ")}
+                    {[i === 0 ? ends.first : "", i === items.length - 1 ? ends.last : ""]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 )}
               </li>

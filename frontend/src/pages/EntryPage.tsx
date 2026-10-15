@@ -4,6 +4,8 @@ import { ApiError, api, type Animation, type Entry } from "../api";
 import { InputEditor } from "../input/InputEditor";
 import { EntryExtras } from "../learn/EntryExtras";
 import { InlineMarkdown } from "../InlineMarkdown";
+import { TopicIcon } from "../TopicIcon";
+import { sectionFor } from "./sections";
 import { AnimationView } from "../player/AnimationView";
 import { VerificationBadge } from "../VerificationBadge";
 import styles from "./pages.module.css";
@@ -73,7 +75,10 @@ function EntryContent({ slug }: { slug: string }) {
         <p className={styles.crumbs}>
           <Link to="/">Library</Link> / {e.category}
         </p>
-        <h1>{e.title}</h1>
+        <h1 className={styles.entryTitle}>
+          <TopicIcon topic={sectionFor(e.category)} size={44} />
+          <span>{e.title}</span>
+        </h1>
         <VerificationBadge verification={e.verification} />
         <p className={styles.summary}>{e.summary}</p>
         <p className={styles.input}>
@@ -102,7 +107,7 @@ function EntryContent({ slug }: { slug: string }) {
         onRun={run}
       />
       <section className={styles.about}>
-        <h2>How it works</h2>
+        <h2>The idea</h2>
         {e.description.split(/\n\s*\n/).map((para, i) => (
           <p key={i}>
             <InlineMarkdown text={para} />

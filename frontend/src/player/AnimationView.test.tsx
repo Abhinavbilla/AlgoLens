@@ -31,18 +31,53 @@ const ANIMATION: Animation = {
     frame(0, {
       narration: { text: "Start with l at 0.", source: "template" },
       panels: [
-        { kind: "array", label: "nums", defined: true, items: ["1", "3", "4"], changed: [], pointers: [{ label: "l", index: 0 }, { label: "r", index: 2 }] },
-        { kind: "vars", label: "Variables", items: [{ name: "l", defined: true, value: "0", changed: false }] },
+        {
+          kind: "array",
+          label: "nums",
+          defined: true,
+          items: ["1", "3", "4"],
+          changed: [],
+          pointers: [
+            { label: "l", index: 0 },
+            { label: "r", index: 2 },
+          ],
+        },
+        {
+          kind: "vars",
+          label: "Variables",
+          items: [{ name: "l", defined: true, value: "0", changed: false }],
+        },
       ],
     }),
     frame(1, {
       narration: { text: "l moves from 0 to 1.", source: "template" },
       panels: [
-        { kind: "array", label: "nums", defined: true, items: ["1", "3", "9"], changed: [2], pointers: [{ label: "l", index: 1 }, { label: "r", index: 2 }] },
-        { kind: "vars", label: "Variables", items: [{ name: "l", defined: true, value: "1", changed: true }] },
+        {
+          kind: "array",
+          label: "nums",
+          defined: true,
+          items: ["1", "3", "9"],
+          changed: [2],
+          pointers: [
+            { label: "l", index: 1 },
+            { label: "r", index: 2 },
+          ],
+        },
+        {
+          kind: "vars",
+          label: "Variables",
+          items: [{ name: "l", defined: true, value: "1", changed: true }],
+        },
       ],
     }),
-    frame(2, { line: 3, next: "return", cpp_line: 3, code: "return l", narration: { text: "Return 1.", source: "template" }, ret: "1" }),
+    frame(2, {
+      line: 3,
+      next: "return",
+      cpp_line: 3,
+      code: "return l",
+      narration: { text: "Return 1.", source: "template" },
+      ret: "1",
+    }),
   ],
 };
 

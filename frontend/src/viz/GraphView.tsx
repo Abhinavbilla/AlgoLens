@@ -13,7 +13,12 @@ export function GraphView({ panel, markNames }: { panel: GraphPanel; markNames?:
     return (
       <section className={styles.panel} aria-label={panel.label}>
         <h3 className={styles.title}>{panel.label}</h3>
-        <svg className={styles.svg} viewBox={`-30 -30 ${SIZE + 60} ${SIZE + 60}`} role="img" aria-label={`${panel.label}: not defined yet`}>
+        <svg
+          className={styles.svg}
+          viewBox={`-30 -30 ${SIZE + 60} ${SIZE + 60}`}
+          role="img"
+          aria-label={`${panel.label}: not defined yet`}
+        >
           <text x={SIZE / 2} y={SIZE / 2} className={styles.nodeLabel}>
             Not defined yet.
           </text>
@@ -30,11 +35,23 @@ export function GraphView({ panel, markNames }: { panel: GraphPanel; markNames?:
   return (
     <section className={styles.panel} aria-label={panel.label}>
       <h3 className={styles.title}>{panel.label}</h3>
-      <svg className={styles.svg} viewBox={`-30 -30 ${SIZE + 60} ${SIZE + 60}`} role="img"
-           aria-label={`${panel.label}: ${nodes.length} nodes, ${(panel.edges ?? []).length} edges`}>
+      <svg
+        className={styles.svg}
+        viewBox={`-30 -30 ${SIZE + 60} ${SIZE + 60}`}
+        role="img"
+        aria-label={`${panel.label}: ${nodes.length} nodes, ${(panel.edges ?? []).length} edges`}
+      >
         {panel.directed && (
           <defs>
-            <marker id={arrowId} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <marker
+              id={arrowId}
+              viewBox="0 0 10 10"
+              refX="10"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto"
+            >
               <path d="M0,0 L10,5 L0,10 z" className={styles.arrowHead} />
             </marker>
           </defs>
@@ -48,8 +65,14 @@ export function GraphView({ panel, markNames }: { panel: GraphPanel; markNames?:
           const my = (a.y + b.y) / 2;
           return (
             <g key={i}>
-              <line className={styles.edge} x1={a.x + dx} y1={a.y + dy} x2={b.x - dx} y2={b.y - dy}
-                    markerEnd={panel.directed ? `url(#${arrowId})` : undefined} />
+              <line
+                className={styles.edge}
+                x1={a.x + dx}
+                y1={a.y + dy}
+                x2={b.x - dx}
+                y2={b.y - dy}
+                markerEnd={panel.directed ? `url(#${arrowId})` : undefined}
+              />
               {e.w !== null && (
                 <>
                   <rect x={mx - 11} y={my - 9} width={22} height={18} rx={4} className={styles.weightBox} />
@@ -75,7 +98,13 @@ export function GraphView({ panel, markNames }: { panel: GraphPanel; markNames?:
                 </text>
               )}
               {pointersAt(n.id).map((ptr, i) => (
-                <text key={ptr.label} x={p.x} y={p.y - R - 6 - i * 13} className={styles.svgPointer} data-pointer={ptr.label}>
+                <text
+                  key={ptr.label}
+                  x={p.x}
+                  y={p.y - R - 6 - i * 13}
+                  className={styles.svgPointer}
+                  data-pointer={ptr.label}
+                >
                   {ptr.label} ▼
                 </text>
               ))}
@@ -85,10 +114,23 @@ export function GraphView({ panel, markNames }: { panel: GraphPanel; markNames?:
       </svg>
       <p className="sr-only">
         {nodes
-          .map((n) => `node ${n.id}${n.label !== null ? ` label ${n.label}` : ""}${n.marks.length ? ` (${n.marks.join(", ")})` : ""}${pointersAt(n.id).length ? ` [${pointersAt(n.id).map((p) => p.label).join(", ")}]` : ""}`)
+          .map(
+            (n) =>
+              `node ${n.id}${n.label !== null ? ` label ${n.label}` : ""}${n.marks.length ? ` (${n.marks.join(", ")})` : ""}${
+                pointersAt(n.id).length
+                  ? ` [${pointersAt(n.id)
+                      .map((p) => p.label)
+                      .join(", ")}]`
+                  : ""
+              }`,
+          )
           .join("; ")}
       </p>
-      <MarkLegend items={nodes.map((n) => ({ name: String(n.id), marks: n.marks }))} order={order} shape="node" />
+      <MarkLegend
+        items={nodes.map((n) => ({ name: String(n.id), marks: n.marks }))}
+        order={order}
+        shape="node"
+      />
     </section>
   );
 }

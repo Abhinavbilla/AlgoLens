@@ -37,8 +37,8 @@ export function ThoughtProcess({ explanation: e }: { explanation: Explanation })
         <p className={styles.eyebrow}>The thought process</p>
         <h2 id="thinking-h">How to think about it</h2>
         <p className={styles.note}>
-          Written by AI about the verified code below. The code and its tests are checked; this text is a
-          guide, so if something here seems off, trust the code and the animation.
+          This walkthrough is written by AI, based on code that's been run and checked. If anything here ever
+          disagrees with the code or the animation, trust those.
         </p>
       </header>
 

@@ -55,7 +55,8 @@ export function App() {
               <section className={styles.notFound}>
                 <h1>Nothing here</h1>
                 <p>
-                  That page doesn't exist. <Link to="/">Back to the library</Link>
+                  We couldn't find that page. It may have moved, or the link has a typo.{" "}
+                  <Link to="/">Back to the library</Link>
                 </p>
               </section>
             }
@@ -64,7 +65,8 @@ export function App() {
       </main>
       <footer className={styles.footer}>
         <span>
-          <strong>AlgoLens</strong> · every step is a real run of real code.
+          <strong>AlgoLens</strong> · made for anyone learning DSA from scratch. Every step you see is real
+          code, really running.
         </span>
         <span>
           <Link to="/">Library</Link> · <Link to="/solve">Paste a problem</Link>

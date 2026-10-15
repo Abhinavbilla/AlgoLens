@@ -72,7 +72,10 @@ function JobProgress({ jobId }: { jobId: string }) {
   return (
     <section className={styles.solve}>
       <h1>Working on it</h1>
-      <p className={styles.lead}>Writing solutions and checking each one usually takes a few minutes.</p>
+      <p className={styles.lead}>
+        We're writing solutions and putting each one through its tests. It usually takes two to five minutes,
+        so this is a good moment for a sip of water.
+      </p>
       <div className={styles.progress} role="status" aria-live="polite">
         {!job && <p>Connecting…</p>}
         {job && job.status !== "failed" && (

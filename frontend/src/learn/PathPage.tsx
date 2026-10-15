@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { api, type EntrySummary } from "../api";
+import { TopicIcon } from "../TopicIcon";
 import { PATH, PRIMERS } from "./path";
 import styles from "./learn.module.css";
 import { useProgress } from "./progress";
@@ -98,7 +99,10 @@ export function PathPage() {
               {n + 1}
             </div>
             <div className={styles.stageBody}>
-              <h2>{stage.title}</h2>
+              <h2 className={styles.stageTitle}>
+                <TopicIcon topic={stage.icon} size={30} />
+                {stage.title}
+              </h2>
               <p className={styles.why}>{stage.why}</p>
               <ul className={styles.items}>
                 {stage.items.map((item) => {

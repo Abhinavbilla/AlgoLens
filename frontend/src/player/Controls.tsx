@@ -44,7 +44,10 @@ export function Controls({ state, dispatch, ops }: Props) {
         </button>
         <label className={styles.speed}>
           Speed
-          <select value={state.speed} onChange={(e) => dispatch({ type: "speed", speed: Number(e.target.value) })}>
+          <select
+            value={state.speed}
+            onChange={(e) => dispatch({ type: "speed", speed: Number(e.target.value) })}
+          >
             {SPEEDS.map((s) => (
               <option key={s} value={s}>
                 {s}×

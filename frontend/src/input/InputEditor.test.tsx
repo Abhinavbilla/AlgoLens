@@ -9,7 +9,15 @@ const PARAMS: InputParam[] = [
 ];
 
 function setup(onRun = vi.fn().mockResolvedValue(null)) {
-  render(<InputEditor params={PARAMS} initial={[[1, 2], "ab"]} defaults={[[9], "z"]} running={false} onRun={onRun} />);
+  render(
+    <InputEditor
+      params={PARAMS}
+      initial={[[1, 2], "ab"]}
+      defaults={[[9], "z"]}
+      running={false}
+      onRun={onRun}
+    />,
+  );
   return onRun;
 }
 
@@ -18,7 +26,10 @@ const field = (name: string) => screen.getByRole("textbox", { name });
 async function replace(name: string, text: string) {
   await userEvent.clear(field(name));
   // userEvent treats [ and { as key descriptors, so type them escaped.
-  await userEvent.type(field(name), text.replace(/[[{]/g, (c) => c + c));
+  await userEvent.type(
+    field(name),
+    text.replace(/[[{]/g, (c) => c + c),
+  );
 }
 
 test("fields start from the shown input; strings are plain text, the rest JSON", () => {
@@ -70,7 +81,10 @@ test("JSON mode takes the whole argument list", async () => {
   const box = screen.getByRole("textbox");
   expect(box).toHaveValue('[[1,2],"ab"]');
   await userEvent.clear(box);
-  await userEvent.type(box, "[[7]]".replace(/[[{]/g, (c) => c + c)); // only one argument
+  await userEvent.type(
+    box,
+    "[[7]]".replace(/[[{]/g, (c) => c + c),
+  ); // only one argument
   await userEvent.click(screen.getByRole("button", { name: "Run with this input" }));
   expect(onRun).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent("Give a JSON list of 2 arguments.");
