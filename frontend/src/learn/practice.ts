@@ -164,6 +164,18 @@ export const PRACTICE: Record<string, Practice[]> = {
     lc("Two Sum", "two-sum", "Easy"),
     lc("Group Anagrams", "group-anagrams", "Medium"),
   ],
+  "valid-anagram": [
+    lc("Valid Anagram", "valid-anagram", "Easy"),
+    lc("First Unique Character in a String", "first-unique-character-in-a-string", "Easy"),
+    lc("Ransom Note", "ransom-note", "Easy"),
+    lc("Find All Anagrams in a String", "find-all-anagrams-in-a-string", "Medium"),
+  ],
+  "count-bits": [
+    lc("Number of 1 Bits", "number-of-1-bits", "Easy"),
+    lc("Power of Two", "power-of-two", "Easy"),
+    lc("Single Number", "single-number", "Easy"),
+    lc("Counting Bits", "counting-bits", "Easy"),
+  ],
   "reverse-linked-list": [
     lc("Reverse Linked List", "reverse-linked-list", "Easy"),
     lc("Merge Two Sorted Lists", "merge-two-sorted-lists", "Easy"),

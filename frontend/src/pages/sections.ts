@@ -18,11 +18,23 @@ export const SECTIONS: Section[] = [
     categories: ["Binary search"],
   },
   {
+    id: "strings-hashing",
+    title: "Strings and hashing",
+    intro: "Text, counting, and finding anything in one step with a hash map.",
+    categories: ["Strings", "Hashing"],
+  },
+  {
+    id: "bits",
+    title: "Bits",
+    intro: "Numbers as rows of switches, and tricks that flip them in one operation.",
+    categories: ["Bit manipulation"],
+  },
+  {
     id: "array-techniques",
     title: "Array techniques",
     intro:
       "Small patterns that turn a nested loop into one pass: pointers moving inward, a window that slides, totals you compute once.",
-    categories: ["Two pointers", "Sliding window", "Prefix sums", "Hashing", "Monotonic stack"],
+    categories: ["Two pointers", "Sliding window", "Prefix sums", "Monotonic stack"],
   },
   {
     id: "heaps",

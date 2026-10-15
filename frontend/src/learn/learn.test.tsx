@@ -47,10 +47,10 @@ test("the path lists stages in order, skips what isn't in the library, and track
   expect(await screen.findByText("Foundations")).toBeInTheDocument();
   expect(screen.getByText("Your first algorithms")).toBeInTheDocument();
   expect(screen.queryByText("Going further")).not.toBeInTheDocument(); // none of its entries are here
-  expect(screen.getByText(/0 of 12 done/)).toBeInTheDocument(); // 8 primers + 4 present entries
+  expect(screen.getByText(/0 of 17 done/)).toBeInTheDocument(); // 13 primers + 4 present entries
   expect(screen.getByText(/Next up:/)).toHaveTextContent("Arrays and indexes");
   await userEvent.click(screen.getByRole("button", { name: "Arrays and indexes: not done" }));
-  expect(screen.getByText(/1 of 12 done/)).toBeInTheDocument();
+  expect(screen.getByText(/1 of 17 done/)).toBeInTheDocument();
   expect(screen.getByText(/Next up:/)).toHaveTextContent("Big-O");
   expect(JSON.parse(localStorage.getItem("algolens.done") ?? "[]")).toEqual(["primer:arrays"]);
 });
@@ -131,4 +131,52 @@ test("tree demo names a node's role", async () => {
   renderAt("/learn/trees");
   await userEvent.click(screen.getByRole("button", { name: "8" }));
   expect(said()).toContain("the root");
+});
+
+test("strings: a slice is start up to but not including end", () => {
+  mockApi();
+  renderAt("/learn/strings");
+  expect(said()).toContain('s[2:6] is "gori"');
+  expect(said()).toContain("1 + 2 + … + 10 = 55 characters");
+});
+
+test("sets: operations and membership", async () => {
+  mockApi();
+  renderAt("/learn/sets");
+  expect(said()).toContain("A & B is {4, 5}");
+  await userEvent.click(screen.getByRole("button", { name: "A | B" }));
+  expect(said()).toContain("A | B is {1, 2, 3, 4, 5, 6, 7}");
+  await userEvent.click(screen.getByRole("button", { name: "A - B" }));
+  expect(said()).toContain("A - B is {1, 2, 3}");
+  expect(said()).toContain("No: 6 in A is False");
+});
+
+test("bits: flipping, shifting and clearing the lowest one-bit", async () => {
+  mockApi();
+  renderAt("/learn/bits");
+  expect(screen.getByRole("list", { name: "44 in binary: 00101100" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "n & (n - 1)" }));
+  expect(screen.getByRole("list", { name: "40 in binary: 00101000" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "bit worth 1: 0" }));
+  expect(said()).toContain("giving 41");
+  expect(said()).toContain("41 is odd");
+});
+
+test("numbers: modulo and digits", async () => {
+  mockApi();
+  renderAt("/learn/numbers");
+  expect(said()).toContain("23 mod 7 = 2");
+  for (let i = 0; i < 4; i++)
+    await userEvent.click(screen.getByRole("button", { name: "Take the last digit" }));
+  expect(said()).toContain("4096 has 4 digits");
+});
+
+test("stability keeps ties in their original order", async () => {
+  mockApi();
+  renderAt("/learn/stable-sorting");
+  await userEvent.click(screen.getByRole("button", { name: "Sort by grade, stable" }));
+  const order = within(screen.getByRole("list", { name: "Students in the current order" }))
+    .getAllByRole("listitem")
+    .map((li) => li.querySelector("strong")?.textContent);
+  expect(order).toEqual(["Ben", "Dev", "Asha", "Chen", "Ema"]);
 });

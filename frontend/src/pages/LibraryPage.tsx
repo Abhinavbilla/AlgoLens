@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { api, type EntrySummary } from "../api";
 import styles from "./home.module.css";
+import { PATH } from "../learn/path";
 import { SECTIONS, sectionFor, type Section } from "./sections";
 import { SortingPreview } from "./SortingPreview";
 
@@ -76,6 +77,31 @@ export function LibraryPage() {
           read along in either language.
         </li>
       </ul>
+
+      <section className={styles.journey} aria-labelledby="journey-title">
+        <div className={styles.journeyHead}>
+          <h2 id="journey-title" className={styles.sectionTitle}>
+            What you'll learn
+          </h2>
+          <p>
+            Every foundation of data structures and algorithms, in an order that builds up. Each stage starts
+            with a hands-on primer, then shows real code running. Then you're ready for LeetCode and
+            Codeforces.
+          </p>
+        </div>
+        <ol className={styles.journeySteps}>
+          {PATH.map((stage, i) => (
+            <li key={stage.title}>
+              <span className={styles.journeyNum}>{i + 1}</span>
+              <span className={styles.journeyTitle}>{stage.title}</span>
+              <span className={styles.journeyWhy}>{stage.why}</span>
+            </li>
+          ))}
+        </ol>
+        <Link to="/path" className={styles.primary}>
+          Open the learning path
+        </Link>
+      </section>
 
       <section id="library" className={styles.library} aria-labelledby="library-title">
         <div className={styles.libraryHead}>

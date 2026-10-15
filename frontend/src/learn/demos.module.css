@@ -295,3 +295,234 @@
   min-width: 40px;
   padding: 0 10px;
 }
+
+/* --- strings, sets, bits, numbers, stability ----------------------------------------------- */
+
+.chars,
+.bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chars li,
+.bits li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.charIndex {
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.charBox {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 40px;
+  border: 2px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 1.0625rem;
+}
+
+.inSlice .charBox {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg));
+}
+
+.inSlice .charIndex {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.sliders {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sliders label,
+.inline {
+  display: grid;
+  grid-template-columns: auto 2.5em minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+}
+
+.inline {
+  grid-template-columns: auto 2.5em minmax(120px, 1fr);
+  font-family: var(--font);
+}
+
+.sliders output,
+.inline output {
+  font-weight: 700;
+  text-align: right;
+}
+
+.costBars {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.costBars > div {
+  display: grid;
+  grid-template-columns: minmax(0, 9em) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 2px 10px;
+  align-items: center;
+}
+
+.costBars strong {
+  grid-column: 2;
+  font-size: 0.8125rem;
+}
+
+.costBar,
+.costBarGood {
+  display: block;
+  height: 14px;
+  border-radius: 4px;
+  transition: width 200ms ease;
+}
+
+.costBar {
+  background: var(--changed);
+}
+
+.costBarGood {
+  background: var(--ok);
+}
+
+.setRows p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.chip,
+.chipOn {
+  min-width: 36px;
+  padding: 4px 10px;
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  font-family: var(--mono);
+  text-align: center;
+}
+
+.chipOn {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.bitOn,
+.bitOff {
+  width: 38px;
+  height: 42px;
+  border: 2px solid var(--border-strong);
+  border-radius: 6px;
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.bitOn {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.bitOff {
+  background: var(--bg);
+  color: var(--text-muted);
+}
+
+.clock {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.clockFace {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.clock circle:not(.clockFace) {
+  fill: var(--bg);
+  stroke: var(--border-strong);
+  stroke-width: 2;
+}
+
+.clock text {
+  fill: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.clock .svgHot circle {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.clock .svgHot text {
+  fill: var(--accent-text);
+  font-weight: 700;
+}
+
+.cardsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardA,
+.cardB {
+  display: grid;
+  padding: 8px 14px;
+  border: 2px solid;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.cardA {
+  border-color: var(--ok);
+}
+
+.cardB {
+  border-color: var(--warn);
+}
+
+.cardA span,
+.cardB span {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .costBar,
+  .costBarGood {
+    transition: none;
+  }
+}

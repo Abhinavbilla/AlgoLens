@@ -1,0 +1,124 @@
+{
+  "title": "Bits: counting 1-bits with n & (n - 1)",
+  "category": "Bit manipulation",
+  "summary": "Each n & (n - 1) clears the lowest 1-bit, so count the steps until nothing is left.",
+  "order": 36,
+  "entry": "count_bits",
+  "schema": {
+    "params": [
+      {
+        "name": "n",
+        "type": {
+          "kind": "int",
+          "min": 0,
+          "max": 255
+        }
+      }
+    ]
+  },
+  "default_input": {
+    "args": [
+      44
+    ]
+  },
+  "tests": [
+    {
+      "args": [
+        0
+      ]
+    },
+    {
+      "args": [
+        1
+      ]
+    },
+    {
+      "args": [
+        2
+      ]
+    },
+    {
+      "args": [
+        3
+      ]
+    },
+    {
+      "args": [
+        44
+      ]
+    },
+    {
+      "args": [
+        64
+      ]
+    },
+    {
+      "args": [
+        255
+      ]
+    }
+  ],
+  "cpp_lines": {
+    "1": 3,
+    "2": 4,
+    "3": 5,
+    "4": 6,
+    "5": 6,
+    "6": 7,
+    "7": 9
+  },
+  "visual": {
+    "panels": [
+      {
+        "kind": "array",
+        "var": "bits",
+        "label": "n in binary (most significant bit first)"
+      },
+      {
+        "kind": "vars",
+        "vars": [
+          "n",
+          "count"
+        ]
+      }
+    ]
+  },
+  "narration": [
+    {
+      "line": 2,
+      "text": "No one-bits counted yet."
+    },
+    {
+      "line": 3,
+      "next": 4,
+      "text": "n is {n}, not zero, so it still has a one-bit."
+    },
+    {
+      "line": 3,
+      "next": 7,
+      "text": "n has reached zero: every one-bit has been cleared."
+    },
+    {
+      "line": 4,
+      "next": 4,
+      "text": "Write n out in binary, one bit at a time."
+    },
+    {
+      "line": 4,
+      "next": 5,
+      "text": "In binary, {n} is {bits}."
+    },
+    {
+      "line": 5,
+      "text": "AND-ing n with one less than itself clears its lowest one-bit: {old(n)} becomes {n}."
+    },
+    {
+      "line": 6,
+      "text": "Bits cleared so far: {count}."
+    },
+    {
+      "line": 7,
+      "text": "The number had {count} one-bits."
+    }
+  ]
+}

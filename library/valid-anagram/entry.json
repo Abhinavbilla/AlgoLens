@@ -1,0 +1,48 @@
+{
+  "title": "Strings: anagram check by counting",
+  "category": "Strings",
+  "summary": "Count each letter of the first word, then use the counts up with the second.",
+  "order": 35,
+  "entry": "is_anagram",
+  "schema": {
+    "params": [
+      {"name": "s", "type": {"kind": "string", "chars": "abc", "len": {"min": 0, "max": 8}}},
+      {"name": "t", "type": {"kind": "string", "chars": "abc", "len": {"min": 0, "max": 8}}}
+    ]
+  },
+  "default_input": {"args": ["abca", "caab"]},
+  "tests": [
+    {"args": ["", ""]},
+    {"args": ["a", "a"]},
+    {"args": ["a", "b"]},
+    {"args": ["ab", "ba"]},
+    {"args": ["abca", "caab"]},
+    {"args": ["abc", "abcc"]},
+    {"args": ["aab", "abb"]},
+    {"args": ["cabbac", "abcabc"]},
+    {"args": ["aaaa", "aaab"]}
+  ],
+  "cpp_lines": {"1": 5, "2": 6, "3": 7, "4": 9, "5": 10, "6": 11, "7": 13, "8": 14, "9": 15, "10": 17, "11": 19},
+  "visual": {
+    "panels": [
+      {"kind": "map", "var": "counts", "label": "counts: letter → how many are still unused"},
+      {"kind": "vars", "vars": ["s", "t", "c"]}
+    ]
+  },
+  "narration": [
+    {"line": 2, "next": 3, "text": "The words have different lengths ({len(s)} and {len(t)}), so they can't be anagrams."},
+    {"line": 2, "next": 4, "text": "Both words have {len(s)} letters. Now compare the letters themselves."},
+    {"line": 3, "text": "Not anagrams."},
+    {"line": 4, "text": "Start an empty count of letters."},
+    {"line": 5, "next": 6, "text": "Next letter of the first word: {c}."},
+    {"line": 5, "next": 7, "text": "Every letter of the first word is counted."},
+    {"line": 6, "text": "{c} has now been seen {counts[c]} times."},
+    {"line": 7, "next": 8, "text": "Next letter of the second word: {c}."},
+    {"line": 7, "next": 11, "text": "Every letter of the second word was matched."},
+    {"line": 8, "next": 9, "text": "No {c} is left to use: the second word has more of it than the first."},
+    {"line": 8, "next": 10, "text": "There's a {c} left to use."},
+    {"line": 9, "text": "Not anagrams."},
+    {"line": 10, "text": "Use up one {c}: {counts[c]} left."},
+    {"line": 11, "text": "Every letter matched exactly: they're anagrams."}
+  ]
+}

@@ -32,6 +32,26 @@ export const PRIMERS: Record<string, { title: string; summary: string }> = {
     title: "Trees",
     summary: "Roots, children, leaves and depth: the vocabulary every tree problem uses.",
   },
+  strings: {
+    title: "Strings",
+    summary: "Characters in a row: slicing, and why building strings can be slow.",
+  },
+  sets: {
+    title: "Sets",
+    summary: "Unique values with instant membership, union and intersection.",
+  },
+  bits: {
+    title: "Bits and binary",
+    summary: "Numbers as rows of switches, and the operators that flip them.",
+  },
+  numbers: {
+    title: "Number basics",
+    summary: "Remainders, digits and the powers of two every algorithm leans on.",
+  },
+  "stable-sorting": {
+    title: "Stable sorting",
+    summary: "What a sort does with ties, and when that matters.",
+  },
   graphs: {
     title: "Graphs",
     summary: "Things and the connections between them, and how a program stores them.",
@@ -47,12 +67,22 @@ export const PATH: Stage[] = [
   {
     title: "Your first algorithms",
     why: "Simple loops over an array, so you get used to reading code step by step.",
-    items: ["bubble-sort", "insertion-sort", "binary-search"],
+    items: ["bubble-sort", "insertion-sort", "primer:stable-sorting", "binary-search"],
   },
   {
-    title: "Array patterns and hashing",
+    title: "Strings, hashing and sets",
+    why: "Text, and the structures that find anything in a single step.",
+    items: ["primer:strings", "primer:hashing", "primer:sets", "hash-map-counting", "valid-anagram"],
+  },
+  {
+    title: "Array patterns",
     why: "Small ideas that turn slow nested loops into a single pass.",
-    items: ["two-pointers", "sliding-window", "prefix-sums", "primer:hashing", "hash-map-counting"],
+    items: ["two-pointers", "sliding-window", "prefix-sums"],
+  },
+  {
+    title: "Numbers and bits",
+    why: "Remainders, digits and binary: the maths behind many tricks.",
+    items: ["primer:numbers", "primer:bits", "count-bits"],
   },
   {
     title: "Recursion in action",

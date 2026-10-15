@@ -24,7 +24,7 @@ from algolens.library.loader import EntrySource
 from algolens.narration.engine import compile_templates, lint
 from algolens.sandbox.client import SandboxClient, SandboxUnavailable
 from algolens.schema.generate import GenerationError
-from algolens.schema.service import check_input, generate_tests
+from algolens.schema.service import all_inputs, check_input, generate_tests
 from algolens.verification.runner import run_tests, show
 
 RANDOM_TESTS = 300
@@ -45,11 +45,15 @@ def verify_entry(entry: EntrySource, client: SandboxClient) -> dict:
         issues = check_input(rules, inp["args"], client)
         if issues:
             failures.append(f"{name} breaks the input rules: {issues[0]}")
+    exhaustive = False
     try:
         random_inputs = generate_tests(rules, RANDOM_TESTS, seed_for(entry.slug), client)
     except GenerationError as exc:
-        random_inputs = []
-        failures.append(f"couldn't generate random tests: {exc}")
+        # Fewer than RANDOM_TESTS distinct valid inputs exist: test every one of them.
+        random_inputs = all_inputs(rules, RANDOM_TESTS, client) or []
+        exhaustive = bool(random_inputs)
+        if not random_inputs:
+            failures.append(f"couldn't generate random tests: {exc}")
     inputs = [t["args"] for t in entry.tests] + random_inputs
     labels = [f"hand-written test {i}" for i in range(len(entry.tests))] + [
         f"random test {i}" for i in range(len(random_inputs))
@@ -70,9 +74,9 @@ def verify_entry(entry: EntrySource, client: SandboxClient) -> dict:
             failures.append(f"{label} {args}: c++ gave {show(c)}, python {p.get('value')!r}")
 
     # Recording integrity on every input.
-    all_inputs = [entry.default_input] + [{"args": a} for a in inputs]
+    every_input = [entry.default_input] + [{"args": a} for a in inputs]
     check = client.trace_check(
-        {"source": entry.python_code, "entry": entry.entry, "inputs": all_inputs, **extras}
+        {"source": entry.python_code, "entry": entry.entry, "inputs": every_input, **extras}
     )
     if check["status"] == "sandbox_error":
         raise SandboxUnavailable(check.get("detail", "sandbox error while checking recordings"))
@@ -121,7 +125,11 @@ def verify_entry(entry: EntrySource, client: SandboxClient) -> dict:
         "status": "verified" if not failures else "failed",
         "checked_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "content_hash": entry.content_hash,
-        "method": f"{n_hand} hand-written and {n_random} random tests",
+        "method": (
+            f"{n_hand} hand-written tests and all {n_random} possible inputs"
+            if exhaustive
+            else f"{n_hand} hand-written and {n_random} random tests"
+        ),
         "tests": n_hand + n_random,
         "random_tests": n_random,
         "failures": failures[:50],

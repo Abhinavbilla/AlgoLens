@@ -1,6 +1,15 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { GraphDemo, HashDemo, LinkedListDemo, StackQueueDemo, TreeDemo } from "./demos";
+import {
+  BitsDemo,
+  BuildStringDemo,
+  DigitsDemo,
+  ModuloDemo,
+  SetDemo,
+  StabilityDemo,
+  SubstringDemo,
+} from "./demos2";
 import { PATH, PRIMERS } from "./path";
 import styles from "./learn.module.css";
 import { useProgress } from "./progress";
@@ -407,6 +416,166 @@ const BODIES: Record<string, ReactNode> = {
       <Check
         question="In the graph above, which nodes can you reach from node 2 in exactly two steps?"
         answer="Node 2's only neighbour is 1. From 1 you can go to 0 or 4 (or back to 2), so two steps from 2 reaches 0, 2 and 4."
+      />
+    </div>
+  ),
+  strings: (
+    <div className={styles.prose}>
+      <h2>An array of characters</h2>
+      <p>
+        A string is a row of characters with indexes, just like an array: <code>s[0]</code> is the first
+        character and <code>len(s)</code> counts them. A <strong>slice</strong> <code>s[i:j]</code> takes
+        positions <code>i</code> up to, but <em>not including</em>, <code>j</code>. Drag the sliders:
+      </p>
+      <SubstringDemo />
+      <h2>The one surprise: strings don't change</h2>
+      <p>
+        In Python (and Java), a string can't be edited in place. Adding a character builds a whole new string,
+        so building a long string one character at a time copies the text over and over:
+      </p>
+      <BuildStringDemo />
+      <h2>Handy facts</h2>
+      <ul>
+        <li>
+          Characters are numbers underneath: <code>ord("a")</code> is 97, so <code>ord(c) - ord("a")</code>{" "}
+          turns a letter into 0–25, perfect as an index into a count array.
+        </li>
+        <li>
+          Comparing two strings of length n takes O(n), not O(1): they're compared character by character.
+        </li>
+        <li>
+          In C++, <code>std::string</code> <em>can</em> be changed in place, and <code>s += c</code> is cheap
+          there. Know your language.
+        </li>
+      </ul>
+      <Check
+        question={
+          <>
+            For <code>s = "algorithm"</code>, what is <code>s[3:6]</code>?
+          </>
+        }
+        answer={
+          <>
+            <code>"ori"</code>: positions 3, 4 and 5 hold o, r and i; position 6 is not included.
+          </>
+        }
+      />
+    </div>
+  ),
+  sets: (
+    <div className={styles.prose}>
+      <h2>A bag of unique things</h2>
+      <p>
+        A <strong>set</strong> keeps each value at most once, in no particular order. It's a hash map with
+        only keys, so asking "is x in the set?" takes one jump, not a search. Combining sets answers "what do
+        these have in common?" in a single line:
+      </p>
+      <SetDemo />
+      <h2>When to reach for a set</h2>
+      <ul>
+        <li>
+          Removing duplicates: <code>set(nums)</code>.
+        </li>
+        <li>Remembering what you've already visited, in graph searches and sliding windows.</li>
+        <li>
+          Fast membership tests inside a loop: <code>x in seen</code> is O(1) on a set but O(n) on a list.
+          That one change often turns O(n²) into O(n).
+        </li>
+      </ul>
+      <Check
+        question="You check 'x in items' for each of n values of x, where items is a list of n values. How long does that take, and how do you speed it up?"
+        answer="Each check scans the list, O(n), so n checks take O(n²). Turn items into a set once, O(n), and each check becomes O(1): O(n) in total."
+      />
+    </div>
+  ),
+  bits: (
+    <div className={styles.prose}>
+      <h2>Numbers are rows of switches</h2>
+      <p>
+        Computers store numbers in <strong>binary</strong>: each bit is worth twice the one to its right (1,
+        2, 4, 8, …), and a number is the sum of the bits that are on. Flip the switches, and try the
+        operations:
+      </p>
+      <BitsDemo />
+      <h2>The operators</h2>
+      <ul>
+        <li>
+          <code>&amp;</code> (and): 1 only where both are 1. <code>n &amp; 1</code> tells you if n is odd.
+        </li>
+        <li>
+          <code>|</code> (or): 1 where either is 1. <code>^</code> (xor): 1 where they differ, so{" "}
+          <code>x ^ x = 0</code>, which makes pairs cancel out.
+        </li>
+        <li>
+          <code>&lt;&lt;</code> and <code>&gt;&gt;</code> shift bits: multiply or divide by 2.
+        </li>
+        <li>
+          <code>n &amp; (n - 1)</code> clears the lowest 1-bit; it's 0 exactly when n is a power of two.
+        </li>
+      </ul>
+      <Check
+        question="Without converting to binary in your head: is 64 a power of two, and how does n & (n - 1) tell you?"
+        answer="Yes. 64 is 1000000 in binary and 63 is 0111111, so 64 & 63 = 0. For a number that isn't a power of two, like 60, there's another 1-bit left over, so the result isn't 0."
+      />
+    </div>
+  ),
+  numbers: (
+    <div className={styles.prose}>
+      <h2>Remainders: arithmetic on a clock</h2>
+      <p>
+        <code>n % k</code> (n mod k) is the remainder after dividing by k. It's how you wrap around: positions
+        in a circle, days of the week, the last digit of a number, or keeping huge answers small ("return the
+        answer modulo 1,000,000,007").
+      </p>
+      <ModuloDemo />
+      <h2>Taking a number apart</h2>
+      <p>
+        <code>% 10</code> gives the last digit and <code>// 10</code> removes it. Repeat, and you've visited
+        every digit:
+      </p>
+      <DigitsDemo />
+      <h2>Worth knowing by heart</h2>
+      <ul>
+        <li>
+          2¹⁰ = 1,024, about a thousand, so 2²⁰ is about a million and 2³⁰ about a billion. Halving a million
+          things takes about 20 steps: that's why binary search is fast.
+        </li>
+        <li>The sum 1 + 2 + … + n is n(n + 1) / 2. This is why two nested loops cost about n²/2.</li>
+        <li>
+          Integers in C++ overflow: a 32-bit <code>int</code> stops at about 2.1 billion, so use{" "}
+          <code>long long</code> for big sums. Python's integers never overflow.
+        </li>
+      </ul>
+      <Check
+        question="What is 17 % 5, and how many digits does 2024 have (and how many // 10 steps reach 0)?"
+        answer="17 % 5 = 2, since 17 = 3 × 5 + 2. 2024 has 4 digits, so four // 10 steps reach 0: 202, 20, 2, 0."
+      />
+    </div>
+  ),
+  "stable-sorting": (
+    <div className={styles.prose}>
+      <h2>What happens to ties?</h2>
+      <p>
+        When two items compare equal, a <strong>stable</strong> sort keeps them in the order they started in;
+        an <strong>unstable</strong> sort may swap them. The sorted keys look the same either way, but the
+        order of the ties can differ:
+      </p>
+      <StabilityDemo />
+      <h2>Why it matters</h2>
+      <ul>
+        <li>
+          Stability lets you sort by several things: sort by name, then <em>stably</em> by grade, and each
+          grade is still in name order.
+        </li>
+        <li>
+          Stable: bubble sort, insertion sort, merge sort, and the built-in sorts of Python and Java (for
+          objects). Usually unstable: quick sort, heap sort, and C++'s <code>std::sort</code>. Use{" "}
+          <code>std::stable_sort</code> when you need stability.
+        </li>
+      </ul>
+      <Check
+        question="You sort a list of orders by price with a stable sort, and two orders cost the same. Which comes first?"
+        answer="Whichever was first in the original list. A stable sort never reorders items that compare equal."
       />
     </div>
   ),
