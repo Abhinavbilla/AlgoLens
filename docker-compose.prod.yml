@@ -5,6 +5,16 @@
 # to https://<the same address>. See deploy/README.md.
 
 services:
+  # Servers usually run AppArmor, and Docker's default profile denies mount(), which nsjail
+  # needs to build its jail (same as docker-compose.ci.yml for GitHub's runners). Every other
+  # restriction stays: no capabilities, the seccomp filter, no network, read-only root. The
+  # sandbox's startup self-test still has to prove isolation, or it refuses all code.
+  sandbox:
+    security_opt: !override  # replace the base list (compose versions merge lists differently)
+      - no-new-privileges:true
+      - seccomp=./sandbox/seccomp/sandbox.json
+      - apparmor=unconfined
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
