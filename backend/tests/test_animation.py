@@ -4,6 +4,7 @@ The tracer's own semantics are pinned by sandbox/tests/test_tracer.py on Python 
 """
 
 import importlib.util
+import itertools
 import json
 import os
 import shutil
@@ -70,8 +71,15 @@ def _to_nodes(module, kind, value):
     return value
 
 
+_runs = itertools.count()
+
+
 def record(tmp_path, src, entry, *args, convert=()):
-    path = tmp_path / "solution.py"
+    # A fresh folder each time: Python's bytecode cache can't tell apart two solution.py files
+    # of the same size written within the same second, and would run the previous one.
+    folder = tmp_path / f"run{next(_runs)}"
+    folder.mkdir()
+    path = folder / "solution.py"
     path.write_text(textwrap.dedent(src).lstrip("\n"), encoding="utf-8")
     spec = importlib.util.spec_from_file_location("solution", path)
     module = importlib.util.module_from_spec(spec)
