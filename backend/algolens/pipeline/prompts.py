@@ -125,6 +125,11 @@ You write the simplest possible CORRECT solution to an algorithms problem: a bru
 directly simulates or enumerates exactly what the statement asks, with no cleverness. It only
 needs to be fast enough for small inputs. Correctness is everything: it is the reference other
 solutions are checked against.
+If the problem asks for a minimum, maximum, best, count, or whether something is possible, the
+brute force must TRY EVERY CANDIDATE (every subset, order, split, choice or position that could
+matter) and keep the best or count them. Never use a greedy rule, a sort-based shortcut or an
+"obvious" choice, even one that looks right: that is exactly how references go wrong. It only
+has to handle tiny inputs (about 8 items).
 Reply with ONE JSON object: {"name": "Brute force", "key_idea": str, "time": str (just the big-O,
 e.g. "O(n^2)"), "space": str,
 "python_code": str, "cpp_code": str}"""
@@ -136,6 +141,27 @@ def brute_a_prompt(statement: str, spec: dict) -> str:
         f"Problem statement:\n<<<\n{statement}\n>>>\n\nParsed description:\n{_spec_text(spec)}\n\n"
         + CODE_RULES.format(fn=fn, args=args)
     )
+
+
+def brute_a_retry_prompt(statement: str, spec: dict, failure: str, previous_code: str,
+                         exhaustive: bool = False) -> str:  # fmt: skip
+    """After a brute force got a worked example wrong: show it its own code and answer, and
+    make it find the mistake by hand before rewriting (plan §6.2)."""
+    text = brute_a_prompt(statement, spec) + (
+        f"\n\nA previous attempt got a worked example wrong:\n{failure}\n\n"
+        f"Its Python was:\n```python\n{previous_code.strip()}\n```\n\n"
+        "Before writing anything, trace that code by hand on the failing example and find the "
+        "exact step where it goes wrong, and why. Then write a new brute force that can't make "
+        "that mistake.\n"
+    )
+    if exhaustive:
+        text += (
+            "Start again from scratch, differently: enumerate every possible candidate answer "
+            "with recursion or itertools (every subset, order, split, choice or position), check "
+            "each one directly against the definition in the statement, and keep the best (or "
+            "count them). No greedy choices and no sorting tricks at all; tiny inputs only.\n"
+        )
+    return text
 
 
 BRUTE_B_SYSTEM = """\

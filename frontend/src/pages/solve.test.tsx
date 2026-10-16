@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { App } from "../App";
@@ -393,4 +393,48 @@ test("without an explanation the page shows the approaches as before", async () 
   renderAt("/problems/p1");
   expect(await screen.findByRole("heading", { name: /Brute force/ })).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "How to think about it" })).not.toBeInTheDocument();
+});
+
+test("try again resubmits the statement kept in this tab", async () => {
+  sessionStorage.clear();
+  const calls = mockApi((url, init) => {
+    if (url === "/api/problems" && init?.method === "POST") {
+      const body = JSON.parse(String(init.body));
+      return body.retry ? { status: 202, body: { job_id: "j2" } } : { status: 200, body: { problem_id: "p1" } };
+    }
+    if (url === "/api/problems/p1") return { status: 200, body: PROBLEM };
+    if (url === "/api/jobs/j2")
+      return { status: 200, body: { id: "j2", status: "queued", stage: "", tests_passed: 0, tests_total: 0, error: "", problem_id: null } };
+  });
+  renderAt("/solve");
+  await userEvent.click(screen.getByLabelText("Problem statement"));
+  await userEvent.paste(STATEMENT);
+  await userEvent.click(screen.getByRole("button", { name: "Solve and verify" }));
+  await userEvent.click(await screen.findByRole("button", { name: /try again/i }));
+  const retry = calls.filter((c) => c.url === "/api/problems").map((c) => JSON.parse(String(c.init?.body)));
+  expect(retry).toEqual([{ text: STATEMENT }, { text: STATEMENT, retry: true }]);
+  await waitFor(() => expect(calls.some((c) => c.url === "/api/jobs/j2")).toBe(true));
+});
+
+test("without the statement in this tab, try again asks to paste it", async () => {
+  sessionStorage.clear();
+  mockApi((url) => {
+    if (url === "/api/problems/p1") return { status: 200, body: PROBLEM };
+  });
+  renderAt("/problems/p1");
+  expect(await screen.findByRole("link", { name: /paste the problem again/i })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /try again/i })).toBeNull();
+});
+
+test("an approach right on every worked example says so, but isn't called verified", async () => {
+  const partial = {
+    ...PROBLEM,
+    approaches: PROBLEM.approaches.map((a) => ({ ...a, status: "unverified", examples_passed: a.id === "a1" })),
+  };
+  mockApi((url) => {
+    if (url === "/api/problems/p1") return { status: 200, body: partial };
+  });
+  renderAt("/problems/p1");
+  expect(await screen.findByText(/passes all the worked examples · not fully verified/i)).toBeInTheDocument();
+  expect(screen.queryByText(/✓ Verified/)).toBeNull();
 });

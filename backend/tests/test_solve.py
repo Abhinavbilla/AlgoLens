@@ -121,12 +121,14 @@ class Script:
         }
         self.calls: list[str] = []
         self.prompts: dict[str, list[str]] = {}
+        self.systems: dict[str, list[str]] = {}
         self.lock = threading.Lock()
 
     def __call__(self, role: str, system: str, prompt: str) -> dict:
         with self.lock:
             self.calls.append(role)
             self.prompts.setdefault(role, []).append(prompt)
+            self.systems.setdefault(role, []).append(system)
             q = self.queues[role]
             return q.popleft() if len(q) > 1 else q[0]
 
@@ -215,22 +217,6 @@ def test_brute_forces_that_disagree_leave_everything_unverified():
     assert all(a.status == "unverified" for a in result.approaches)
     assert "disagree" in result.approaches[0].reason
     assert result.approaches[0].failing_case["second"] == 0
-
-
-def test_brute_force_that_fails_an_example_is_regenerated_once():
-    wrong = {**BRUTE, "python_code": "def max_sub_array(nums):\n    return sum(nums)\n"}
-    script = happy(brute_a=[wrong, BRUTE])
-    result, _ = run(script)
-    assert result.approaches[0].status == "verified" and result.approaches[0].repairs == 1
-    assert "got this worked example wrong" in script.prompts["brute_a"][1]
-    assert result.approaches[1].status == "verified"
-
-
-def test_brute_force_wrong_twice_means_nothing_is_verified():
-    wrong = {**BRUTE, "python_code": "def max_sub_array(nums):\n    return sum(nums)\n"}
-    result, _ = run(happy(brute_a=wrong))
-    assert all(a.status == "unverified" for a in result.approaches)
-    assert "worked example wrong" in result.approaches[1].reason
 
 
 def test_out_of_scope_statement_is_rejected():
@@ -342,3 +328,192 @@ def test_far_too_few_random_inputs_is_not_verified():
     result, _ = run(happy(parse=small_spec(1)))  # only 6 different inputs exist
     assert all(a.status != "verified" for a in result.approaches)
     assert "at least 10" in result.approaches[1].reason
+
+
+# --- a brute force that gets an example wrong (plan §6.2) ----------------------------------
+
+WRONG_BRUTE = {**BRUTE, "python_code": "def max_sub_array(nums):\n    return sum(nums)\n"}
+
+
+def test_brute_force_that_fails_an_example_is_regenerated_and_shown_its_mistake():
+    script = happy(brute_a=[WRONG_BRUTE, BRUTE])
+    result, _ = run(script)
+    assert result.approaches[0].status == "verified" and result.approaches[0].repairs == 1
+    retry = script.prompts["brute_a"][1]
+    assert "got a worked example wrong" in retry and "should give" in retry
+    assert "return sum(nums)" in retry  # its own code, to trace by hand
+    assert "trace that code by hand" in retry and "Start again from scratch" not in retry
+    assert result.approaches[1].status == "verified"
+
+
+def test_second_retry_starts_over_with_an_exhaustive_search():
+    script = happy(brute_a=[WRONG_BRUTE, WRONG_BRUTE, BRUTE])
+    result, _ = run(script)
+    assert script.calls.count("brute_a") == 3
+    assert "Start again from scratch" in script.prompts["brute_a"][2]
+    assert result.approaches[0].status == "verified" and result.approaches[0].repairs == 2
+    assert result.approaches[1].status == "verified"
+
+
+def test_brute_force_wrong_three_times_still_checks_the_examples():
+    script = happy(brute_a=WRONG_BRUTE)
+    result, _ = run(script)
+    assert script.calls.count("brute_a") == 3  # the first attempt and two retries
+    assert all(a.status == "unverified" for a in result.approaches)
+    assert "worked example wrong" in result.approaches[1].reason
+    brute, fast = result.approaches
+    assert not brute.examples_passed and fast.examples_passed  # Kadane is right on them
+
+
+def test_no_second_retry_when_both_brute_forces_get_examples_wrong():
+    wrong_b = {"restatement": "sum", "python_code": "def max_sub_array(nums):\n    return 0\n"}
+    script = happy(brute_a=WRONG_BRUTE, brute_b=wrong_b)
+    run(script)
+    # Both wrong on the examples: probably misread, so no more tokens are spent on retries.
+    assert script.calls.count("brute_a") == 2
+
+
+# --- regression: Minimum Number of Arrows to Burst Balloons --------------------------------
+
+ARROWS_SPEC = {
+    **SPEC,
+    "title": "Minimum Number of Arrows to Burst Balloons",
+    "function_name": "findMinArrowShots",
+    "params": [{"name": "points", "type": {
+        "kind": "array", "len": {"min": 1, "max": 6},
+        "of": {"kind": "array", "of": {"kind": "int", "min": 0, "max": 20},
+               "len": {"min": 2, "max": 2}, "sorted": "asc"}}}],
+    "output": "the minimum number of arrows",
+    "examples": [{"args": [[[10, 16], [2, 8], [1, 6], [7, 12]]], "expected": 2},
+                 {"args": [[[1, 2], [3, 4], [5, 6], [7, 8]]], "expected": 4}],
+}  # fmt: skip
+
+ARROWS_MAIN = """
+int main() {
+    auto in = algolens::Json::parse(algolens::read_input());
+    auto pts = in["args"][0].get<std::vector<std::vector<long long>>>();
+    algolens::emit(algolens::Json(findMinArrowShots(pts)).dump());
+}
+"""
+
+# What the AI wrote for the user: a greedy in input order, wrong on example 1 (3, not 2).
+GREEDY_BRUTE = {
+    **BRUTE,
+    "python_code": """
+def findMinArrowShots(points):
+    n = len(points)
+    burst = [False] * n
+    arrows = 0
+    for i in range(n):
+        if burst[i]:
+            continue
+        arrows += 1
+        arrow_pos = points[i][1]
+        burst[i] = True
+        for j in range(i + 1, n):
+            if not burst[j] and points[j][0] <= arrow_pos <= points[j][1]:
+                burst[j] = True
+    return arrows
+""",
+    "cpp_code": "#include <algolens.h>\nint main() { return 0; }\n",
+}
+
+EXHAUSTIVE_BRUTE = {
+    **BRUTE,
+    "python_code": """
+from itertools import combinations
+
+
+def findMinArrowShots(points):
+    spots = sorted({x for p in points for x in p})
+    for k in range(1, len(points) + 1):
+        for arrows in combinations(spots, k):
+            if all(any(a <= x <= b for x in arrows) for a, b in points):
+                return k
+    return len(points)
+""",
+    "cpp_code": "#include <algolens.h>\n"
+    + """
+long long findMinArrowShots(const std::vector<std::vector<long long>>& points) {
+    std::vector<long long> spots;
+    for (auto& p : points) { spots.push_back(p[0]); spots.push_back(p[1]); }
+    std::sort(spots.begin(), spots.end());
+    spots.erase(std::unique(spots.begin(), spots.end()), spots.end());
+    long long best = (long long)points.size();
+    int m = (int)spots.size();
+    for (int mask = 1; mask < (1 << m); ++mask) {
+        bool ok = true;
+        for (auto& p : points) {
+            bool hit = false;
+            for (int i = 0; i < m; ++i)
+                if ((mask >> i & 1) && p[0] <= spots[i] && spots[i] <= p[1]) hit = true;
+            if (!hit) { ok = false; break; }
+        }
+        if (ok) best = std::min(best, (long long)__builtin_popcount(mask));
+    }
+    return best;
+}
+"""
+    + ARROWS_MAIN,
+}
+
+ARROWS_B = {
+    "restatement": "fewest points hitting every interval",
+    "python_code": """
+def findMinArrowShots(points):
+    spots = sorted({x for p in points for x in p})
+
+    def need(left, chosen):
+        if all(any(a <= x <= b for x in chosen) for a, b in points):
+            return len(chosen)
+        if not left:
+            return float("inf")
+        return min(need(left[1:], chosen + [left[0]]), need(left[1:], chosen))
+
+    return need(spots, [])
+""",
+}
+
+GREEDY = {"name": "Greedy after sorting by end", "key_idea": "Shoot at the end of the first.",
+          "time": "O(n log n)", "space": "O(1)", "python_code": """
+def findMinArrowShots(points):
+    points = sorted(points, key=lambda p: p[1])
+    arrows = 0
+    current = -1
+    for start, end in points:
+        if start > current:
+            arrows += 1
+            current = end
+    return arrows
+""", "cpp_code": "#include <algolens.h>\n" + """
+long long findMinArrowShots(std::vector<std::vector<long long>> points) {
+    std::sort(points.begin(), points.end(),
+              [](const auto& a, const auto& b) { return a[1] < b[1]; });
+    long long arrows = 0, current = -1;
+    for (auto& p : points) {
+        if (p[0] > current) { ++arrows; current = p[1]; }
+    }
+    return arrows;
+}
+""" + ARROWS_MAIN}  # fmt: skip
+
+
+def test_minimum_arrows_greedy_brute_force_is_replaced_and_everything_verifies():
+    script = happy(parse=ARROWS_SPEC, brute_a=[GREEDY_BRUTE, GREEDY_BRUTE, EXHAUSTIVE_BRUTE],
+                   brute_b=ARROWS_B, approaches={"approaches": [GREEDY]})  # fmt: skip
+    result, _ = run(script)
+    assert result.status == "done", result.reason
+    brute, greedy = result.approaches
+    assert brute.status == "verified", brute.reason
+    assert greedy.status == "verified", greedy.reason
+    assert brute.repairs == 2 and "should give 2, got 3" in brute.repair_reasons[0]
+    assert "TRY EVERY CANDIDATE" in script.systems["brute_a"][0]
+
+
+def test_minimum_arrows_when_no_reference_can_be_trusted():
+    script = happy(parse=ARROWS_SPEC, brute_a=GREEDY_BRUTE, brute_b=ARROWS_B,
+                   approaches={"approaches": [GREEDY]})  # fmt: skip
+    result, _ = run(script)
+    brute, greedy = result.approaches
+    assert brute.status == greedy.status == "unverified"
+    assert greedy.examples_passed and not brute.examples_passed

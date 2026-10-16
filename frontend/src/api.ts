@@ -195,6 +195,7 @@ export type ApproachView = {
   repairs: number;
   exhaustive?: boolean; // the tests covered every valid input
   limited?: boolean; // fewer than 300 random inputs could be made; tested on those
+  examples_passed?: boolean; // not verified, but right on every worked example
   failing_case: Record<string, unknown> | null;
   animated: boolean;
   animation_note: string;
@@ -250,11 +251,11 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ args }),
     }),
-  submit: (text: string) =>
+  submit: (text: string, retry = false) =>
     request<Submitted>("/api/problems", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(retry ? { text, retry } : { text }),
     }),
   job: (id: string) => get<JobView>(`/api/jobs/${encodeURIComponent(id)}`),
   jobEventsUrl: (id: string) => `/api/jobs/${encodeURIComponent(id)}/events`,

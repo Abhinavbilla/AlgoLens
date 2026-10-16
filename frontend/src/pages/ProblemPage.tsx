@@ -5,6 +5,7 @@ import { useAuth } from "../account/AuthContext";
 import { HighlightedLine } from "../viz/highlight";
 import { ApproachPlayer } from "./ApproachPlayer";
 import { ThoughtProcess } from "./ThoughtProcess";
+import { TryAgain } from "./TryAgain";
 import { Compare } from "./CompareChart";
 import { TutorProvider } from "../tutor/TutorContext";
 import pageStyles from "./pages.module.css";
@@ -60,6 +61,7 @@ function ProblemContent({ problemId }: { problemId: string }) {
               : "This problem isn't supported"}
         </h1>
         <p role="alert">{p.reason}</p>
+        <TryAgain problemId={p.id} />
         <Link to="/solve">Paste another problem</Link>
       </section>
     );
@@ -90,6 +92,7 @@ function ProblemContent({ problemId }: { problemId: string }) {
           Signature: <code>{`${p.function_name}(${p.params.map((x) => x.name).join(", ")})`}</code>
         </p>
       </header>
+      {p.approaches.some((a) => a.status !== "verified") && <TryAgain problemId={p.id} />}
       {p.explanation && <ThoughtProcess explanation={p.explanation} />}
       {p.explanation && <h2 className={styles.codeHeading}>The verified code, step by step</h2>}
       <ol className={styles.approaches}>
@@ -123,6 +126,13 @@ export function ApproachBadge({ approach: a }: { approach: ApproachView }) {
     return (
       <p className={`${pageStyles.badge} ${pageStyles.unverified}`}>
         <span aria-hidden="true">⧗</span> Not verified: too slow on a test
+      </p>
+    );
+  }
+  if (a.examples_passed) {
+    return (
+      <p className={`${pageStyles.badge} ${pageStyles.partial}`}>
+        <span aria-hidden="true">✓</span> Passes all the worked examples · not fully verified
       </p>
     );
   }

@@ -12,7 +12,7 @@ from algolens.api import app as app_module
 from algolens.api import problems as problems_api
 from algolens.config import get_settings
 from algolens.db import session as session_module
-from algolens.db.models import Job, Problem, Run
+from algolens.db.models import Approach, Job, Problem, Run
 from algolens.db.session import session_factory
 from algolens.pipeline import service
 from algolens.sandbox.client import SandboxClient
@@ -205,3 +205,32 @@ def test_verified_approach_animations_and_custom_inputs(sessions, monkeypatch):
     assert r.status_code == 409
     assert api.get(f"/api/problems/{pid}/approaches/{uuid.uuid4()}/animation").status_code == 404
     get_settings.cache_clear()
+
+
+def _stored(s, ai, statuses):
+    problem = Problem(id=uuid.uuid4(), text_hash=service.text_hash(STATEMENT),
+                      system_version=service.system_version(ai), status="done", spec={})  # fmt: skip
+    s.add(problem)
+    s.flush()
+    for i, st in enumerate(statuses):
+        s.add(Approach(problem_id=problem.id, position=i, name=f"a{i}", key_idea="k",
+                       time_complexity="O(n)", space_complexity="O(1)", python_code="x",
+                       cpp_code="x", status=st))  # fmt: skip
+    s.commit()
+    return str(problem.id)
+
+
+def test_try_again_solves_a_result_that_isnt_fully_verified(sessions):
+    ai = fake_ai()
+    with sessions() as s:
+        pid = _stored(s, ai, ["unverified", "verified"])
+        assert service.submit(s, STATEMENT, ai=ai) == {"problem_id": pid}  # normally cached
+        assert "job_id" in service.submit(s, STATEMENT, ai=ai, retry=True)
+
+
+def test_try_again_never_redoes_a_fully_verified_result(sessions):
+    ai = fake_ai()
+    with sessions() as s:
+        pid = _stored(s, ai, ["verified", "verified"])
+        assert service.submit(s, STATEMENT, ai=ai, retry=True) == {"problem_id": pid}
+        assert s.scalars(select(Job)).all() == []  # no AI quota spent

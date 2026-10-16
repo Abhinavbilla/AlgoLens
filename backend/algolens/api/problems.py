@@ -4,7 +4,7 @@ import asyncio
 import json
 import uuid
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -24,6 +24,7 @@ from algolens.pipeline.service import (
 from algolens.pipeline.visualize import AnimationSource, sandbox_extras
 from algolens.sandbox.client import SandboxClient, SandboxUnavailable
 from algolens.schema.service import check_input
+from algolens.tutor import RateLimit
 
 router = APIRouter(prefix="/api", tags=["problems"])
 FINAL = ("done", "failed")
@@ -31,10 +32,16 @@ FINAL = ("done", "failed")
 
 class Submission(BaseModel):
     text: str = Field(max_length=MAX_TEXT * 2)  # normalized length is checked below
+    retry: bool = False  # solve again if the cached result isn't fully verified
+
+
+# "Try again" re-runs the whole pipeline, so it's limited per visitor: free AI tiers allow only
+# a few problems a day.
+retry_limit = RateLimit(per_minute=1, per_day=10)
 
 
 @router.post("/problems", status_code=202)
-def post_problem(body: Submission, response: Response) -> dict:
+def post_problem(body: Submission, request: Request, response: Response) -> dict:
     text = normalize(body.text)
     if len(text) < 20:
         raise HTTPException(422, detail="Paste the full problem statement, with an example.")
@@ -46,8 +53,14 @@ def post_problem(body: Submission, response: Response) -> dict:
             503, detail=f"Solving new problems isn't set up yet (missing {', '.join(keys)}). "
             "The library still works.",
         )  # fmt: skip
+    if body.retry:
+        ip = request.headers.get("x-real-ip") or (request.client.host if request.client else "?")
+        wait = retry_limit.wait_seconds(ip)
+        if wait:
+            raise HTTPException(429, detail="You've retried a lot today. Try again in "
+                                            f"{round(wait / 60) or 1} minutes.")  # fmt: skip
     with session_factory()() as session:
-        out = submit(session, text)
+        out = submit(session, text, retry=body.retry)
     if "problem_id" in out:
         response.status_code = 200
     return out

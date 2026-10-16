@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { api, type JobView } from "../api";
+import { pasted } from "./TryAgain";
 import styles from "./solve.module.css";
 
 export function JobPage() {
@@ -22,6 +23,7 @@ function JobProgress({ jobId }: { jobId: string }) {
       if (closed) return;
       setJob(view);
       if (view.status === "done" && view.problem_id) {
+        pasted.jobBecame(view.id, view.problem_id);
         navigate(`/problems/${view.problem_id}`, { replace: true });
       }
     };

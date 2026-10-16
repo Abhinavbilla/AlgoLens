@@ -102,3 +102,10 @@
   align-items: center;
   gap: 14px;
 }
+
+/* Not verified, but right on every worked example. */
+.partial {
+  border-color: var(--accent);
+  border-style: dashed;
+  color: var(--accent);
+}

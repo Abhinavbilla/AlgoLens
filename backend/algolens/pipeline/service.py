@@ -83,8 +83,10 @@ def missing_keys(ai: AIClient | None = None) -> list[str]:
     return sorted(k for k in needed if not os.environ.get(k))
 
 
-def submit(session: Session, text: str, ai: AIClient | None = None) -> dict:
-    """{"problem_id": ...} for a cached result, else {"job_id": ...} (new or already queued)."""
+def submit(session: Session, text: str, ai: AIClient | None = None, retry: bool = False) -> dict:
+    """{"problem_id": ...} for a cached result, else {"job_id": ...} (new or already queued).
+    `retry` solves it again when the cached result isn't fully verified (a fully verified
+    one is never redone: that would only spend AI quota)."""
     h, version = text_hash(text), system_version(ai)
     cached = session.scalar(
         select(Problem).where(
@@ -92,7 +94,7 @@ def submit(session: Session, text: str, ai: AIClient | None = None) -> dict:
             Problem.status.in_(CACHEABLE),
         )
     )  # fmt: skip
-    if cached is not None:
+    if cached is not None and not (retry and not fully_verified(session, cached)):
         return {"problem_id": str(cached.id)}
     pending = session.scalar(
         select(Job).where(
@@ -108,6 +110,14 @@ def submit(session: Session, text: str, ai: AIClient | None = None) -> dict:
     session.add(job)
     session.commit()
     return {"job_id": str(job.id)}
+
+
+def fully_verified(session: Session, problem: Problem) -> bool:
+    if problem.status != "done":
+        return False
+    statuses = session.scalars(select(Approach.status).where(Approach.problem_id == problem.id))
+    found = list(statuses)
+    return bool(found) and all(s == "verified" for s in found)
 
 
 def handle_solve(session: Session, job: Job, ai: AIClient | None = None,
@@ -181,7 +191,7 @@ def store(session: Session, h: str, version: str, result: SolveResult) -> Proble
                 "tests_total": a.tests_total, "examples_checked": a.examples_checked,
                 "repairs": a.repairs, "failing_case": a.failing_case,
                 "repair_reasons": a.repair_reasons, "exhaustive": a.exhaustive,
-                "limited": a.limited,
+                "limited": a.limited, "examples_passed": a.examples_passed,
             },
         ))  # fmt: skip
     return problem

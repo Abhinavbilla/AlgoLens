@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { ApiError, api } from "../api";
+import { pasted } from "./TryAgain";
 import styles from "./solve.module.css";
 
 export const MAX_TEXT = 10_000;
@@ -31,8 +32,13 @@ export function SolvePage() {
     try {
       const out = await api.submit(text);
       // The text stays only in this tab's memory; the server keeps a hash of it.
-      if ("problem_id" in out) navigate(`/problems/${out.problem_id}`);
-      else navigate(`/jobs/${out.job_id}`);
+      if ("problem_id" in out) {
+        pasted.forProblem(out.problem_id, text);
+        navigate(`/problems/${out.problem_id}`);
+      } else {
+        pasted.forJob(out.job_id, text);
+        navigate(`/jobs/${out.job_id}`);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't reach the server.");
       setBusy(false);

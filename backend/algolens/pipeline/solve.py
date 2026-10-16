@@ -44,6 +44,10 @@ RANDOM_TESTS = 300
 # Fewer than this many random inputs (on top of the worked examples) is too little to call
 # anything verified. Between this and RANDOM_TESTS, approaches are verified on what there is.
 MIN_RANDOM_TESTS = 10
+# Regenerations of a brute force that gets a worked example wrong. The second is only asked
+# for when the independent second brute force gets every example right (so the examples were
+# read correctly): each costs a few thousand tokens of a free tier's daily allowance.
+BRUTE_RETRIES = 2
 MUTATION_SAMPLE = 40
 MIN_MUTATIONS_REJECTED = 0.7
 SLOW = ("timeout", "not_run")
@@ -77,6 +81,9 @@ class ApproachResult:
     repair_reasons: list[str] = field(default_factory=list)  # why each repair was needed
     exhaustive: bool = False  # the tests covered every valid input (fewer than 300 exist)
     limited: bool = False  # fewer than 300 random inputs could be made: tested on those
+    # Not verified, but right on every worked example (checked when no reference could be
+    # trusted, so learners can tell a likely-good approach from a broken one).
+    examples_passed: bool = False
     failing_case: dict | None = None
     animation: dict | None = None  # see pipeline/visualize.py; only for verified approaches
 
@@ -440,7 +447,19 @@ class _Judge:
         _fail_all(self.approaches, reason)
         for a in self.approaches:
             a.failing_case = case
+        self._examples_only()
         return False
+
+    def _examples_only(self) -> None:
+        """Whether each approach at least gets the worked examples right: sandbox only, no
+        AI. That's not verification, but it tells a likely-good approach from a broken one."""
+        if not self.n_ex:
+            return
+        expected = [ex.expected for ex in self.examples]
+        for a in self.approaches:
+            res = run_tests(self.run.sandbox, "python", a.python_code, self.spec.function_name,
+                            self.tests[: self.n_ex], self.extras)  # fmt: skip
+            a.examples_passed = self._first_wrong(list(range(self.n_ex)), res, expected) is None
 
     # --- brute forces ---------------------------------------------------------------------------
 
@@ -448,9 +467,16 @@ class _Judge:
         run, sd = self.run, self.spec.model_dump()
         res_a = self._python(a.python_code, "the brute force")
         fail = self._example_failure(res_a)
-        if fail:  # regenerate once, told only which example it got wrong (plan §6.2)
-            retry = prompts.brute_a_prompt(run.text, sd)
-            retry += f"\n\nA previous attempt got this worked example wrong:\n{fail}\n"
+        res_b: list[dict] | None = None
+        for attempt in range(BRUTE_RETRIES):  # plan §6.2: regenerate, shown what went wrong
+            if not fail:
+                break
+            if attempt > 0:
+                res_b = res_b or self._python(brute_b.python_code, "the second brute force")
+                if self._example_failure(res_b):
+                    break  # both get examples wrong: likely misread, don't spend more tokens
+            retry = prompts.brute_a_retry_prompt(run.text, sd, fail, a.python_code,
+                                                 exhaustive=attempt > 0)  # fmt: skip
             new = run.ask("brute_a", prompts.BRUTE_A_SYSTEM, retry, GeneratedApproach)
             for k, v in _fields(new).items():
                 setattr(a, k, v)
@@ -458,10 +484,11 @@ class _Judge:
             a.repair_reasons.append(fail[:500])
             res_a = self._python(a.python_code, "the brute force")
             fail = self._example_failure(res_a)
-            if fail:
-                return self._no_reference(f"The brute force got a worked example wrong ({fail}).")
+        if fail:
+            return self._no_reference(f"The brute force got a worked example wrong ({fail}).")
 
-        res_b = self._python(brute_b.python_code, "the second brute force")
+        if res_b is None:
+            res_b = self._python(brute_b.python_code, "the second brute force")
         fail_b = self._example_failure(res_b)
         if fail_b:
             retry = prompts.brute_b_prompt(run.text, sd, fail_b)
