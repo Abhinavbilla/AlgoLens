@@ -1,0 +1,15 @@
+# HTTPS in front of AlgoLens on a server. Caddy gets and renews a free Let's Encrypt
+# certificate for SITE_ADDRESS by itself (ports 80 and 443 must be open to the internet).
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy web:80 {
+		# Server-sent events (job progress) must not be buffered.
+		flush_interval -1
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

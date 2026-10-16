@@ -11,3 +11,7 @@ dist/
 /eval/
 *.tsbuildinfo
 /ui-check-out/
+
+# Private keys never go in the repo
+*.pem
+*.key

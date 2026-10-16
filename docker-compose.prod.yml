@@ -1,0 +1,26 @@
+# On a server: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Adds Caddy for HTTPS on ports 80 and 443; everything else stays private to the server
+# (the base file binds the database, API and web ports to 127.0.0.1 only).
+# Set SITE_ADDRESS in .env, e.g. SITE_ADDRESS=20-2-211-154.sslip.io, and ALGOLENS_PUBLIC_URL
+# to https://<the same address>. See deploy/README.md.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy-data:
+  caddy-config:
