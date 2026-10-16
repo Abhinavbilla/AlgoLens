@@ -1,5 +1,6 @@
 """The solve pipeline end to end with scripted AI replies and the real sandbox (plan §6)."""
 
+import json
 import os
 import threading
 from collections import deque
@@ -313,3 +314,31 @@ def test_unverified_approaches_are_not_explained():
     result, _ = run(script)
     assert [a["name"] for a in result.explanation["approaches"]] == ["Brute force"]
     assert "Approach 2" not in script.prompts["explain"][0]
+
+
+def small_spec(max_len: int) -> dict:
+    """Arrays of 1..max_len values in 0..5: few distinct inputs, and arrays can't be listed
+    exhaustively, so only some random ones exist."""
+    spec = json.loads(json.dumps(SPEC))
+    spec["params"][0]["type"] = {"kind": "array", "of": {"kind": "int", "min": 0, "max": 5},
+                                 "len": {"min": 1, "max": max_len}}  # fmt: skip
+    spec["examples"] = [{"args": [[5]], "expected": 5}, {"args": [[0]], "expected": 0}]
+    if max_len > 1:
+        spec["examples"][1] = {"args": [[1, 2]], "expected": 3}
+    return spec
+
+
+def test_too_few_random_inputs_still_verifies_on_those_there_are():
+    result, _ = run(happy(parse=small_spec(3)))
+    assert result.status == "done", result.reason
+    brute, fast = result.approaches
+    assert brute.status == fast.status == "verified", (brute.reason, fast.reason)
+    assert fast.limited and not fast.exhaustive
+    assert 10 <= fast.tests_passed < 300 and fast.tests_total == fast.tests_passed
+    assert fast.animation and "unavailable" not in fast.animation  # still animated
+
+
+def test_far_too_few_random_inputs_is_not_verified():
+    result, _ = run(happy(parse=small_spec(1)))  # only 6 different inputs exist
+    assert all(a.status != "verified" for a in result.approaches)
+    assert "at least 10" in result.approaches[1].reason

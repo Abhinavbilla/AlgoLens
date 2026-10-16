@@ -58,6 +58,7 @@ def get_entry(slug: str) -> dict:
         "title": row.title,
         "category": row.category,
         "summary": c["summary"],
+        "entry": c["entry"],
         "description": row.description,
         "note": c.get("note", ""),
         "python_code": c["python_code"],

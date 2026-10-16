@@ -1,5 +1,8 @@
 import { Link, NavLink, Route, Routes, useLocation } from "react-router";
 import styles from "./App.module.css";
+import { AccountButton } from "./account/AccountButton";
+import { AccountPage } from "./account/AccountPage";
+import { AuthProvider } from "./account/AuthContext";
 import { HealthBadge } from "./HealthBadge";
 import { ThemeToggle } from "./ThemeToggle";
 import { PathPage } from "./learn/PathPage";
@@ -15,6 +18,7 @@ import { SolvePage } from "./pages/SolvePage";
 export function App() {
   const location = useLocation();
   return (
+    <AuthProvider>
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link to="/" className={styles.brand} aria-label="AlgoLens home">
@@ -38,6 +42,7 @@ export function App() {
         <div className={styles.tools}>
           <HealthBadge />
           <ThemeToggle />
+          <AccountButton />
         </div>
       </header>
       <main className={styles.main}>
@@ -51,6 +56,7 @@ export function App() {
           <Route path="/learn/:topic" element={<PrimerPage />} />
           <Route path="/jobs/:jobId" element={<JobPage />} />
           <Route path="/problems/:problemId" element={<ProblemPage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route
             path="*"
             element={
@@ -76,6 +82,7 @@ export function App() {
         </span>
       </footer>
     </div>
+    </AuthProvider>
   );
 }
 

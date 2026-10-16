@@ -7,6 +7,7 @@ import { InlineMarkdown } from "../InlineMarkdown";
 import { TopicIcon } from "../TopicIcon";
 import { sectionFor } from "./sections";
 import { AnimationView } from "../player/AnimationView";
+import { TutorProvider } from "../tutor/TutorContext";
 import { VerificationBadge } from "../VerificationBadge";
 import styles from "./pages.module.css";
 
@@ -69,7 +70,21 @@ function EntryContent({ slug }: { slug: string }) {
     }
   }
 
+  const tutor = {
+    target: { kind: "library" as const, id: slug },
+    title: e.title,
+    functionName: e.entry,
+    params: e.params.map((p) => p.name),
+    suggestions: [
+      "Why does this work?",
+      "Walk me through the example input",
+      "Where does the time complexity come from?",
+      "What kinds of problems is this used for?",
+    ],
+  };
+
   return (
+    <TutorProvider page={tutor}>
     <article className={styles.entry}>
       <header className={styles.entryHeader}>
         <p className={styles.crumbs}>
@@ -117,5 +132,6 @@ function EntryContent({ slug }: { slug: string }) {
       </section>
       <EntryExtras slug={slug} />
     </article>
+    </TutorProvider>
   );
 }

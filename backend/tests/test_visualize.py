@@ -30,7 +30,9 @@ def test_good_plan_is_used_as_written():
     result, progress = run(happy(narration=PLAN))
     anim = _fast(result).animation
     assert anim["source"] == "ai" and anim["narration"] == GOOD and anim["visual"] == VISUAL
-    assert anim["cpp_lines"] == {"6": 6, "7": 6}  # the out-of-range pair is dropped
+    # The out-of-range AI pair is dropped; the computed alignment covers every code line.
+    assert "99" not in anim["cpp_lines"] and anim["cpp_lines"]["6"] == 6
+    assert {"2", "3", "4", "5", "6", "7", "8"} <= set(anim["cpp_lines"])
     assert anim["default_input"] == {"args": [[1]]}  # the shortest worked example
     assert "preparing animations" in {p[0] for p in progress}
     assert result.approaches[0].animation["source"] == "ai"  # the brute force too

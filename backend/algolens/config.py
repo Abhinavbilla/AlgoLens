@@ -27,12 +27,28 @@ class Settings(BaseSettings):
     model_narration: str = "gemini:gemini-3.8-flash"
     # The thought-process explanation; empty means "same model as narration".
     model_explain: str = ""
+    # The tutor chat on algorithm and problem pages; empty means "same model as narration".
+    model_tutor: str = ""
 
     # Per-problem AI budget, input + output tokens across all calls (plan §6.4).
     max_tokens_per_problem: int = Field(default=200_000, gt=0)
     max_repair_rounds: int = Field(default=2, ge=0)
 
     worker_poll_seconds: float = Field(default=1.0, gt=0)
+
+    # Optional Google sign-in. The address the site is reached at: Google sends people back to
+    # <public_url>/api/auth/google/callback, and an https address makes the cookie Secure.
+    # The client id and secret are read from GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.
+    public_url: str = "http://localhost:8080"
+    session_days: int = Field(default=30, gt=0)
+
+    # Optional sign-in with an emailed code (algolens/mailer.py). The password is read from
+    # SMTP_PASSWORD. email_dev_log writes codes to the log instead: local testing only.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    mail_from: str = ""
+    email_dev_log: bool = False
 
     @model_validator(mode="after")
     def _brute_forces_use_different_models(self) -> "Settings":

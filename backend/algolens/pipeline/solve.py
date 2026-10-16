@@ -41,6 +41,9 @@ from algolens.verification.compare import same
 from algolens.verification.runner import run_tests, show
 
 RANDOM_TESTS = 300
+# Fewer than this many random inputs (on top of the worked examples) is too little to call
+# anything verified. Between this and RANDOM_TESTS, approaches are verified on what there is.
+MIN_RANDOM_TESTS = 10
 MUTATION_SAMPLE = 40
 MIN_MUTATIONS_REJECTED = 0.7
 SLOW = ("timeout", "not_run")
@@ -73,6 +76,7 @@ class ApproachResult:
     repairs: int = 0
     repair_reasons: list[str] = field(default_factory=list)  # why each repair was needed
     exhaustive: bool = False  # the tests covered every valid input (fewer than 300 exist)
+    limited: bool = False  # fewer than 300 random inputs could be made: tested on those
     failing_case: dict | None = None
     animation: dict | None = None  # see pipeline/visualize.py; only for verified approaches
 
@@ -250,7 +254,7 @@ def _verify_all(run: _Run, spec: ParsedProblem, rules: InputRules, result: Solve
 
     with run.timed("building tests"):
         seed = int(hashlib.sha256(run.text.encode()).hexdigest()[:8], 16)
-        exhaustive = False
+        exhaustive = limited = False
         try:
             random_inputs = generate_tests(rules, RANDOM_TESTS, seed, run.sandbox)
         except GenerationError as exc:
@@ -258,12 +262,18 @@ def _verify_all(run: _Run, spec: ParsedProblem, rules: InputRules, result: Solve
             random_inputs = all_inputs(rules, RANDOM_TESTS, run.sandbox)
             exhaustive = random_inputs is not None
             if not exhaustive:
-                reason = f"Couldn't generate valid random tests: {exc}"
-                run.failures.append(reason)
-                _fail_all(approaches, reason)
-                return
+                # Otherwise test on the valid inputs that could be made, if there are enough.
+                random_inputs = exc.partial
+                limited = True
+                if len(random_inputs) < MIN_RANDOM_TESTS:
+                    reason = (f"Only {len(random_inputs)} valid random tests could be made "
+                              f"(at least {MIN_RANDOM_TESTS} are needed): {exc}")  # fmt: skip
+                    run.failures.append(reason)
+                    _fail_all(approaches, reason)
+                    return
         for a in approaches:
             a.exhaustive = exhaustive
+            a.limited = limited
     judge = _Judge(run, spec, checker, random_inputs, approaches)
 
     with run.timed("checking the brute force"):

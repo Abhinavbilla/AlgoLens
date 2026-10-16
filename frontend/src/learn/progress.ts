@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 
-// What a learner has marked as done, kept in this browser only (there are no accounts).
+// What a learner has marked as done, kept in this browser. Signed-in learners also get it
+// saved to their account (account/AuthContext.tsx), so it follows them across devices.
 // Keys are library slugs and primer ids ("primer:arrays").
 
 const KEY = "algolens.done";
-const EVENT = "algolens-progress";
+export const PROGRESS_EVENT = "algolens-progress";
+const EVENT = PROGRESS_EVENT;
 
-function read(): Set<string> {
+export function read(): Set<string> {
   try {
     const raw = localStorage.getItem(KEY);
     const list = raw ? (JSON.parse(raw) as unknown) : [];
@@ -16,13 +18,14 @@ function read(): Set<string> {
   }
 }
 
-function write(done: Set<string>) {
+/** `fromAccount`: the change came from the account, so it needn't be saved back to it. */
+export function write(done: Set<string>, fromAccount = false) {
   try {
     localStorage.setItem(KEY, JSON.stringify([...done]));
   } catch {
     // Storage unavailable (private window): progress lasts for this visit only.
   }
-  window.dispatchEvent(new Event(EVENT));
+  window.dispatchEvent(new CustomEvent(EVENT, { detail: { fromAccount } }));
 }
 
 export function useProgress() {

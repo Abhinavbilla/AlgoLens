@@ -123,7 +123,7 @@ def _approach_source(problem_id: uuid.UUID, approach_id: uuid.UUID):
         raise HTTPException(409, detail={"message": message, "issues": []})
     spec = problem.spec or {}
     source = AnimationSource(str(approach.id), spec["function_name"], approach.python_code,
-                             sandbox_extras(spec), plan)  # fmt: skip
+                             sandbox_extras(spec), plan, approach.cpp_code)  # fmt: skip
     return spec, source
 
 

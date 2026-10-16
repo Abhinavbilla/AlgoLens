@@ -44,7 +44,12 @@ ATTEMPTS = 200
 
 
 class GenerationError(ValueError):
-    """Couldn't produce inputs that satisfy the schema (it may be contradictory)."""
+    """Couldn't produce inputs that satisfy the schema (it may be contradictory). `partial`
+    holds the valid inputs that were produced before giving up, if any."""
+
+    def __init__(self, message: str, partial: list | None = None):
+        super().__init__(message)
+        self.partial = partial or []
 
 
 @dataclass(frozen=True)

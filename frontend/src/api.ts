@@ -19,6 +19,7 @@ export type EntrySummary = {
 export type InputParam = { name: string; kind: string; hint: string };
 
 export type Entry = EntrySummary & {
+  entry: string; // the function's name
   description: string;
   note: string;
   python_code: string;
@@ -193,6 +194,7 @@ export type ApproachView = {
   examples_checked: number;
   repairs: number;
   exhaustive?: boolean; // the tests covered every valid input
+  limited?: boolean; // fewer than 300 random inputs could be made; tested on those
   failing_case: Record<string, unknown> | null;
   animated: boolean;
   animation_note: string;
@@ -267,4 +269,74 @@ export const api = {
       `/api/problems/${encodeURIComponent(pid)}/approaches/${encodeURIComponent(aid)}/animation`,
       { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ args }) },
     ),
+  chat: (body: ChatRequest) =>
+    request<{ reply: string }>("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  checkCode: (context: TutorTarget, code: string) =>
+    request<CheckResult>("/api/chat/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ context, code }),
+    }),
+};
+
+// The tutor chat (backend/algolens/api/chat.py). The conversation lives only in the browser.
+
+export type TutorTarget = { kind: "library" | "problem"; id: string; approach_id?: string | null };
+
+export type TutorStep = {
+  index: number;
+  line: number | null;
+  narration: string;
+  variables: Record<string, unknown>;
+};
+
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+export type ChatMode = "explain" | "hint" | "review";
+
+export type ChatRequest = {
+  context: TutorTarget & { step?: TutorStep | null };
+  mode: ChatMode;
+  messages: ChatMessage[];
+};
+
+export type CheckResult = {
+  verdict: "passed" | "wrong" | "error" | "missing_function" | string;
+  passed: number;
+  total: number;
+  message: string;
+  failure: { input: unknown[]; expected: unknown; got: unknown; outcome: string; detail: string } | null;
+};
+
+// Optional Google sign-in (backend/algolens/api/auth.py). Changes carry X-Requested-With,
+// which the server requires so other sites can't make them on a learner's behalf.
+
+export type User = { id: string; email: string; name: string; picture: string };
+
+export type MyProblem = { id: string; title: string; status: string; added_at: string };
+
+const change = <T>(path: string, method: string, body?: unknown) =>
+  request<T>(path, {
+    method,
+    headers: { "Content-Type": "application/json", "X-Requested-With": "algolens" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+export const accounts = {
+  me: () => get<{ enabled: boolean; google: boolean; email: boolean; user: User | null }>("/api/auth/me"),
+  emailStart: (email: string) => change<{ sent: boolean; minutes: number; dev?: boolean }>("/api/auth/email/start", "POST", { email }),
+  emailVerify: (email: string, code: string, name = "") =>
+    change<{ user: User; created: boolean }>("/api/auth/email/verify", "POST", { email, code, name }),
+  signInUrl: (next: string) => `/api/auth/google/login?next=${encodeURIComponent(next)}`,
+  signOut: () => change<{ user: null }>("/api/auth/logout", "POST"),
+  deleteAccount: () => change<{ deleted: boolean }>("/api/auth/me", "DELETE"),
+  progress: () => get<{ done: string[] }>("/api/me/progress"),
+  saveProgress: (done: string[]) => change<{ done: string[] }>("/api/me/progress", "PUT", { done }),
+  problems: () => get<MyProblem[]>("/api/me/problems"),
+  rememberProblem: (id: string) => change<{ saved: boolean }>(`/api/me/problems/${encodeURIComponent(id)}`, "POST"),
+  forgetProblem: (id: string) => change<{ saved: boolean }>(`/api/me/problems/${encodeURIComponent(id)}`, "DELETE"),
 };

@@ -38,15 +38,21 @@ def check_input(rules: InputRules, args: Any, client: SandboxClient) -> list[Iss
 def generate_tests(
     rules: InputRules, n: int, seed: int, client: SandboxClient | None, profile: Profile = SMALL
 ) -> list[list[Any]]:
-    """`n` distinct valid inputs, deterministic for the seed."""
+    """`n` distinct valid inputs, deterministic for the seed. If fewer can be made, raises
+    GenerationError with the ones that were made in `partial` (callers may test on those)."""
     out: list[list[Any]] = []
     seen: set[str] = set()
+    problem = ""
     for round_ in range(6):
         wanted = n - len(out)
         if wanted <= 0:
             break
-        candidates = generate_many(rules.schema, max(wanted * 3, 50), seed=seed * 1000 + round_,
-                                   profile=profile)  # fmt: skip
+        try:
+            candidates = generate_many(rules.schema, max(wanted * 3, 50),
+                                       seed=seed * 1000 + round_, profile=profile)  # fmt: skip
+        except GenerationError as exc:
+            problem = str(exc)
+            break
         fresh = []
         for c in candidates:
             key = json.dumps(c, sort_keys=True)
@@ -61,15 +67,16 @@ def generate_tests(
                 verdicts += _run_validator(rules.validator, fresh[i : i + BATCH], client)
             accepted = [c for c, v in zip(fresh, verdicts, strict=True) if v is None]
             if fresh and len(accepted) / len(fresh) < MIN_ACCEPTANCE:
-                raise GenerationError(
-                    f"only {len(accepted)} of {len(fresh)} generated inputs satisfy the extra "
-                    "rules; they're too strict to sample from"
-                )
+                problem = (f"only {len(accepted)} of {len(fresh)} generated inputs satisfy the "
+                           "extra rules")  # fmt: skip
         else:
             accepted = fresh
         out += accepted[:wanted]
     if len(out) < n:
-        raise GenerationError(f"could only generate {len(out)} distinct valid inputs of {n}")
+        why = f" ({problem})" if problem else ""
+        raise GenerationError(
+            f"could only generate {len(out)} distinct valid inputs of {n}{why}", partial=out
+        )
     return out
 
 

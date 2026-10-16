@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from algolens.ai.budget import BudgetExhausted
 from algolens.animation.builder import AnimationError, before_view, build, compile_visual
+from algolens.animation.linemap import align
 from algolens.animation.values import FrameView
 from algolens.narration.engine import TemplateError, compile_templates, lint
 from algolens.pipeline import prompts
@@ -47,21 +48,31 @@ class AnimationSource:
     """What the animation service needs (duck-typed like library EntrySource)."""
 
     def __init__(self, approach_id: str, entry: str, python_code: str, extras: dict,
-                 plan: dict):  # fmt: skip
+                 plan: dict, cpp_code: str = ""):  # fmt: skip
         self.entry = entry
         self.python_code = python_code
         self._extras = extras
         self.visual = plan["visual"]
         self.narration = plan["narration"]
-        self.cpp_lines = plan.get("cpp_lines", {})
+        self.cpp_lines = line_map(python_code, cpp_code, plan.get("cpp_lines", {}))
         self.default_input = plan["default_input"]
-        self.content_hash = f"approach:{approach_id}:{plan.get('version', 1)}"
+        # "lm1": recordings cached before the computed line map get rebuilt with it.
+        self.content_hash = f"approach:{approach_id}:{plan.get('version', 1)}:lm1"
 
     def sandbox_extras(self) -> dict:
         return dict(self._extras)
 
     def cpp_line_map(self) -> dict[int, int]:
         return {int(k): v for k, v in self.cpp_lines.items()}
+
+
+def line_map(python_code: str, cpp_code: str, ai_map: dict) -> dict[str, int]:
+    """Which C++ line to highlight for each Python line: computed by aligning the two
+    (animation/linemap.py), with the AI's own pairs only filling lines it left out."""
+    computed = align(python_code, cpp_code) if cpp_code else {}
+    merged = {str(k): v for k, v in ai_map.items()}
+    merged.update({str(k): v for k, v in computed.items()})
+    return merged
 
 
 def sandbox_extras(spec: dict) -> dict:
@@ -126,6 +137,7 @@ def plan_animation(run, spec: dict, python_code: str, cpp_code: str) -> dict:
     else:
         plan = _salvage(plan, recordings, default, python_code)
     plan["default_input"] = {"args": default.args}
+    plan["cpp_lines"] = line_map(python_code, cpp_code, plan.get("cpp_lines", {}))
     plan.setdefault("lint", {})["attempts"] = attempts  # lint errors of each AI proposal
     return plan
 

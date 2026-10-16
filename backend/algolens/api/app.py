@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response
 
 from algolens import __version__
-from algolens.api import library, problems
+from algolens.api import auth, chat, library, problems
 from algolens.db.session import database_is_up
 from algolens.sandbox.client import SandboxClient
 
@@ -18,6 +18,8 @@ def create_app() -> FastAPI:
     app = FastAPI(title="AlgoLens", version=__version__)
     app.include_router(library.router)
     app.include_router(problems.router)
+    app.include_router(chat.router)
+    app.include_router(auth.router)
 
     @app.get("/api/health")
     def health(response: Response) -> dict[str, str]:

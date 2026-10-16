@@ -15,10 +15,11 @@ import { Controls } from "./Controls";
 import { decisionTargets, questionAt, type Question, type Target } from "./predict";
 import { computeReserves, NO_RESERVE, type Reserve } from "./reserve";
 import { usePlayer } from "./usePlayer";
+import { stepFromFrame, useTutor } from "../tutor/TutorContext";
 
-type Props = { animation: Animation; python: string; cpp: string };
+type Props = { animation: Animation; python: string; cpp: string; approachId?: string };
 
-export function AnimationView({ animation, python, cpp }: Props) {
+export function AnimationView({ animation, python, cpp, approachId }: Props) {
   const { frames } = animation;
   const narrations = useMemo(() => frames.map((f) => f.narration.text), [frames]);
   const { state, dispatch } = usePlayer(narrations);
@@ -41,6 +42,13 @@ export function AnimationView({ animation, python, cpp }: Props) {
     if (pending && state.playing) dispatch({ type: "pause" });
   }, [pending, state.playing, dispatch]);
 
+  // Tell the page's tutor (if there is one) which step is on screen.
+  const tutor = useTutor();
+  useEffect(() => {
+    tutor?.reportStep({ ...stepFromFrame(frame), approachId });
+  }, [tutor, frame, approachId]);
+  useEffect(() => () => tutor?.reportStep(null), [tutor]);
+
   return (
     <div className={styles.layout}>
       <div className={styles.main}>
@@ -53,6 +61,18 @@ export function AnimationView({ animation, python, cpp }: Props) {
           >
             {predict ? "Predict mode: on" : "Predict the next step"}
           </button>
+          {tutor && (
+            <button
+              type="button"
+              className={styles.modeOff}
+              onClick={() => {
+                if (state.playing) dispatch({ type: "pause" });
+                tutor.open({ tab: "explain", question: "What's happening at this step, and why?", withStep: true });
+              }}
+            >
+              Ask about this step
+            </button>
+          )}
           {predict && (
             <span className={styles.score} role="status">
               {answered.length === 0

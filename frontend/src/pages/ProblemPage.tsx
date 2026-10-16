@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-import { api, type ApproachView, type ProblemView } from "../api";
+import { accounts, api, type ApproachView, type ProblemView } from "../api";
+import { useAuth } from "../account/AuthContext";
 import { HighlightedLine } from "../viz/highlight";
 import { ApproachPlayer } from "./ApproachPlayer";
 import { ThoughtProcess } from "./ThoughtProcess";
 import { Compare } from "./CompareChart";
+import { TutorProvider } from "../tutor/TutorContext";
 import pageStyles from "./pages.module.css";
 import styles from "./solve.module.css";
 
@@ -29,6 +31,13 @@ function ProblemContent({ problemId }: { problemId: string }) {
       cancelled = true;
     };
   }, [problemId]);
+
+  // Signed in: add it to the learner's "Your problems" list (its id only, never the text).
+  const { user } = useAuth();
+  const solved = state.status === "ok" && state.data.status === "done";
+  useEffect(() => {
+    if (user && solved) void accounts.rememberProblem(problemId).catch(() => {});
+  }, [user, solved, problemId]);
 
   if (state.status === "loading") return <p role="status">Loading…</p>;
   if (state.status === "error") {
@@ -55,7 +64,22 @@ function ProblemContent({ problemId }: { problemId: string }) {
       </section>
     );
   }
+  const verified = p.approaches.filter((a) => a.status === "verified");
+  const fastest = verified[verified.length - 1];
+  const tutor = {
+    target: { kind: "problem" as const, id: p.id },
+    title: p.title || p.function_name,
+    functionName: p.function_name,
+    params: p.params.map((x) => x.name),
+    suggestions: [
+      verified.length > 1 ? `Why is ${verified[0].name.toLowerCase()} too slow?` : "Why does this approach work?",
+      fastest ? `Walk me through ${fastest.name.toLowerCase()} on the first example` : "Explain the first example",
+      p.explanation ? `How would I spot that this is ${p.explanation.pattern}?` : "What pattern is this?",
+      "What edge cases should I watch for?",
+    ],
+  };
   return (
+    <TutorProvider page={tutor}>
     <article className={styles.problem}>
       <header className={pageStyles.entryHeader}>
         <p className={pageStyles.crumbs}>
@@ -75,8 +99,9 @@ function ProblemContent({ problemId }: { problemId: string }) {
           </li>
         ))}
       </ol>
-      {p.approaches.filter((a) => a.status === "verified").length > 0 && <Compare problemId={p.id} />}
+      {verified.length > 0 && <Compare problemId={p.id} />}
     </article>
+    </TutorProvider>
   );
 }
 
@@ -85,8 +110,12 @@ export function ApproachBadge({ approach: a }: { approach: ApproachView }) {
     return (
       <p className={`${pageStyles.badge} ${pageStyles.verified}`}>
         <span aria-hidden="true">✓</span> Verified · {a.examples_checked} examples and{" "}
-        {a.exhaustive ? `all ${a.tests_passed} possible inputs` : `${a.tests_passed} random tests`}, Python
-        and C++ agree
+        {a.exhaustive
+          ? `all ${a.tests_passed} possible inputs`
+          : a.limited
+            ? `${a.tests_passed} random tests (all the valid inputs we could make)`
+            : `${a.tests_passed} random tests`}
+        , Python and C++ agree
       </p>
     );
   }

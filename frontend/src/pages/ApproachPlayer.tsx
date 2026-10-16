@@ -56,6 +56,7 @@ export function ApproachPlayer({
           animation={animation.data}
           python={a.python_code}
           cpp={a.cpp_code}
+          approachId={a.id}
         />
       )}
       {inputs.length > 0 && (

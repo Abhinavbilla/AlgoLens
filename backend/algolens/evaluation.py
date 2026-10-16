@@ -196,7 +196,7 @@ def _integrity(result: SolveResult, sandbox: SandboxClient) -> list[dict]:
         if not plan or "unavailable" in plan:
             continue
         source = AnimationSource(
-            a.name, spec["function_name"], a.python_code, sandbox_extras(spec), plan
+            a.name, spec["function_name"], a.python_code, sandbox_extras(spec), plan, a.cpp_code
         )
         try:
             animation = animate(source, plan["default_input"], sandbox)

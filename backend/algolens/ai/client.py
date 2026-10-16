@@ -58,6 +58,14 @@ class Reply:
 
 
 @dataclass
+class TextReply:
+    text: str
+    input_tokens: int
+    output_tokens: int
+    model: str
+
+
+@dataclass
 class _Pacer:
     interval: float
     lock: threading.Lock = field(default_factory=threading.Lock)
@@ -113,29 +121,68 @@ class AIClient:
             charge(reply.input_tokens + reply.output_tokens)
             return reply
 
+    def complete_text(
+        self, role: str, system: str, messages: list[dict], budget: Budget, max_tokens: int = 1200
+    ) -> TextReply:
+        """A plain-prose reply to a conversation ([{"role": "user"|"assistant", "content"}]),
+        for the tutor. Same pacing, retries and budget as complete_json."""
+        provider, model = parse_role(self.roles[role])
+        size = len(system) + sum(len(m["content"]) for m in messages)
+        with budget.reserve(size // 3 + max_tokens, stage=role) as charge:
+            if provider == "fake":
+                if self.fake is None:
+                    raise AIUnavailable("no fake responses configured")
+                transcript = "\n\n".join(f"{m['role']}: {m['content']}" for m in messages)
+                text = str(self.fake(role, system, transcript).get("text", ""))
+                reply = TextReply(text, size // 4, len(text) // 4, model)
+            else:
+                reply = self._call_text(provider, model, system, messages, max_tokens)
+            charge(reply.input_tokens + reply.output_tokens)
+            return reply
+
     # --- providers ---------------------------------------------------------------------------
+
+    def _send(self, provider, model, system, messages, max_tokens, json_mode, attempt):
+        """One paced request: (text, usage), or a _Retryable to wait out and try again."""
+        _pacer(provider).wait()
+        try:
+            if provider == "anthropic":
+                return self._anthropic(model, system, messages, max_tokens, json_mode)
+            return self._openai_compatible(provider, model, system, messages, max_tokens, json_mode)
+        except _Retryable as exc:
+            if exc.wait > MAX_WAIT_S:
+                minutes = round(exc.wait / 60)
+                raise AIError(
+                    f"{provider} rate limit for {model}: try again in about {minutes} min "
+                    f"({_quota_message(str(exc))})"
+                ) from exc
+            time.sleep(exc.wait if exc.wait else min(60, 2 ** (attempt + 1)))
+            return exc
+
+    def _call_text(self, provider, model, system, messages, max_tokens) -> TextReply:
+        last_error = "no attempt"
+        for attempt in range(RETRIES):
+            sent = self._send(provider, model, system, messages, max_tokens, False, attempt)
+            if isinstance(sent, _Retryable):
+                last_error = str(sent)
+                continue
+            text, usage = sent
+            # Reasoning models (Qwen, DeepSeek) may think out loud first: keep only the answer.
+            text = re.sub(r"<think>.*?(</think>|$)", "", text, flags=re.DOTALL).strip()
+            if text:
+                return TextReply(text, usage[0], usage[1], model)
+            last_error = "empty reply"
+        raise AIError(f"{provider} failed after {RETRIES} attempts: {last_error}")
 
     def _call(self, provider: str, model: str, system: str, prompt: str, max_tokens: int) -> Reply:
         last_error = "no attempt"
         for attempt in range(RETRIES):
-            _pacer(provider).wait()
-            try:
-                if provider == "anthropic":
-                    text, usage = self._anthropic(model, system, prompt, max_tokens)
-                else:
-                    text, usage = self._openai_compatible(
-                        provider, model, system, prompt, max_tokens
-                    )
-            except _Retryable as exc:
-                last_error = str(exc)
-                if exc.wait > MAX_WAIT_S:
-                    minutes = round(exc.wait / 60)
-                    raise AIError(
-                        f"{provider} rate limit for {model}: try again in about {minutes} min "
-                        f"({_quota_message(str(exc))})"
-                    ) from exc
-                time.sleep(exc.wait if exc.wait else min(60, 2 ** (attempt + 1)))
+            messages = [{"role": "user", "content": prompt}]
+            sent = self._send(provider, model, system, messages, max_tokens, True, attempt)
+            if isinstance(sent, _Retryable):
+                last_error = str(sent)
                 continue
+            text, usage = sent
             data = extract_json(text)
             if data is not None:
                 return Reply(data, usage[0], usage[1], model)
@@ -143,21 +190,19 @@ class AIClient:
             prompt += "\n\nYour previous reply was not one valid JSON object. Reply with JSON only."
         raise AIError(f"{provider} failed after {RETRIES} attempts: {last_error}")
 
-    def _openai_compatible(self, provider, model, system, prompt, max_tokens):
+    def _openai_compatible(self, provider, model, system, messages, max_tokens, json_mode=True):
         base, key_name = ENDPOINTS[provider]
         key = os.environ.get(key_name)
         if not key:
             raise AIUnavailable(f"{key_name} is not set")
         body = {
             "model": model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt},
-            ],
-            "response_format": {"type": "json_object"},
+            "messages": [{"role": "system", "content": system}, *messages],
             "max_tokens": min(max_tokens, MAX_OUTPUT.get(provider, max_tokens)),
-            "temperature": 0.2,
+            "temperature": 0.2 if json_mode else 0.4,
         }
+        if json_mode:
+            body["response_format"] = {"type": "json_object"}
         headers = {"Authorization": f"Bearer {key}"}
         last = ""
         for _ in range(3):
@@ -181,14 +226,16 @@ class AIClient:
         usage = resp.get("usage") or {}
         return choice, (usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0))
 
-    def _anthropic(self, model, system, prompt, max_tokens):
+    def _anthropic(self, model, system, messages, max_tokens, json_mode=True):
         key = os.environ.get("ANTHROPIC_API_KEY")
         if not key:
             raise AIUnavailable("ANTHROPIC_API_KEY is not set")
+        if json_mode:
+            system += "\nReply with a single JSON object and nothing else."
         body = {
             "model": model,
-            "system": system + "\nReply with a single JSON object and nothing else.",
-            "messages": [{"role": "user", "content": prompt}],
+            "system": system,
+            "messages": messages,
             "max_tokens": max_tokens,
         }
         headers = {"x-api-key": key, "anthropic-version": "2023-06-01"}
@@ -273,6 +320,7 @@ def client_from_settings(fake: Callable[[str, str, str], dict] | None = None) ->
     names = ("parse", "brute_a", "brute_b", "approaches", "checker", "repair", "narration")
     roles = {r: getattr(s, f"model_{r}") for r in names}
     roles["explain"] = s.model_explain or s.model_narration
+    roles["tutor"] = s.model_tutor or s.model_narration
     return AIClient(roles, fake=fake)
 
 
@@ -280,4 +328,12 @@ def roles_fingerprint(roles: dict[str, str]) -> str:
     return ",".join(f"{k}={v}" for k, v in sorted(roles.items()))
 
 
-__all__ = ["AIClient", "AIError", "AIUnavailable", "Reply", "client_from_settings", "extract_json"]
+__all__ = [
+    "AIClient",
+    "AIError",
+    "AIUnavailable",
+    "Reply",
+    "TextReply",
+    "client_from_settings",
+    "extract_json",
+]

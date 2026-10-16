@@ -1,0 +1,506 @@
+/* The tutor: a pill in the corner that opens a side panel (a full-screen sheet on phones). */
+
+.launcher {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.launcher:hover {
+  transform: translateY(-2px);
+}
+
+.mark {
+  flex: none;
+}
+
+.panel {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, calc(100vw - 32px));
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow), 0 24px 60px rgb(40 30 10 / 18%);
+  animation: slideIn 0.22s ease-out;
+  overflow: hidden;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+
+  .launcher {
+    transition: none;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+}
+
+.headText h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.headText p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover,
+.ghost:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.ghost {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 10px 14px 0;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.tab,
+.tabOn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.tabOn {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+}
+
+.log {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.empty {
+  margin: auto 0;
+}
+
+.lead {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 0.925rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chips button {
+  padding: 7px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chips button:hover {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.mine,
+.theirs {
+  max-width: 92%;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 0.925rem;
+  overflow-wrap: anywhere;
+}
+
+.mine {
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  background: var(--brand-soft);
+}
+
+.theirs {
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  background: var(--bg);
+}
+
+.mine > :first-child,
+.theirs > :first-child {
+  margin-top: 0;
+}
+
+.mine > :last-child,
+.theirs > :last-child {
+  margin-bottom: 0;
+}
+
+.theirs p,
+.theirs ul,
+.theirs ol,
+.mine p {
+  margin: 0 0 8px;
+}
+
+.theirs ul,
+.theirs ol {
+  padding-left: 20px;
+}
+
+.theirs code,
+.mine code,
+.lead code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+.plain {
+  white-space: pre-wrap;
+}
+
+.meta {
+  margin: 0 0 4px !important;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mdHeading {
+  font-weight: 700;
+}
+
+.codeBlock {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  overflow-x: auto;
+}
+
+.dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: blink 1.2s infinite ease-in-out;
+}
+
+.dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+
+  40% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dots i {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.error {
+  margin: 0 14px 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--brand-soft);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.compose {
+  padding: 10px 14px 6px;
+  border-top: 1px solid var(--border);
+}
+
+.stepToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 0.825rem;
+  cursor: pointer;
+}
+
+.inputRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.inputRow textarea {
+  flex: 1;
+  min-width: 0;
+  max-height: 160px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.925rem;
+  resize: vertical;
+}
+
+.send {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  cursor: pointer;
+}
+
+.send:disabled,
+.primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.note {
+  margin: 0;
+  padding: 6px 14px 10px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.check {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.check .lead {
+  margin: 0;
+}
+
+.code {
+  min-height: 200px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  tab-size: 4;
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.primary {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pass,
+.fail {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--ok);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.fail {
+  border-left-color: var(--warn);
+}
+
+.pass p,
+.fail p {
+  margin: 0 0 8px;
+}
+
+.verdict {
+  font-weight: 700;
+}
+
+.verdict span {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.detail {
+  margin: 0 0 10px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Phones: a full-screen sheet, with the launcher kept clear of the page's own controls. */
+@media (max-width: 640px) {
+  .panel {
+    inset: 0;
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+    animation-name: slideUp;
+  }
+
+  .launcher {
+    right: 12px;
+    bottom: 12px;
+    padding: 6px 14px 6px 8px;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+}
+
+@media print {
+  .launcher,
+  .panel {
+    display: none;
+  }
+}

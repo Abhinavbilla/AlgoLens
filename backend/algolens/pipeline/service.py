@@ -66,7 +66,8 @@ def code_fingerprint() -> str:
 
 
 def system_version(ai: AIClient | None = None) -> str:
-    roles = (ai or client_from_settings()).roles
+    roles = dict((ai or client_from_settings()).roles)
+    roles.pop("tutor", None)  # the chat never changes a stored result
     fp = hashlib.sha256(roles_fingerprint(roles).encode()).hexdigest()[:12]
     return f"{__version__}:{prompt_set_hash()}:{fp}:{code_fingerprint()}"
 
@@ -75,7 +76,9 @@ def missing_keys(ai: AIClient | None = None) -> list[str]:
     """API keys the configured roles need but the environment doesn't have."""
     roles = (ai or client_from_settings()).roles
     needed = {
-        KEY_ENV[parse_role(spec)[0]] for spec in roles.values() if not spec.startswith("fake:")
+        KEY_ENV[parse_role(spec)[0]]
+        for role, spec in roles.items()
+        if role != "tutor" and not spec.startswith("fake:")
     }
     return sorted(k for k in needed if not os.environ.get(k))
 
@@ -178,6 +181,7 @@ def store(session: Session, h: str, version: str, result: SolveResult) -> Proble
                 "tests_total": a.tests_total, "examples_checked": a.examples_checked,
                 "repairs": a.repairs, "failing_case": a.failing_case,
                 "repair_reasons": a.repair_reasons, "exhaustive": a.exhaustive,
+                "limited": a.limited,
             },
         ))  # fmt: skip
     return problem

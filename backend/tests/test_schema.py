@@ -1,3 +1,4 @@
+import json
 import random
 
 import pytest
@@ -181,3 +182,27 @@ def test_constraint_message_is_used():
 def test_malformed_schemas_are_rejected(raw):
     with pytest.raises(SchemaError):
         compile_schema(raw)
+
+
+def test_generation_that_falls_short_hands_back_what_it_made():
+    from algolens.schema.service import InputRules, generate_tests
+
+    schema = compile_schema(
+        {
+            "params": [
+                {
+                    "name": "nums",
+                    "type": {
+                        "kind": "array",
+                        "of": {"kind": "int", "min": 0, "max": 2},
+                        "len": {"min": 1, "max": 2},
+                    },
+                }
+            ]
+        }
+    )
+    with pytest.raises(GenerationError) as info:
+        generate_tests(InputRules(schema), 300, seed=1, client=None)
+    partial = info.value.partial
+    assert 0 < len(partial) <= 12  # 3 + 9 distinct inputs exist
+    assert len({json.dumps(p) for p in partial}) == len(partial)
