@@ -39,7 +39,7 @@ for (const width of [1280, 375]) {
     await page.getByRole("button", { name: "Verify & log in" }).click();
     await page.waitForURL(/\/library\/kadane$/);
     await page.getByRole("link", { name: /your account/i }).waitFor();
-    console.log("signed in and back on", new URL(page.url()).pathname);
+    console.log("signed in and back on", page.url().replace(base, ""));
     await page.getByRole("link", { name: /your account/i }).click();
     await page.getByRole("button", { name: "Sign out" }).waitFor();
     await page.screenshot({ path: join(out, `account-${width}.png`) });
