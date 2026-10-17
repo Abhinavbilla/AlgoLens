@@ -426,3 +426,30 @@
   opacity: 0.6;
   cursor: default;
 }
+
+/* The free AI allowance ran out (not a problem with the statement). */
+.quota {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--warn);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.quota p {
+  margin: 0 0 8px;
+}
+
+.quota p:last-child {
+  margin-bottom: 0;
+}
+
+.quotaTitle {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.quotaWhen {
+  color: var(--text-muted);
+}

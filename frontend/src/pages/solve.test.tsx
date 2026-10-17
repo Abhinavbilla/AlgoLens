@@ -438,3 +438,23 @@ test("an approach right on every worked example says so, but isn't called verifi
   expect(await screen.findByText(/passes all the worked examples · not fully verified/i)).toBeInTheDocument();
   expect(screen.queryByText(/✓ Verified/)).toBeNull();
 });
+
+test("a used-up AI allowance says when it's back, in the learner's own time", async () => {
+  const retry = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+  mockApi((url) => {
+    if (url === "/api/jobs/j9")
+      return {
+        status: 200,
+        body: {
+          id: "j9", status: "failed", stage: "", tests_passed: 0, tests_total: 0, problem_id: null,
+          error: "Today's free AI allowance has run out, so this problem couldn't be solved right now.",
+          quota: { retry_at: retry, daily: true },
+        },
+      };
+  });
+  renderAt("/jobs/j9");
+  expect(await screen.findByText("Today's free AI allowance is used up")).toBeInTheDocument();
+  expect(screen.getByText(/back around/i)).toHaveTextContent(/\(your time\)/);
+  expect(screen.queryByText(/couldn't be processed/)).toBeNull();
+  expect(screen.getByRole("link", { name: /explore the library/i })).toBeInTheDocument();
+});

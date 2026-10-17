@@ -176,6 +176,8 @@ export type JobView = {
   tests_total: number;
   error: string;
   problem_id: string | null;
+  /** Set when the free AI allowance ran out: when it should be back, if the provider said. */
+  quota?: { retry_at: string | null; daily: boolean } | null;
 };
 
 export type ApproachView = {

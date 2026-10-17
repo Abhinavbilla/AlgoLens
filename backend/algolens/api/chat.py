@@ -9,7 +9,13 @@ from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
 
 from algolens.ai.budget import Budget, BudgetExhausted
-from algolens.ai.client import AIError, AIUnavailable, client_from_settings, parse_role
+from algolens.ai.client import (
+    AIError,
+    AIUnavailable,
+    QuotaExhausted,
+    client_from_settings,
+    parse_role,
+)
 from algolens.api.auth import current_user
 from algolens.api.library import UNAVAILABLE, _row, _verification
 from algolens.db.models import Approach, Problem
@@ -109,13 +115,14 @@ def chat(body: ChatRequest, request: Request) -> dict:
         reply = ai.complete_text("tutor", system, messages, Budget(CHAT_BUDGET), MAX_REPLY_TOKENS)
     except BudgetExhausted as exc:
         raise HTTPException(413, detail="This conversation is too long; start a new one.") from exc
+    except QuotaExhausted as exc:
+        log.warning("tutor stopped: %s", exc)
+        raise HTTPException(503, detail=exc.friendly("The tutor can't answer")) from exc
     except AIError as exc:
         log.warning("tutor call failed: %s", exc)
-        busy = "rate limit" in str(exc)
-        raise HTTPException(503, detail=(
-            "The tutor has hit the AI service's usage limit. Try again a little later."
-            if busy else "The tutor couldn't reach the AI service. Try again in a moment."
-        )) from exc  # fmt: skip
+        raise HTTPException(
+            503, detail="The tutor couldn't reach the AI service. Try again in a moment."
+        ) from exc
     finally:
         ai.close()
     return {"reply": reply.text}

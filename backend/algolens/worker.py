@@ -12,6 +12,7 @@ from collections.abc import Callable
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from algolens.ai.client import QuotaExhausted
 from algolens.config import get_settings
 from algolens.db.models import Job
 from algolens.db.session import session_factory
@@ -57,6 +58,15 @@ def run_one(sessions: sessionmaker[Session], handlers: dict[str, Handler] = HAND
                 raise LookupError(f"no handler for job kind {job.kind!r}")
             handler(session, job)
             job.status = "done"
+        except QuotaExhausted as exc:  # the free AI allowance ran out: say so plainly
+            session.rollback()
+            log.warning("job %s stopped: %s", job.id, exc)
+            job.status = "failed"
+            job.error = exc.friendly("This problem couldn't be solved")[:2000]
+            payload = dict(job.payload or {})
+            payload["quota"] = {"retry_at": exc.retry_at.isoformat() if exc.retry_at else None,
+                                "daily": exc.daily}  # fmt: skip
+            job.payload = payload
         except Exception as exc:
             session.rollback()
             log.exception("job %s failed", job.id)

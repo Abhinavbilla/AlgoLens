@@ -70,3 +70,20 @@ def test_jobs_left_running_by_a_stopped_worker_are_failed(sessions):
         jobs = {j.status: j for j in s.scalars(select(Job)).all()}
         assert jobs["failed"].error == INTERRUPTED and "text" not in jobs["failed"].payload
         assert "queued" in jobs
+
+
+def test_used_up_ai_allowance_gives_a_plain_message_and_when_its_back(sessions):
+    from algolens.ai.client import QuotaExhausted
+
+    job = _enqueue(sessions, "solve")
+
+    def out_of_quota(_s, _j):
+        raise QuotaExhausted("groq", "m", 2 * 3600, True, "HTTP 429: tokens per day (TPD)")
+
+    run_one(sessions, handlers={"solve": out_of_quota})
+    with sessions() as s:
+        done = s.get(Job, job.id)
+        assert done.status == "failed"
+        assert done.error.startswith("Today's free AI allowance has run out")
+        assert "about 2 h" in done.error and "groq" not in done.error.lower()
+        assert done.payload["quota"]["daily"] is True and done.payload["quota"]["retry_at"]

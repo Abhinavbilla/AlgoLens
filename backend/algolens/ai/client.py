@@ -21,6 +21,7 @@ import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta, timezone
 
 import httpx
 
@@ -47,6 +48,47 @@ class AIError(RuntimeError):
 
 class AIUnavailable(AIError):
     """No usable configuration or the service is down: new problems can't be processed."""
+
+
+class QuotaExhausted(AIError):
+    """The provider's free allowance is used up for now: a daily quota, or a limit that would
+    take minutes to clear. `retry_at` is when it should be back (None if the provider didn't
+    say). Nothing about the problem itself is wrong, so nothing is cached."""
+
+    def __init__(self, provider: str, model: str, wait_s: float | None, daily: bool, detail: str):
+        self.provider, self.model, self.daily = provider, model, daily
+        self.wait_s = wait_s if wait_s and wait_s > 0 else None
+        self.retry_at = datetime.now(UTC) + timedelta(seconds=self.wait_s) if self.wait_s else None
+        when = f"back in about {human_wait(self.wait_s)}" if self.wait_s else "back later"
+        super().__init__(
+            f"{provider} {'daily ' if daily else ''}quota for {model} used up, {when} "
+            f"({_quota_message(detail)})"
+        )
+
+    def friendly(self, what: str = "New problems can't be solved") -> str:
+        """For learners: what happened, when it should work again, and what still works."""
+        limit = "Today's free AI allowance has run out" if self.daily else (
+            "The free AI service has reached its usage limit for now"
+        )  # fmt: skip
+        when = (
+            f"It should be back in about {human_wait(self.wait_s)}."
+            if self.wait_s
+            else "It should be back later today."
+        )
+        return (
+            f"{limit}, so {what[0].lower() + what[1:]} right now. {when} Nothing is lost: "
+            "the library, the learning path and the step-by-step animations still work."
+        )
+
+
+def human_wait(seconds: float | None) -> str:
+    if not seconds or seconds < 90:
+        return "a minute"
+    minutes = round(seconds / 60)
+    if minutes < 60:
+        return f"{minutes} minutes"
+    hours, rest = divmod(minutes, 60)
+    return f"{hours} h {rest} min" if rest else f"{hours} h"
 
 
 @dataclass
@@ -150,12 +192,9 @@ class AIClient:
                 return self._anthropic(model, system, messages, max_tokens, json_mode)
             return self._openai_compatible(provider, model, system, messages, max_tokens, json_mode)
         except _Retryable as exc:
-            if exc.wait > MAX_WAIT_S:
-                minutes = round(exc.wait / 60)
-                raise AIError(
-                    f"{provider} rate limit for {model}: try again in about {minutes} min "
-                    f"({_quota_message(str(exc))})"
-                ) from exc
+            quota = _quota(provider, model, exc)
+            if quota is not None:
+                raise quota from exc
             time.sleep(exc.wait if exc.wait else min(60, 2 ** (attempt + 1)))
             return exc
 
@@ -172,7 +211,7 @@ class AIClient:
             if text:
                 return TextReply(text, usage[0], usage[1], model)
             last_error = "empty reply"
-        raise AIError(f"{provider} failed after {RETRIES} attempts: {last_error}")
+        raise _gave_up(provider, model, last_error)
 
     def _call(self, provider: str, model: str, system: str, prompt: str, max_tokens: int) -> Reply:
         last_error = "no attempt"
@@ -188,7 +227,7 @@ class AIClient:
                 return Reply(data, usage[0], usage[1], model)
             last_error = f"reply wasn't a JSON object: {text[:200]!r}"
             prompt += "\n\nYour previous reply was not one valid JSON object. Reply with JSON only."
-        raise AIError(f"{provider} failed after {RETRIES} attempts: {last_error}")
+        raise _gave_up(provider, model, last_error)
 
     def _openai_compatible(self, provider, model, system, messages, max_tokens, json_mode=True):
         base, key_name = ENDPOINTS[provider]
@@ -254,7 +293,8 @@ class AIClient:
         if r.status_code == 429 or r.status_code >= 500:
             wait = r.headers.get("retry-after") or ""
             seconds = float(wait) if wait.replace(".", "").isdigit() else 0
-            raise _Retryable(f"HTTP {r.status_code}: {r.text[:400]}", seconds)
+            # Keep enough of the body for the quota details (Gemini puts them near the end).
+            raise _Retryable(f"HTTP {r.status_code}: {r.text[:3000]}", seconds)
         if r.status_code in (401, 403):
             raise AIUnavailable(f"the AI service refused the key (HTTP {r.status_code})")
         if r.status_code >= 400:
@@ -280,6 +320,59 @@ def _fitting_max_tokens(error: str, max_tokens: int) -> int | None:
     kind, limit, requested = m.group(1), int(m.group(2)), int(m.group(3))
     new = limit - 16 if kind == "OTPM" else max_tokens - (requested - limit) - 64
     return new if MIN_OUTPUT_TOKENS <= new < max_tokens else None
+
+
+_DAILY = re.compile(r"per day|\bTPD\b|\bRPD\b|PerDay|daily", re.IGNORECASE)
+
+
+def _retry_delay(error: str) -> float:
+    """How long the provider asks us to wait, from its message: Groq's "try again in 7m12.5s"
+    or Gemini's "retryDelay": "34s"."""
+    m = re.search(r'"retryDelay":\s*"(\d+(?:\.\d+)?)s"', error)
+    if m:
+        return float(m.group(1))
+    m = re.search(r"try again in (?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?", error)
+    if m and any(m.groups()):
+        h, mi, s = (float(g) if g else 0.0 for g in m.groups())
+        return h * 3600 + mi * 60 + s
+    return 0.0
+
+
+def _until_pacific_midnight() -> float:
+    """Seconds until Gemini's free daily quotas reset (midnight US Pacific time)."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo("America/Los_Angeles")
+    except Exception:  # no time zone data: Pacific standard time is close enough
+        tz = timezone(timedelta(hours=-8))
+    now = datetime.now(tz)
+    midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return (midnight - now).total_seconds()
+
+
+def _quota(provider: str, model: str, exc: "_Retryable") -> "QuotaExhausted | None":
+    """A QuotaExhausted if this rate-limit reply means "used up for now" rather than "slow
+    down for a few seconds"; None if retrying soon is worth it."""
+    text = str(exc)
+    if not text.startswith("HTTP 429"):
+        return None  # network errors and 5xx: just retry
+    wait = exc.wait or _retry_delay(text)
+    daily = bool(_DAILY.search(text))
+    if daily and not wait and provider == "gemini":
+        wait = _until_pacific_midnight()
+    if wait > MAX_WAIT_S or (daily and not wait):
+        return QuotaExhausted(provider, model, wait, daily, text)
+    return None
+
+
+def _gave_up(provider: str, model: str, last_error: str) -> AIError:
+    """The error after every retry failed: still too many requests means the allowance is
+    used up, whatever the provider said about waiting."""
+    if last_error.startswith("HTTP 429"):
+        return QuotaExhausted(provider, model, _retry_delay(last_error), bool(_DAILY.search(
+            last_error)), last_error)  # fmt: skip
+    return AIError(f"{provider} failed after {RETRIES} attempts: {last_error}")
 
 
 def _quota_message(error: str) -> str:
@@ -332,6 +425,7 @@ __all__ = [
     "AIClient",
     "AIError",
     "AIUnavailable",
+    "QuotaExhausted",
     "Reply",
     "TextReply",
     "client_from_settings",

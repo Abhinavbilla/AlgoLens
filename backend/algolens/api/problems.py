@@ -75,6 +75,8 @@ def _job_view(job: Job) -> dict:
         "tests_total": job.tests_total,
         "error": job.error or "",
         "problem_id": (job.payload or {}).get("problem_id"),
+        # Set when the free AI allowance ran out: when it should be back (ISO time or None).
+        "quota": (job.payload or {}).get("quota"),
     }
 
 

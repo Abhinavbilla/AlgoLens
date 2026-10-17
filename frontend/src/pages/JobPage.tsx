@@ -95,7 +95,8 @@ function JobProgress({ jobId }: { jobId: string }) {
             </p>
           </>
         )}
-        {job?.status === "failed" && (
+        {job?.status === "failed" && job.quota && <QuotaCard job={job} />}
+        {job?.status === "failed" && !job.quota && (
           <div role="alert">
             <p>This problem couldn't be processed: {job.error || "an unknown error"}.</p>
             <p>
@@ -105,6 +106,31 @@ function JobProgress({ jobId }: { jobId: string }) {
         )}
       </div>
     </section>
+  );
+}
+
+// The free AI allowance ran out: not a problem with the statement, so say when to come back.
+function QuotaCard({ job }: { job: JobView }) {
+  const at = job.quota?.retry_at ? new Date(job.quota.retry_at) : null;
+  const local = at?.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const tomorrow = at && at.toDateString() !== new Date().toDateString();
+  return (
+    <div className={styles.quota} role="alert">
+      <p className={styles.quotaTitle}>
+        {job.quota?.daily ? "Today's free AI allowance is used up" : "The free AI service is at its limit"}
+      </p>
+      <p>{job.error}</p>
+      {local && (
+        <p className={styles.quotaWhen}>
+          Back around <strong>{local}</strong>
+          {tomorrow ? " tomorrow" : ""} (your time).
+        </p>
+      )}
+      <p>
+        <Link to="/library">Explore the library</Link> · <Link to="/path">Learning path</Link> ·{" "}
+        <Link to="/solve">Paste it again later</Link>
+      </p>
+    </div>
   );
 }
 

@@ -188,3 +188,17 @@ def test_check_reports_errors_and_slow_code(api):
     assert slow["verdict"] == "timeout"
     missing = check(api, "def something_else(nums):\n    return 0\n").json()
     assert missing["verdict"] == "missing_function" and "max_subarray" in missing["message"]
+
+
+def test_tutor_out_of_allowance_says_so(api, monkeypatch):
+    from algolens.ai.client import QuotaExhausted
+
+    def out(role, system, transcript):
+        raise QuotaExhausted("groq", "m", 1800, True, "HTTP 429: tokens per day")
+
+    monkeypatch.setattr(chat_api, "client_from_settings",
+                        lambda: AIClient({"tutor": "fake:t"}, fake=out))  # fmt: skip
+    r = ask(api, "hi")
+    assert r.status_code == 503
+    assert r.json()["detail"].startswith("Today's free AI allowance has run out, so the tutor")
+    assert "30 minutes" in r.json()["detail"]

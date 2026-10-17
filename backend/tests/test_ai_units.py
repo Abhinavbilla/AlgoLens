@@ -224,7 +224,7 @@ def test_long_rate_limit_fails_fast_with_the_reason(monkeypatch):
         )
 
     monkeypatch.setattr(cl.AIClient, "_post", fake_post)
-    with pytest.raises(cl.AIError, match="try again in about 19 min.*tokens per day"):
+    with pytest.raises(cl.QuotaExhausted, match="back in about 19 minutes.*tokens per day"):
         cl.AIClient({"parse": "groq:m"}).complete_json("parse", "s", "p", Budget(100_000))
     assert calls == [1]
 
