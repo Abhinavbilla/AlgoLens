@@ -8,11 +8,20 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
+from algolens.api.auth import current_user
 from algolens.api.library import UNAVAILABLE, _animation_or_error
 from algolens.compare import cached_compare
+from algolens.config import get_settings
 from algolens.db.models import Approach, Job, Problem
 from algolens.db.session import session_factory
+from algolens.pipeline.allowance import (
+    DailyLimitReached,
+    allowance,
+    queue_position,
+    visitor_key,
+)
 from algolens.pipeline.service import (
     MAX_TEXT,
     input_rules,
@@ -28,6 +37,10 @@ from algolens.tutor import RateLimit
 
 router = APIRouter(prefix="/api", tags=["problems"])
 FINAL = ("done", "failed")
+NO_PROBLEM = (
+    "This problem isn't stored anymore (results are cleared when AlgoLens is updated). "
+    "Paste it again to solve it."
+)
 
 
 class Submission(BaseModel):
@@ -38,6 +51,26 @@ class Submission(BaseModel):
 # "Try again" re-runs the whole pipeline, so it's limited per visitor: free AI tiers allow only
 # a few problems a day.
 retry_limit = RateLimit(per_minute=1, per_day=10)
+
+
+def _visitor(request: Request) -> tuple[str, int]:
+    """The visitor's key for the daily limit, and their limit."""
+    settings = get_settings()
+    user = current_user(request)
+    if user is not None:
+        return visitor_key(str(user.id), ""), settings.problems_per_day_signed_in
+    ip = request.headers.get("x-real-ip") or (request.client.host if request.client else "?")
+    return visitor_key(None, ip), settings.problems_per_day
+
+
+@router.get("/problems/allowance")
+def get_allowance(request: Request) -> dict:
+    """How many new problems this visitor can still have solved today."""
+    visitor, limit = _visitor(request)
+    if limit == 0:
+        return {"limit": 0, "used": 0, "in_progress": 0, "left": None, "retry_at": None}
+    with session_factory()() as session:
+        return allowance(session, visitor, limit).view()
 
 
 @router.post("/problems", status_code=202)
@@ -59,14 +92,21 @@ def post_problem(body: Submission, request: Request, response: Response) -> dict
         if wait:
             raise HTTPException(429, detail="You've retried a lot today. Try again in "
                                             f"{round(wait / 60) or 1} minutes.")  # fmt: skip
+    visitor, limit = _visitor(request)
     with session_factory()() as session:
-        out = submit(session, text, retry=body.retry)
+        try:
+            out = submit(session, text, retry=body.retry, visitor=visitor, daily_limit=limit)
+        except DailyLimitReached as exc:
+            raise HTTPException(429, detail={
+                "message": str(exc), "issues": [], "kind": "daily_limit",
+                "allowance": exc.allowance.view(),
+            }) from exc  # fmt: skip
     if "problem_id" in out:
         response.status_code = 200
     return out
 
 
-def _job_view(job: Job) -> dict:
+def _job_view(session: Session, job: Job) -> dict:
     return {
         "id": str(job.id),
         "status": job.status,
@@ -75,8 +115,12 @@ def _job_view(job: Job) -> dict:
         "tests_total": job.tests_total,
         "error": job.error or "",
         "problem_id": (job.payload or {}).get("problem_id"),
+        # Why a failed job stopped (see algolens/failures.py), so the page can title it.
+        "error_kind": (job.payload or {}).get("error_kind"),
         # Set when the free AI allowance ran out: when it should be back (ISO time or None).
         "quota": (job.payload or {}).get("quota"),
+        # Waiting: how many are ahead and roughly how long until it starts.
+        "queue": queue_position(session, job),
     }
 
 
@@ -84,8 +128,12 @@ def _load_job(job_id: uuid.UUID) -> dict:
     with session_factory()() as session:
         job = session.scalar(select(Job).where(Job.id == job_id, Job.kind == "solve"))
         if job is None:
-            raise HTTPException(404, detail="no such job")
-        return _job_view(job)
+            raise HTTPException(
+                404,
+                detail="This job wasn't found. It may be from before the "
+                "server was reset. Please paste the problem again.",
+            )
+        return _job_view(session, job)
 
 
 @router.get("/jobs/{job_id}")
@@ -119,7 +167,7 @@ def get_problem(problem_id: uuid.UUID) -> dict:
     with session_factory()() as session:
         view = problem_view(session, problem_id)
     if view is None:
-        raise HTTPException(404, detail="no such problem")
+        raise HTTPException(404, detail=NO_PROBLEM)
     return view
 
 
@@ -131,7 +179,7 @@ def _approach_source(problem_id: uuid.UUID, approach_id: uuid.UUID):
         problem = session.get(Problem, problem_id)
         approach = session.get(Approach, approach_id)
         if problem is None or approach is None or approach.problem_id != problem.id:
-            raise HTTPException(404, detail="no such approach")
+            raise HTTPException(404, detail="This approach wasn't found. Reload the page.")
     plan = approach.visual_spec or {}
     if not plan or "unavailable" in plan:
         message = plan.get("unavailable") or "Only verified approaches are animated."
@@ -178,7 +226,7 @@ def get_compare(problem_id: uuid.UUID) -> dict:
     with session_factory()() as session:
         problem = session.get(Problem, problem_id)
         if problem is None:
-            raise HTTPException(404, detail="no such problem")
+            raise HTTPException(404, detail=NO_PROBLEM)
         rows = session.scalars(
             select(Approach)
             .where(Approach.problem_id == problem.id, Approach.status == "verified")

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { api, type JobView } from "../api";
+import { ApiError, OFFLINE_MESSAGE, api, type JobView } from "../api";
+import { pickQuote, type Quote } from "./quotes";
 import { pasted } from "./TryAgain";
 import styles from "./solve.module.css";
 
@@ -13,6 +14,7 @@ function JobProgress({ jobId }: { jobId: string }) {
   const navigate = useNavigate();
   const [job, setJob] = useState<JobView | null>(null);
   const [error, setError] = useState("");
+  const [quote] = useState(() => pickQuote()); // one per run, kept while this page is open
 
   useEffect(() => {
     let closed = false;
@@ -43,7 +45,12 @@ function JobProgress({ jobId }: { jobId: string }) {
     if (typeof EventSource === "function") {
       source = new EventSource(api.jobEventsUrl(jobId));
       source.onmessage = (ev) => {
-        const view = JSON.parse(ev.data) as JobView;
+        let view: JobView;
+        try {
+          view = JSON.parse(ev.data) as JobView;
+        } catch {
+          return; // a garbled event: the next one (or polling) brings the state
+        }
         update(view);
         if (final(view)) source?.close();
       };
@@ -73,16 +80,23 @@ function JobProgress({ jobId }: { jobId: string }) {
   const counting = job && job.tests_total > 0;
   return (
     <section className={styles.solve}>
-      <h1>Working on it</h1>
-      <p className={styles.lead}>
-        We're writing solutions and putting each one through its tests. It usually takes two to five minutes,
-        so this is a good moment for a sip of water.
-      </p>
+      {job?.status === "failed" ? (
+        <h1>This problem couldn't be finished</h1>
+      ) : (
+        <>
+          <h1>Working on it</h1>
+          <p className={styles.lead}>
+            We're writing solutions and putting each one through its tests. It usually takes two to five minutes.
+          </p>
+          <QuoteCard quote={quote} />
+        </>
+      )}
       <div className={styles.progress} role="status" aria-live="polite">
         {!job && <p>Connecting…</p>}
         {job && job.status !== "failed" && (
           <>
             <p className={styles.stage}>{capitalize(job.stage || "starting")}</p>
+            {job.queue && <QueueNote queue={job.queue} />}
             {/* Always rendered, so the layout doesn't jump when counting starts. */}
             <progress
               className={styles.bar}
@@ -96,16 +110,70 @@ function JobProgress({ jobId }: { jobId: string }) {
           </>
         )}
         {job?.status === "failed" && job.quota && <QuotaCard job={job} />}
-        {job?.status === "failed" && !job.quota && (
-          <div role="alert">
-            <p>This problem couldn't be processed: {job.error || "an unknown error"}.</p>
-            <p>
-              Nothing was marked verified or wrong because of it. <Link to="/solve">Try again</Link>
-            </p>
-          </div>
-        )}
+        {job?.status === "failed" && !job.quota && <FailureCard job={job} />}
       </div>
     </section>
+  );
+}
+
+// Titles for backend/algolens/failures.py's kinds; the message itself comes from the server.
+const FAILURE_TITLES: Record<string, string> = {
+  ai_setup: "AlgoLens can't use its AI service right now",
+  ai_down: "The AI service isn't responding",
+  ai_format: "The AI's answers came back unusable",
+  too_big: "This statement is too long for the AI service",
+  sandbox: "The code runner is down",
+  lost_text: "Your statement was lost before work started",
+  interrupted: "The server restarted while solving this",
+  internal: "Something broke on our side",
+};
+
+// No point offering a retry while the server itself is misconfigured.
+const NO_RETRY = new Set(["ai_setup"]);
+
+function FailureCard({ job }: { job: JobView }) {
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [retryError, setRetryError] = useState("");
+  const kind = job.error_kind ?? "";
+  const text = pasted.textForJob(job.id);
+  const canRetry = !!text && !NO_RETRY.has(kind);
+
+  async function retry() {
+    setBusy(true);
+    setRetryError("");
+    try {
+      const out = await api.submit(text!);
+      if ("job_id" in out) {
+        pasted.forJob(out.job_id, text!);
+        navigate(`/jobs/${out.job_id}`);
+      } else {
+        pasted.forProblem(out.problem_id, text!);
+        navigate(`/problems/${out.problem_id}`);
+      }
+    } catch (e) {
+      setRetryError(e instanceof ApiError ? e.message : OFFLINE_MESSAGE);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className={styles.quota} role="alert">
+      <p className={styles.quotaTitle}>{FAILURE_TITLES[kind] ?? "This problem couldn't be processed"}</p>
+      <p>{job.error || "The server didn't say what went wrong. Nothing was marked right or wrong because of it."}</p>
+      {canRetry && (
+        <p>
+          <button type="button" className={styles.retryButton} onClick={retry} disabled={busy}>
+            {busy ? "Starting…" : "↻ Try again"}
+          </button>
+        </p>
+      )}
+      {retryError && <p>{retryError}</p>}
+      <p>
+        <Link to="/solve">{canRetry ? "Paste a different problem" : "Paste it again"}</Link> ·{" "}
+        <Link to="/library">Explore the library</Link>
+      </p>
+    </div>
   );
 }
 
@@ -132,6 +200,40 @@ function QuotaCard({ job }: { job: JobView }) {
       </p>
     </div>
   );
+}
+
+function QuoteCard({ quote }: { quote: Quote }) {
+  return (
+    <figure className={styles.quoteCard}>
+      <span className={styles.quoteMark} aria-hidden="true">
+        &ldquo;
+      </span>
+      <blockquote className={styles.quoteText}>{quote.text}</blockquote>
+      <figcaption className={styles.quoteBy}>
+        <span className={styles.quoteAuthor}>{quote.author}</span>
+        <span className={styles.quoteSource}>{quote.source}</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function QueueNote({ queue }: { queue: NonNullable<JobView["queue"]> }) {
+  if (queue.ahead === 0) return <p className={styles.muted}>You're next: it starts in a moment.</p>;
+  return (
+    <p className={styles.queueNote}>
+      {queue.ahead === 1 ? "1 problem is" : `${queue.ahead} problems are`} ahead of yours. Yours should start in
+      about <strong>{minutes(queue.wait_s)}</strong>, then take around {minutes(queue.typical_s)}. You can leave
+      this tab open and come back.
+    </p>
+  );
+}
+
+export function minutes(seconds: number) {
+  const m = Math.max(1, Math.round(seconds / 60));
+  if (m < 60) return `${m} minute${m === 1 ? "" : "s"}`;
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  return rest ? `${h} h ${rest} min` : `${h} h`;
 }
 
 function capitalize(s: string) {

@@ -8,7 +8,7 @@ export const SECTIONS: Section[] = [
     id: "sorting",
     title: "Sorting",
     intro:
-      "Four ways to put things in order, from the obvious to the clever. Watch where each one spends its effort.",
+      "Six ways to put things in order, from the obvious to the clever: simple loops, counting, and the divide-and-conquer classics merge sort and quick sort. Watch where each one spends its effort.",
     categories: ["Sorting"],
   },
   {

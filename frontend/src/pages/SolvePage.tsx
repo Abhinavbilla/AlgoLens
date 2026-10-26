@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
-import { ApiError, api } from "../api";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router";
+import { ApiError, OFFLINE_MESSAGE, api, type Allowance } from "../api";
 import { pasted } from "./TryAgain";
 import styles from "./solve.module.css";
 
@@ -24,11 +24,25 @@ export function SolvePage() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [allowance, setAllowance] = useState<Allowance | null>(null);
+  const [limitMessage, setLimitMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .allowance()
+      .then((a) => !cancelled && setAllowance(a))
+      .catch(() => {}); // only a hint: the server still checks on submit
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
+    setLimitMessage("");
     try {
       const out = await api.submit(text);
       // The text stays only in this tab's memory; the server keeps a hash of it.
@@ -40,7 +54,12 @@ export function SolvePage() {
         navigate(`/jobs/${out.job_id}`);
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't reach the server.");
+      if (err instanceof ApiError && err.detail?.kind === "daily_limit") {
+        setLimitMessage(err.message);
+        if (err.detail.allowance) setAllowance(err.detail.allowance as Allowance);
+      } else {
+        setError(err instanceof ApiError ? err.message : OFFLINE_MESSAGE);
+      }
       setBusy(false);
     }
   }
@@ -91,6 +110,8 @@ export function SolvePage() {
             The statement is sent to the configured AI service to be solved. AlgoLens itself doesn't store it:
             only a fingerprint, so the same problem isn't solved twice.
           </p>
+          {allowance && allowance.left !== null && !limitMessage && <AllowanceNote allowance={allowance} />}
+          {limitMessage && allowance && <LimitCard message={limitMessage} allowance={allowance} />}
           {error && (
             <p role="alert" className={styles.error}>
               {error}
@@ -123,4 +144,59 @@ export function SolvePage() {
       </aside>
     </div>
   );
+}
+
+function localTime(iso: string | null) {
+  if (!iso) return null;
+  const at = new Date(iso);
+  const time = at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return at.toDateString() === new Date().toDateString() ? time : `${time} tomorrow`;
+}
+
+function AllowanceNote({ allowance: a }: { allowance: Allowance }) {
+  if (a.left === null) return null;
+  if (a.left > 0) {
+    return (
+      <p className={styles.allowance}>
+        {a.left} of {a.limit} new problem{a.limit === 1 ? "" : "s"} left today. Only problems that are solved
+        and verified count; if something goes wrong along the way, it doesn't.
+      </p>
+    );
+  }
+  const at = localTime(a.retry_at);
+  return (
+    <p className={styles.allowance}>
+      {a.used >= a.limit
+        ? `You've used today's ${a.limit} new problems${at ? `; the next one frees up around ${at}` : ""}. `
+        : "Your problems still being solved use up today's limit. "}
+      A problem that has been solved before still opens straight away.
+    </p>
+  );
+}
+
+// Shown after the server refused a new problem: the learner's own limit, not an error.
+function LimitCard({ message, allowance: a }: { message: string; allowance: Allowance }) {
+  const at = a.used >= a.limit ? localTime(a.retry_at) : null;
+  return (
+    <div className={styles.quota} role="alert">
+      <p className={styles.quotaTitle}>
+        {a.used >= a.limit ? "Today's limit is finished" : "Wait for your problems to finish"}
+      </p>
+      <p>{tidy(message)}</p>
+      {at && (
+        <p className={styles.quotaWhen}>
+          You can paste a new one around <strong>{at}</strong> (your time).
+        </p>
+      )}
+      <p>
+        <Link to="/library">Explore the library</Link> · <Link to="/path">Learning path</Link>
+      </p>
+    </div>
+  );
+}
+
+// The title already says it: "Today's limit is finished: you've solved…" → "You've solved…".
+function tidy(message: string) {
+  const rest = message.replace(/^Today's limit is finished: /, "");
+  return rest.charAt(0).toUpperCase() + rest.slice(1);
 }

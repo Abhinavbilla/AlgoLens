@@ -29,13 +29,15 @@ def test_empty_queue(sessions):
     assert run_one(sessions) is False
 
 
-def test_unknown_kind_is_failed_not_dropped(sessions):
+def test_unknown_kind_is_failed_not_dropped(sessions, caplog):
     job = _enqueue(sessions, "mystery")
     assert run_one(sessions, handlers={}) is True
     with sessions() as s:
         done = s.get(Job, job.id)
-        assert done.status == "failed"
-        assert "no handler" in done.error
+        assert done.status == "failed" and done.payload["error_kind"] == "internal"
+        # The learner reads a plain message; the technical detail goes to the log.
+        assert "no handler" not in done.error and "Something broke" in done.error
+        assert "no handler" in caplog.text
         assert done.started_at is not None and done.finished_at is not None
 
 

@@ -33,6 +33,7 @@ export const pasted = {
     if (text) save(`problem:${problemId}`, text);
   },
   textFor: (problemId: string) => load(`problem:${problemId}`),
+  textForJob: (jobId: string) => load(`job:${jobId}`),
 };
 
 /** Solve the problem again, for results that aren't fully verified. */

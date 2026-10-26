@@ -18,6 +18,7 @@ from algolens.ai.client import (
 )
 from algolens.api.auth import current_user
 from algolens.api.library import UNAVAILABLE, _row, _verification
+from algolens.api.problems import NO_PROBLEM
 from algolens.db.models import Approach, Problem
 from algolens.db.session import session_factory
 from algolens.library.loader import from_row
@@ -71,11 +72,11 @@ def _problem(ctx: Context) -> tuple[Problem, list[Approach]]:
     try:
         pid = uuid.UUID(ctx.id)
     except ValueError:
-        raise HTTPException(404, detail="no such problem") from None
+        raise HTTPException(404, detail=NO_PROBLEM) from None
     with session_factory()() as session:
         problem = session.get(Problem, pid)
         if problem is None:
-            raise HTTPException(404, detail="no such problem")
+            raise HTTPException(404, detail=NO_PROBLEM)
         approaches = session.scalars(
             select(Approach).where(Approach.problem_id == pid).order_by(Approach.position)
         ).all()

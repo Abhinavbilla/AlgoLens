@@ -30,6 +30,8 @@ from algolens.ai.client import (
 )
 from algolens.config import get_settings
 from algolens.db.models import Approach, Job, Problem, Run
+from algolens.failures import TextGone
+from algolens.pipeline.allowance import DailyLimitReached, allowance
 from algolens.pipeline.prompts import prompt_set_hash
 from algolens.pipeline.solve import SolveResult, solve
 from algolens.sandbox.client import SandboxClient
@@ -83,10 +85,17 @@ def missing_keys(ai: AIClient | None = None) -> list[str]:
     return sorted(k for k in needed if not os.environ.get(k))
 
 
-def submit(session: Session, text: str, ai: AIClient | None = None, retry: bool = False) -> dict:
+def submit(
+    session: Session, text: str, ai: AIClient | None = None, retry: bool = False,
+    visitor: str | None = None, daily_limit: int = 0,
+) -> dict:  # fmt: skip
     """{"problem_id": ...} for a cached result, else {"job_id": ...} (new or already queued).
     `retry` solves it again when the cached result isn't fully verified (a fully verified
-    one is never redone: that would only spend AI quota)."""
+    one is never redone: that would only spend AI quota).
+
+    Only a new job counts against the visitor's daily limit (see pipeline/allowance.py): a
+    cached result, or joining a job already solving the same text, is free. Raises
+    DailyLimitReached when the visitor has no problems left today."""
     h, version = text_hash(text), system_version(ai)
     cached = session.scalar(
         select(Problem).where(
@@ -104,9 +113,14 @@ def submit(session: Session, text: str, ai: AIClient | None = None, retry: bool 
     )  # fmt: skip
     if pending is not None:
         return {"job_id": str(pending.id)}
-    job = Job(
-        kind="solve", payload={"text": normalize(text), "text_hash": h, "system_version": version}
-    )
+    if visitor and daily_limit > 0:
+        left = allowance(session, visitor, daily_limit)
+        if left.left == 0:
+            raise DailyLimitReached(left)
+    payload = {"text": normalize(text), "text_hash": h, "system_version": version}
+    if visitor:
+        payload["visitor"] = visitor
+    job = Job(kind="solve", payload=payload)
     session.add(job)
     session.commit()
     return {"job_id": str(job.id)}
@@ -127,7 +141,7 @@ def handle_solve(session: Session, job: Job, ai: AIClient | None = None,
     job.payload = payload  # the text leaves the database before any work starts
     session.commit()
     if not text:
-        raise ValueError("the problem text is no longer available; please submit it again")
+        raise TextGone("the problem text is no longer available")
 
     settings = get_settings()
     ai = ai or client_from_settings()
@@ -163,7 +177,9 @@ def handle_solve(session: Session, job: Job, ai: AIClient | None = None,
         result.failures,
     )
     run.finished_at = datetime.now(UTC)
-    job.payload = {**payload, "problem_id": str(problem.id)}
+    # Delivered: something verified to learn from. Only that counts against the daily limit.
+    delivered = result.status == "done" and any(a.status == "verified" for a in result.approaches)
+    job.payload = {**payload, "problem_id": str(problem.id), "delivered": delivered}
     job.stage = "finished"
     session.commit()
 

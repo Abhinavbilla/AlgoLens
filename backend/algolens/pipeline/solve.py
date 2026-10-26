@@ -15,6 +15,8 @@ that reason.
 
 import hashlib
 import json
+import logging
+import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -51,6 +53,8 @@ BRUTE_RETRIES = 2
 MUTATION_SAMPLE = 40
 MIN_MUTATIONS_REJECTED = 0.7
 SLOW = ("timeout", "not_run")
+
+log = logging.getLogger("algolens.pipeline")
 
 Progress = Callable[[str, int, int], None]
 
@@ -121,18 +125,23 @@ class _Run:
         self.max_repairs = max_repairs
         self.timings: dict[str, float] = {}
         self.failures: list[str] = []
+        self.lock = threading.Lock()
 
-    def timed(self, stage: str):
+    def timed(self, stage: str, report: bool = True):
+        """Times a stage. `report=False` only records the time: for work running in a thread,
+        since progress reports write to the database session, which isn't thread-safe."""
         run = self
 
         class _T:
             def __enter__(self):
                 self.t = time.monotonic()
-                run.progress(stage, 0, 0)
+                if report:
+                    run.progress(stage, 0, 0)
 
             def __exit__(self, *exc):
-                spent = run.timings.get(stage, 0) + time.monotonic() - self.t
-                run.timings[stage] = round(spent, 2)
+                with run.lock:
+                    spent = run.timings.get(stage, 0) + time.monotonic() - self.t
+                    run.timings[stage] = round(spent, 2)
 
         return _T()
 
@@ -161,7 +170,8 @@ class _Run:
                     ParsedProblem,
                 )  # fmt: skip
             except BadReply as exc:
-                problem = str(exc)[:800]
+                log.info("parse reply didn't fit: %s", exc)
+                problem = "the AI's reading of it didn't come out in a usable form"
                 continue
             if not spec.in_scope:
                 raise Rejected(spec.rejection_reason or "This isn't a problem AlgoLens supports.")
@@ -171,7 +181,7 @@ class _Run:
                 return spec, InputRules(schema, spec.extra_rules_python or None)
         raise Rejected(
             "We couldn't read this problem reliably, so nothing was run. Try pasting it again, "
-            f"perhaps with the examples written out clearly. (Details: {problem})"
+            f"perhaps with the examples written out clearly. (What went wrong: {problem}.)"
         )
 
     def _check_spec(self, spec: ParsedProblem) -> str:
@@ -182,12 +192,13 @@ class _Run:
         try:
             schema = compile_schema(spec.schema_json())
         except SchemaError as exc:
-            return f"the input schema is invalid: {exc}"
+            return f"the input types it described don't make sense ({exc})"
         rules = InputRules(schema, spec.extra_rules_python or None)
         for i, ex in enumerate(spec.examples):
             issues = check_input(rules, ex.args, self.sandbox)
             if issues:
-                return f"worked example {i + 1} doesn't fit the input schema: {issues[0]}"
+                return (f"worked example {i + 1} doesn't fit the input rules read from the "
+                        f"statement ({issues[0]})")  # fmt: skip
         return ""
 
 
@@ -207,18 +218,19 @@ def solve(
     except Rejected as exc:
         return SolveResult("rejected", str(exc), timings=run.timings, tokens=budget.report())
     except BudgetExhausted as exc:
+        log.info("budget ran out reading the problem: %s", exc)
         return SolveResult(
-            "failed", f"Ran out of AI budget while reading the problem ({exc}).",
+            "failed", budget_reason(exc) + " A very long or unusual statement can do this: try "
+            "pasting just the statement, the examples and the constraints.",
             timings=run.timings, tokens=budget.report(),
         )  # fmt: skip
     result = SolveResult("done", spec=spec.model_dump(), timings=run.timings)
     try:
         _verify_all(run, spec, rules, result)
-        _animate(run, result)
-        _explain(run, result)
+        _animate_and_explain(run, result)
     except BudgetExhausted as exc:
-        reason = f"Not verified: the problem's AI budget ran out ({exc})."
-        run.failures.append(reason)
+        reason = "Not verified. " + budget_reason(exc)
+        run.failures.append(f"{reason} ({exc})")
         if not result.approaches:
             result.status, result.reason = "failed", reason
         for a in result.approaches:
@@ -227,6 +239,27 @@ def solve(
     result.tokens = budget.report()
     result.failures = run.failures
     return result
+
+
+STAGE_WORDS = {
+    "parse": "reading the problem",
+    "brute_a": "writing solutions",
+    "brute_b": "writing solutions",
+    "approaches": "writing solutions",
+    "checker": "writing the answer checker",
+    "repair": "fixing an approach that failed a test",
+    "narration": "preparing the animations",
+    "explain": "writing the explanation",
+}
+
+
+def budget_reason(exc: BudgetExhausted) -> str:
+    """For learners: each problem gets a fixed amount of AI work, and this one used it up."""
+    stage = STAGE_WORDS.get(exc.stage, "solving it")
+    return (
+        f"This problem used up its AI budget (each problem gets a fixed amount of AI work) "
+        f"while {stage}. Nothing was marked wrong because of it; trying again may get further."
+    )
 
 
 def _verify_all(run: _Run, spec: ParsedProblem, rules: InputRules, result: SolveResult) -> None:
@@ -273,9 +306,13 @@ def _verify_all(run: _Run, spec: ParsedProblem, rules: InputRules, result: Solve
                 random_inputs = exc.partial
                 limited = True
                 if len(random_inputs) < MIN_RANDOM_TESTS:
-                    reason = (f"Only {len(random_inputs)} valid random tests could be made "
-                              f"(at least {MIN_RANDOM_TESTS} are needed): {exc}")  # fmt: skip
-                    run.failures.append(reason)
+                    reason = (
+                        f"Not verified: only {len(random_inputs)} valid random test "
+                        f"inputs could be made from the problem's rules (at least "
+                        f"{MIN_RANDOM_TESTS} are needed to trust a result). The rules read "
+                        f"from the statement may be stricter than the real problem."
+                    )
+                    run.failures.append(f"{reason} ({exc})")
                     _fail_all(approaches, reason)
                     return
         for a in approaches:
@@ -291,14 +328,29 @@ def _verify_all(run: _Run, spec: ParsedProblem, rules: InputRules, result: Solve
             judge.check_approach(a)
 
 
-def _animate(run: _Run, result: SolveResult) -> None:
+def _animate_and_explain(run: _Run, result: SolveResult) -> None:
+    """Both at once: they're independent, and on separate models (or providers) neither
+    waits for the other's rate limit. Both are always waited for before an error is raised."""
+    if not any(a.status == "verified" for a in result.approaches):
+        return
+    run.progress("preparing animations and the explanation", 0, 0)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        jobs = [
+            pool.submit(_animate, run, result, False),
+            pool.submit(_explain, run, result, False),
+        ]
+    for job in jobs:
+        job.result()  # re-raises BudgetExhausted or a provider error from either
+
+
+def _animate(run: _Run, result: SolveResult, report: bool = True) -> None:
     """Animations only for verified code: an animation teaches, so it must be right."""
     from algolens.pipeline.visualize import plan_animation
 
     for a in result.approaches:
         if a.status != "verified":
             continue
-        with run.timed("preparing animations"):
+        with run.timed("preparing animations", report):
             try:
                 a.animation = plan_animation(run, result.spec or {}, a.python_code, a.cpp_code)
             except BudgetExhausted:
@@ -306,7 +358,7 @@ def _animate(run: _Run, result: SolveResult) -> None:
                 raise
 
 
-def _explain(run: _Run, result: SolveResult) -> None:
+def _explain(run: _Run, result: SolveResult, report: bool = True) -> None:
     """The interview-style thought process, brute force to optimal, for the approaches that
     were verified (explaining unverified code would teach something that may be wrong). A
     reply that doesn't fit, or a provider error, leaves the page without it: the verified
@@ -316,7 +368,7 @@ def _explain(run: _Run, result: SolveResult) -> None:
     shown = [a for a in result.approaches if a.status == "verified"]
     if not shown:
         return
-    with run.timed("writing the explanation"):
+    with run.timed("writing the explanation", report):
         try:
             reply = run.ask(
                 "explain",
@@ -327,7 +379,8 @@ def _explain(run: _Run, result: SolveResult) -> None:
         except BudgetExhausted:
             raise
         except Exception as exc:  # AIError, a reply that never fit: no explanation, no failure
-            run.failures.append(f"explanation unavailable: {str(exc)[:200]}")
+            with run.lock:
+                run.failures.append(f"explanation unavailable: {str(exc)[:200]}")
             return
     if len(reply.approaches) != len(shown):
         run.failures.append("explanation unavailable: it didn't cover each approach once")

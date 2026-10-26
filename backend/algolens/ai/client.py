@@ -295,8 +295,14 @@ class AIClient:
             seconds = float(wait) if wait.replace(".", "").isdigit() else 0
             # Keep enough of the body for the quota details (Gemini puts them near the end).
             raise _Retryable(f"HTTP {r.status_code}: {r.text[:3000]}", seconds)
-        if r.status_code in (401, 403):
-            raise AIUnavailable(f"the AI service refused the key (HTTP {r.status_code})")
+        # Gemini answers a bad key with 400 API_KEY_INVALID; a retired model is a setup issue too.
+        if (
+            r.status_code in (401, 403, 404)
+            or "API_KEY_INVALID" in r.text
+            or ("model_decommissioned" in r.text)
+        ):
+            raise AIUnavailable(f"the AI service refused the key or model (HTTP {r.status_code}: "
+                                f"{r.text[:300]})")  # fmt: skip
         if r.status_code >= 400:
             raise AIError(f"HTTP {r.status_code}: {r.text[:500]}")
         return r.json()

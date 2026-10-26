@@ -453,3 +453,102 @@
 .quotaWhen {
   color: var(--text-muted);
 }
+
+.queueNote {
+  margin: 4px 0 10px;
+}
+
+/* New problems left today, under the submit button. */
+.allowance {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* A quote to read while a problem is solved: one per run (pages/quotes.ts). */
+.quoteCard {
+  position: relative;
+  margin: 0 0 24px;
+  padding: 26px 28px 22px 64px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  animation: quoteIn 0.7s ease-out both;
+}
+
+.quoteMark {
+  position: absolute;
+  top: 4px;
+  left: 16px;
+  font-family: var(--serif);
+  font-size: 4.5rem;
+  line-height: 1;
+  color: var(--brand);
+  opacity: 0.85;
+}
+
+.quoteText {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.quoteBy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: 14px;
+}
+
+.quoteAuthor {
+  font-family: var(--hand);
+  font-size: 1.45rem;
+  color: var(--brand);
+}
+
+.quoteAuthor::before {
+  content: "— ";
+}
+
+.quoteSource {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+@keyframes quoteIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quoteCard {
+    animation: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .quoteCard {
+    padding: 44px 18px 18px;
+  }
+
+  .quoteMark {
+    top: 0;
+    left: 14px;
+    font-size: 3.6rem;
+  }
+
+  .quoteText {
+    font-size: 1.15rem;
+  }
+}

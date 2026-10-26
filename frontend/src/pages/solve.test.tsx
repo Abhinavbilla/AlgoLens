@@ -236,7 +236,7 @@ test("a failed job says nothing was judged", async () => {
   renderAt("/jobs/j2");
   const alert = await screen.findByRole("alert");
   expect(alert).toHaveTextContent("the code runner is down");
-  expect(alert).toHaveTextContent("Nothing was marked verified or wrong");
+  expect(alert).toHaveTextContent("This problem couldn't be processed"); // no kind: generic title
 });
 
 const FRAME = {
@@ -457,4 +457,100 @@ test("a used-up AI allowance says when it's back, in the learner's own time", as
   expect(screen.getByText(/back around/i)).toHaveTextContent(/\(your time\)/);
   expect(screen.queryByText(/couldn't be processed/)).toBeNull();
   expect(screen.getByRole("link", { name: /explore the library/i })).toBeInTheDocument();
+});
+
+test("a failed job gets a plain title and message, and a retry with the text from this tab", async () => {
+  sessionStorage.setItem("algolens:pasted:job:j7", "Two Sum ... Example: nums = [2,7], target = 9 -> [0,1]");
+  mockApi((url) => {
+    if (url === "/api/jobs/j7")
+      return {
+        status: 200,
+        body: {
+          id: "j7", status: "failed", stage: "", tests_passed: 0, tests_total: 0, problem_id: null,
+          error: "The code runner that tests every solution is down right now.",
+          error_kind: "sandbox", quota: null,
+        },
+      };
+  });
+  renderAt("/jobs/j7");
+  expect(await screen.findByText("The code runner is down")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /couldn't be finished/i })).toBeInTheDocument();
+  expect(screen.queryByRole("figure")).toBeNull(); // no quote under a failure
+  expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+});
+
+test("a server error without an explanation is described in words, not a status code", async () => {
+  mockApi((url) => {
+    if (url === "/api/problems") return { status: 502, body: "<html>Bad Gateway</html>" };
+  });
+  renderAt("/solve");
+  await userEvent.click(screen.getByRole("button", { name: /try an example/i }));
+  await userEvent.click(screen.getByRole("button", { name: /solve and verify/i }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(/isn't responding/);
+  expect(screen.getByRole("alert")).not.toHaveTextContent(/502/);
+});
+
+test("the paste page says how many new problems are left today", async () => {
+  mockApi((url) => {
+    if (url === "/api/problems/allowance")
+      return { status: 200, body: { limit: 3, used: 1, in_progress: 0, left: 2, retry_at: null } };
+  });
+  renderAt("/solve");
+  expect(await screen.findByText(/2 of 3 new problems left today/)).toBeInTheDocument();
+});
+
+test("a refused new problem shows today's limit is finished, with when it frees up", async () => {
+  const retry = new Date(Date.now() + 3 * 3600 * 1000).toISOString();
+  const allowance = { limit: 3, used: 3, in_progress: 0, left: 0, retry_at: retry };
+  mockApi((url) => {
+    if (url === "/api/problems")
+      return {
+        status: 429,
+        body: {
+          detail: {
+            message: "Today's limit is finished: you've solved 3 new problems in the last 24 hours.",
+            issues: [], kind: "daily_limit", allowance,
+          },
+        },
+      };
+  });
+  renderAt("/solve");
+  await userEvent.click(screen.getByRole("button", { name: /try an example/i }));
+  await userEvent.click(screen.getByRole("button", { name: /solve and verify/i }));
+  const card = await screen.findByRole("alert");
+  expect(within(card).getByText("Today's limit is finished")).toBeInTheDocument();
+  expect(card).toHaveTextContent(/You've solved 3 new problems/);
+  expect(card).toHaveTextContent(/around .* \(your time\)/);
+});
+
+test("a waiting job says how many are ahead and roughly when it starts", async () => {
+  mockApi((url) => {
+    if (url === "/api/jobs/j8")
+      return {
+        status: 200,
+        body: {
+          id: "j8", status: "queued", stage: "waiting in the queue", tests_passed: 0, tests_total: 0,
+          error: "", problem_id: null, queue: { ahead: 2, wait_s: 300, typical_s: 180 },
+        },
+      };
+  });
+  renderAt("/jobs/j8");
+  expect(await screen.findByText(/2 problems are ahead of yours/)).toHaveTextContent(/about 5 minutes/);
+});
+
+test("a running problem shows a quote to read while waiting", async () => {
+  mockApi((url) => {
+    if (url === "/api/jobs/j5")
+      return {
+        status: 200,
+        body: {
+          id: "j5", status: "running", stage: "writing solutions", tests_passed: 0, tests_total: 0,
+          error: "", problem_id: null,
+        },
+      };
+  });
+  renderAt("/jobs/j5");
+  const quote = await screen.findByRole("figure");
+  expect(quote.querySelector("blockquote")?.textContent).toBeTruthy();
+  expect(screen.queryByText(/sip of water/)).toBeNull();
 });

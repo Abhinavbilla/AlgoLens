@@ -36,6 +36,11 @@ class Settings(BaseSettings):
 
     worker_poll_seconds: float = Field(default=1.0, gt=0)
 
+    # New problems each visitor may have solved in 24 hours (pipeline/allowance.py); only
+    # delivered results count. Signed-in learners get more. 0 turns the limit off.
+    problems_per_day: int = Field(default=3, ge=0)
+    problems_per_day_signed_in: int = Field(default=6, ge=0)
+
     # Optional Google sign-in. The address the site is reached at: Google sends people back to
     # <public_url>/api/auth/google/callback, and an https address makes the cookie Secure.
     # The client id and secret are read from GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.

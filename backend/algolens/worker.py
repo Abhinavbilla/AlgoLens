@@ -16,6 +16,7 @@ from algolens.ai.client import QuotaExhausted
 from algolens.config import get_settings
 from algolens.db.models import Job
 from algolens.db.session import session_factory
+from algolens.failures import describe_failure
 
 log = logging.getLogger("algolens.worker")
 
@@ -58,20 +59,20 @@ def run_one(sessions: sessionmaker[Session], handlers: dict[str, Handler] = HAND
                 raise LookupError(f"no handler for job kind {job.kind!r}")
             handler(session, job)
             job.status = "done"
-        except QuotaExhausted as exc:  # the free AI allowance ran out: say so plainly
-            session.rollback()
-            log.warning("job %s stopped: %s", job.id, exc)
-            job.status = "failed"
-            job.error = exc.friendly("This problem couldn't be solved")[:2000]
-            payload = dict(job.payload or {})
-            payload["quota"] = {"retry_at": exc.retry_at.isoformat() if exc.retry_at else None,
-                                "daily": exc.daily}  # fmt: skip
-            job.payload = payload
         except Exception as exc:
             session.rollback()
-            log.exception("job %s failed", job.id)
-            job.status = "failed"
-            job.error = str(exc)[:2000]
+            if isinstance(exc, QuotaExhausted):  # the free AI allowance ran out: expected
+                log.warning("job %s stopped: %s", job.id, exc)
+            else:
+                log.exception("job %s failed", job.id)
+            # Learners get a plain explanation; the raw error stays in the log and the run.
+            kind, message = describe_failure(exc)
+            job.status, job.error = "failed", message[:2000]
+            payload = {**(job.payload or {}), "error_kind": kind}
+            if isinstance(exc, QuotaExhausted):
+                payload["quota"] = {"retry_at": exc.retry_at.isoformat() if exc.retry_at else None,
+                                    "daily": exc.daily}  # fmt: skip
+            job.payload = payload
         if "text" in (job.payload or {}):
             job.payload = {k: v for k, v in job.payload.items() if k != "text"}
         job.finished_at = func.now()
@@ -79,7 +80,10 @@ def run_one(sessions: sessionmaker[Session], handlers: dict[str, Handler] = HAND
         return True
 
 
-INTERRUPTED = "interrupted by a restart before it finished; please submit the problem again"
+INTERRUPTED = (
+    "The server restarted while this problem was being solved, so the work stopped. Nothing "
+    "was marked right or wrong because of it. Please paste the problem again."
+)
 
 
 def fail_interrupted(session: Session) -> int:
@@ -89,7 +93,8 @@ def fail_interrupted(session: Session) -> int:
     jobs = session.scalars(select(Job).where(Job.status == "running")).all()
     for job in jobs:
         job.status, job.error, job.finished_at = "failed", INTERRUPTED, func.now()
-        job.payload = {k: v for k, v in (job.payload or {}).items() if k != "text"}
+        payload = {k: v for k, v in (job.payload or {}).items() if k != "text"}
+        job.payload = {**payload, "error_kind": "interrupted"}
     session.commit()
     return len(jobs)
 

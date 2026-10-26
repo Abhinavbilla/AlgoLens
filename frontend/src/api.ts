@@ -137,27 +137,63 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public issues: Issue[] = [],
+    /** The server's structured detail, when it sent one (e.g. the daily allowance). */
+    public detail: Record<string, unknown> | null = null,
   ) {
     super(message);
   }
 }
 
+// What to say when the server didn't explain an error itself (a proxy page, a crash).
+const STATUS_MESSAGES: Record<number, string> = {
+  400: "The server couldn't understand that request. Reload the page and try again.",
+  404: "That wasn't found. It may have been removed; go back and try again.",
+  408: "The server took too long to answer. Try again.",
+  413: "That's too large to send. Try something shorter.",
+  422: "Some of what was sent isn't valid. Check it and try again.",
+  429: "Too many requests in a short time. Wait a minute and try again.",
+  500: "Something went wrong on the AlgoLens server. Try again in a moment.",
+  502: "The AlgoLens server isn't responding (it may be restarting). Try again in a minute.",
+  503: "AlgoLens is temporarily unavailable (it may be restarting). Try again in a minute.",
+  504: "The AlgoLens server took too long to answer. Try again in a minute.",
+};
+
+export const OFFLINE_MESSAGE =
+  "Couldn't reach AlgoLens. Check your internet connection, then try again.";
+
+export function statusMessage(status: number): string {
+  return (
+    STATUS_MESSAGES[status] ??
+    (status >= 500
+      ? STATUS_MESSAGES[500]
+      : "Something went wrong with that request. Reload the page and try again.")
+  );
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init);
+  let res: Response;
+  try {
+    res = await fetch(path, init);
+  } catch {
+    throw new ApiError(0, OFFLINE_MESSAGE);
+  }
   if (!res.ok) {
-    let message = `Request failed (${res.status})`;
+    let message = statusMessage(res.status);
     let issues: Issue[] = [];
+    let detail: Record<string, unknown> | null = null;
     try {
       const body = await res.json();
       if (typeof body.detail === "string") message = body.detail;
       else if (body.detail && typeof body.detail.message === "string") {
         message = body.detail.message;
         issues = Array.isArray(body.detail.issues) ? body.detail.issues : [];
+        detail = body.detail;
       }
+      // A list detail is FastAPI's own validation dump: keep the plain status message.
     } catch {
-      // keep the generic message
+      // not JSON (a proxy's error page): keep the plain status message
     }
-    throw new ApiError(res.status, message, issues);
+    throw new ApiError(res.status, message, issues, detail);
   }
   return res.json() as Promise<T>;
 }
@@ -175,9 +211,22 @@ export type JobView = {
   tests_passed: number;
   tests_total: number;
   error: string;
+  /** Why a failed job stopped (backend/algolens/failures.py). */
+  error_kind?: string | null;
   problem_id: string | null;
   /** Set when the free AI allowance ran out: when it should be back, if the provider said. */
   quota?: { retry_at: string | null; daily: boolean } | null;
+  /** While waiting: jobs ahead of this one and roughly how long until it starts. */
+  queue?: { ahead: number; wait_s: number; typical_s: number } | null;
+};
+
+/** New problems this visitor can still have solved in 24 hours (left is null: no limit). */
+export type Allowance = {
+  limit: number;
+  used: number;
+  in_progress: number;
+  left: number | null;
+  retry_at: string | null;
 };
 
 export type ApproachView = {
@@ -259,6 +308,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(retry ? { text, retry } : { text }),
     }),
+  allowance: () => get<Allowance>("/api/problems/allowance"),
   job: (id: string) => get<JobView>(`/api/jobs/${encodeURIComponent(id)}`),
   jobEventsUrl: (id: string) => `/api/jobs/${encodeURIComponent(id)}/events`,
   problem: (id: string) => get<ProblemView>(`/api/problems/${encodeURIComponent(id)}`),

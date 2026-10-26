@@ -45,7 +45,7 @@ test("the path lists stages in order, skips what isn't in the library, and track
   mockApi();
   renderAt("/path");
   expect(await screen.findByText("Foundations")).toBeInTheDocument();
-  expect(screen.getByText("Your first algorithms")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Sorting" })).toBeInTheDocument();
   expect(screen.queryByText("Going further")).not.toBeInTheDocument(); // none of its entries are here
   expect(screen.getByText(/0 of 17 done/)).toBeInTheDocument(); // 13 primers + 4 present entries
   expect(screen.getByText(/Next up:/)).toHaveTextContent("Arrays and indexes");
@@ -179,4 +179,12 @@ test("stability keeps ties in their original order", async () => {
     .getAllByRole("listitem")
     .map((li) => li.querySelector("strong")?.textContent);
   expect(order).toEqual(["Ben", "Dev", "Asha", "Chen", "Ema"]);
+});
+
+test("the sorting stage teaches every sort, ending with merge sort and quick sort", () => {
+  const sorting = PATH.find((s) => s.title === "Sorting");
+  expect(sorting?.items).toEqual(
+    expect.arrayContaining(["bubble-sort", "selection-sort", "insertion-sort", "counting-sort", "merge-sort", "quick-sort"]),
+  );
+  expect(sorting?.items.slice(-2)).toEqual(["merge-sort", "quick-sort"]);
 });

@@ -23,7 +23,7 @@ def _row(slug: str) -> LibraryEntry:
     with session_factory()() as session:
         row = session.scalar(select(LibraryEntry).where(LibraryEntry.slug == slug))
     if row is None:
-        raise HTTPException(404, detail=f"no library entry {slug!r}")
+        raise HTTPException(404, detail="This page isn't in the library. It may have been renamed.")
     return row
 
 

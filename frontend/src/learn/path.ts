@@ -66,19 +66,25 @@ export const PATH: Stage[] = [
     items: ["primer:arrays", "primer:big-o", "primer:recursion"],
   },
   {
-    title: "Your first algorithms",
+    title: "Sorting",
     icon: "sorting",
-    why: "Simple loops over an array, so you get used to reading code step by step.",
+    why:
+      "Six ways to put things in order: three simple loops, one that counts instead of comparing, and the two classics that split the work in half.",
     items: [
       "bubble-sort",
       "selection-sort",
       "insertion-sort",
       "counting-sort",
       "primer:stable-sorting",
-      "binary-search-exact",
-      "binary-search",
-      "integer-sqrt",
+      "merge-sort",
+      "quick-sort",
     ],
+  },
+  {
+    title: "Searching",
+    icon: "searching",
+    why: "Sorted data pays off: throw away half of what's left at every step.",
+    items: ["binary-search-exact", "binary-search", "integer-sqrt"],
   },
   {
     title: "Strings, hashing and sets",
@@ -109,8 +115,9 @@ export const PATH: Stage[] = [
   {
     title: "Recursion in action",
     icon: "recursion",
-    why: "Split a problem, solve the pieces, combine. Watch the call stack grow and shrink.",
-    items: ["merge-sort", "quick-sort", "subsets", "combinations", "permutations"],
+    why:
+      "Merge sort and quick sort already split a problem in two. Now branch further: build every subset, combination and ordering, and watch the call stack grow and shrink.",
+    items: ["subsets", "combinations", "permutations"],
   },
   {
     title: "Stacks, queues and heaps",
