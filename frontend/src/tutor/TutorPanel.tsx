@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import { ApiError, api, type ChatMessage, type ChatMode, type CheckResult, type TutorStep } from "../api";
 import type { PageInfo, StepReport } from "./TutorContext";
 import { Markdown } from "./Markdown";
+import { MIN_HEIGHT, MIN_WIDTH, useResizable } from "./resize";
 import styles from "./TutorPanel.module.css";
 
 export type Tab = "explain" | "hint" | "check";
@@ -58,6 +59,7 @@ export function TutorPanel({ page, open, opening, hasStep, currentStep, onOpen, 
   const [checkError, setCheckError] = useState("");
   const input = useRef<HTMLTextAreaElement>(null);
   const log = useRef<HTMLDivElement>(null);
+  const resize = useResizable();
 
   useEffect(() => save(`${key}:chat`, messages), [key, messages]);
   useEffect(() => save(`${key}:code`, code), [key, code]);
@@ -170,11 +172,46 @@ export function TutorPanel({ page, open, opening, hasStep, currentStep, onOpen, 
 
   return (
     <aside
-      className={styles.panel}
+      className={resize.dragging ? `${styles.panel} ${styles.resizing}` : styles.panel}
+      style={resize.style}
       role="dialog"
       aria-label="Tutor"
       onKeyDown={(e) => e.key === "Escape" && onClose()}
     >
+      {/* Drag an edge to resize; arrow keys work too, and a double-click resets the size. */}
+      <div
+        className={styles.edgeLeft}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the tutor's width"
+        aria-valuemin={MIN_WIDTH}
+        aria-valuenow={resize.size.width}
+        tabIndex={0}
+        title="Drag to resize · double-click to reset"
+        onPointerDown={resize.onPointerDown("left")}
+        onKeyDown={resize.onKeyDown("left")}
+        onDoubleClick={resize.reset}
+      />
+      <div
+        className={styles.edgeTop}
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize the tutor's height"
+        aria-valuemin={MIN_HEIGHT}
+        aria-valuenow={resize.size.height ?? undefined}
+        tabIndex={0}
+        title="Drag to resize · double-click to reset"
+        onPointerDown={resize.onPointerDown("top")}
+        onKeyDown={resize.onKeyDown("top")}
+        onDoubleClick={resize.reset}
+      />
+      <div
+        className={styles.edgeCorner}
+        aria-hidden="true"
+        title="Drag to resize · double-click to reset"
+        onPointerDown={resize.onPointerDown("corner")}
+        onDoubleClick={resize.reset}
+      />
       <header className={styles.head}>
         <TutorMark />
         <div className={styles.headText}>

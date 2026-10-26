@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Frame } from "../api";
 import { Markdown } from "./Markdown";
+import { MIN_HEIGHT, MIN_WIDTH, clampSize } from "./resize";
 import { stepFromFrame, TutorProvider, useTutor, type PageInfo } from "./TutorContext";
 
 const PAGE: PageInfo = {
@@ -158,4 +159,31 @@ test("a step summary carries the values on screen", () => {
     narration: "best becomes 3",
     variables: { best: "3", nums: ["1", "2"], i: 1 },
   });
+});
+
+test("the panel can be resized from the keyboard, and the size is remembered", async () => {
+  localStorage.removeItem("algolens:tutor-size");
+  const user = userEvent.setup();
+  const { unmount } = render(<TutorProvider page={PAGE}>page</TutorProvider>);
+  await user.click(screen.getByRole("button", { name: /ask the tutor/i }));
+  const width = screen.getByRole("separator", { name: /resize the tutor's width/i });
+  expect(width).toHaveAttribute("aria-valuenow", "420");
+  width.focus();
+  await user.keyboard("{ArrowLeft}{ArrowLeft}");
+  expect(width).toHaveAttribute("aria-valuenow", "468");
+  expect(screen.getByRole("dialog", { name: "Tutor" }).style.getPropertyValue("--tutor-width")).toBe("468px");
+  unmount();
+
+  render(<TutorProvider page={PAGE}>page</TutorProvider>);
+  await user.click(screen.getByRole("button", { name: /ask the tutor/i }));
+  const again = screen.getByRole("separator", { name: /resize the tutor's width/i });
+  expect(again).toHaveAttribute("aria-valuenow", "468");
+  await user.dblClick(again);
+  expect(again).toHaveAttribute("aria-valuenow", "420");
+});
+
+test("a size never goes below the minimum or past the window", () => {
+  expect(clampSize({ width: 100, height: 100 }, 1280, 900)).toEqual({ width: MIN_WIDTH, height: MIN_HEIGHT });
+  expect(clampSize({ width: 5000, height: 600 }, 1280, 900)).toEqual({ width: 1248, height: 600 });
+  expect(clampSize({ width: 500, height: 866 }, 1280, 900)).toEqual({ width: 500, height: null }); // full height again
 });
