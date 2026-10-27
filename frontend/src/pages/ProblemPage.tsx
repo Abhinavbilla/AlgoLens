@@ -5,7 +5,8 @@ import { useAuth } from "../account/AuthContext";
 import { HighlightedLine } from "../viz/highlight";
 import { ApproachPlayer } from "./ApproachPlayer";
 import { ThoughtProcess } from "./ThoughtProcess";
-import { TryAgain } from "./TryAgain";
+import { recent } from "./recent";
+import { TryAgain, pasted } from "./TryAgain";
 import { Compare } from "./CompareChart";
 import { TutorProvider } from "../tutor/TutorContext";
 import pageStyles from "./pages.module.css";
@@ -26,7 +27,12 @@ function ProblemContent({ problemId }: { problemId: string }) {
     let cancelled = false;
     api
       .problem(problemId)
-      .then((data) => !cancelled && setState({ status: "ok", data }))
+      .then((data) => {
+        if (cancelled) return;
+        setState({ status: "ok", data });
+        // Remember it in this browser's recent problems, so it's easy to come back to.
+        recent.opened(problemId, data.title, data.status, pasted.textFor(problemId) ?? undefined);
+      })
       .catch((e: Error) => !cancelled && setState({ status: "error", message: e.message }));
     return () => {
       cancelled = true;

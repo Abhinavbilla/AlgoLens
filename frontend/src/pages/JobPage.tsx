@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ApiError, OFFLINE_MESSAGE, api, type JobView } from "../api";
 import { pickQuote, type Quote } from "./quotes";
+import { recent } from "./recent";
 import { pasted } from "./TryAgain";
 import styles from "./solve.module.css";
 
@@ -24,8 +25,13 @@ function JobProgress({ jobId }: { jobId: string }) {
     const update = (view: JobView) => {
       if (closed) return;
       setJob(view);
+      if (view.status === "failed") {
+        recent.failed(view.id);
+        recent.seen(view.id); // they're looking at why
+      }
       if (view.status === "done" && view.problem_id) {
         pasted.jobBecame(view.id, view.problem_id);
+        recent.finished(view.id, view.problem_id);
         navigate(`/problems/${view.problem_id}`, { replace: true });
       }
     };
@@ -39,7 +45,11 @@ function JobProgress({ jobId }: { jobId: string }) {
           update(view);
           if (!final(view) && !closed) timer = window.setTimeout(poll, 2000);
         })
-        .catch((e: Error) => !closed && setError(e.message));
+        .catch((e: Error) => {
+          if (closed) return;
+          setError(e.message);
+          recent.failed(jobId); // e.g. a job from before a reset: stop following it
+        });
     };
 
     if (typeof EventSource === "function") {

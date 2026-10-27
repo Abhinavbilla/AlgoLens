@@ -1,0 +1,178 @@
+/* "Your recent problems" on the Paste page, and the pill that follows a problem being solved. */
+
+.recent {
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.recent h2 {
+  margin: 0 0 4px;
+  font-family: var(--serif);
+  font-size: 1.25rem;
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.recent ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.status {
+  flex: none;
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.solving {
+  color: var(--brand);
+}
+
+.ready {
+  color: var(--ok);
+}
+
+.failed,
+.rejected {
+  color: var(--warn);
+}
+
+.when {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.remove,
+.pillClose {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.remove:hover,
+.pillClose:hover {
+  background: var(--brand-soft);
+  color: var(--text);
+}
+
+/* The pill: bottom-left, clear of the tutor launcher on the right. */
+.pill {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(460px, calc(100vw - 32px));
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid currentColor;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  animation: pillIn 0.25s ease-out;
+}
+
+.pillText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.pillLink {
+  flex: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.spinner {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pillIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 3s;
+  }
+}
+
+@media (max-width: 640px) {
+  .pill {
+    left: 12px;
+    right: 12px;
+    bottom: 64px; /* above the tutor launcher */
+    max-width: none;
+  }
+
+  .when {
+    display: none;
+  }
+}
+
+@media print {
+  .pill {
+    display: none;
+  }
+}

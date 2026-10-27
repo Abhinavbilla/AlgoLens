@@ -554,3 +554,46 @@ test("a running problem shows a quote to read while waiting", async () => {
   expect(quote.querySelector("blockquote")?.textContent).toBeTruthy();
   expect(screen.queryByText(/sip of water/)).toBeNull();
 });
+
+test("an opened result is listed under your recent problems on the Paste page", async () => {
+  localStorage.clear();
+  mockApi((url) => {
+    if (url === "/api/problems/p1") return { status: 200, body: PROBLEM };
+  });
+  const { unmount } = renderAt("/problems/p1");
+  await screen.findByRole("heading", { level: 1 });
+  unmount();
+  renderAt("/solve");
+  const list = await screen.findByRole("region", { name: "Your recent problems" });
+  const link = within(list).getByRole("link", { name: PROBLEM.title });
+  expect(link).toHaveAttribute("href", "/problems/p1");
+  expect(list).toHaveTextContent("Ready");
+  await userEvent.click(within(list).getByRole("button", { name: /remove/i }));
+  expect(screen.queryByRole("region", { name: "Your recent problems" })).toBeNull();
+});
+
+test("leaving while a problem is solved: a pill follows it and says when it's ready", async () => {
+  localStorage.clear();
+  let done = false;
+  mockApi((url) => {
+    if (url === "/api/problems") return { status: 202, body: { job_id: "j3" } };
+    if (url === "/api/jobs/j3")
+      return {
+        status: 200,
+        body: {
+          id: "j3", status: done ? "done" : "running", stage: "writing solutions", tests_passed: 0,
+          tests_total: 0, error: "", problem_id: done ? "p1" : null,
+        },
+      };
+    if (url === "/api/library") return { status: 200, body: [] };
+  });
+  renderAt("/solve");
+  await userEvent.click(screen.getByRole("button", { name: /try an example/i }));
+  await userEvent.click(screen.getByRole("button", { name: /solve and verify/i }));
+  await screen.findByRole("heading", { name: /working on it/i });
+  await userEvent.click(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: "Library" }));
+  expect(await screen.findByText(/Solving “Longest Run of Ones”/)).toBeInTheDocument();
+  done = true;
+  const ready = await screen.findByText(/“Longest Run of Ones” is ready/, {}, { timeout: 8000 });
+  expect(ready.closest("[role=status]")?.querySelector("a")).toHaveAttribute("href", "/problems/p1");
+}, 15000);

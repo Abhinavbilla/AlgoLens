@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { ApiError, OFFLINE_MESSAGE, api, type Allowance } from "../api";
+import { RecentList } from "./RecentProblems";
 import { pasted } from "./TryAgain";
 import styles from "./solve.module.css";
 
@@ -118,6 +119,7 @@ export function SolvePage() {
             </p>
           )}
         </form>
+        <RecentList />
       </section>
 
       <aside className={styles.how} aria-labelledby="how-h">

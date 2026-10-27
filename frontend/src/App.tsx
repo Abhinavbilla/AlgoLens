@@ -13,6 +13,7 @@ import { HomePage } from "./pages/HomePage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { TopicPage } from "./pages/TopicPage";
 import { ProblemPage } from "./pages/ProblemPage";
+import { SolvingPill } from "./pages/RecentProblems";
 import { SolvePage } from "./pages/SolvePage";
 
 export function App() {
@@ -71,6 +72,7 @@ export function App() {
           />
         </Routes>
       </main>
+      <SolvingPill />
       <footer className={styles.footer}>
         <span>
           <strong>AlgoLens</strong> · made for anyone learning DSA from scratch. Every step you see is real

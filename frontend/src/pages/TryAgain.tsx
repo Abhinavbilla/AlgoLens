@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ApiError, api } from "../api";
+import { recent } from "./recent";
 import styles from "./solve.module.css";
 
 // The server keeps only a hash of a pasted statement, never the text. So "Try again" uses the
@@ -25,7 +26,11 @@ function load(key: string): string | null {
 }
 
 export const pasted = {
-  forJob: (jobId: string, text: string) => save(`job:${jobId}`, text),
+  /** A job started for this text: keep the text for "Try again", and list it as recent. */
+  forJob: (jobId: string, text: string) => {
+    save(`job:${jobId}`, text);
+    recent.started(jobId, text);
+  },
   forProblem: (problemId: string, text: string) => save(`problem:${problemId}`, text),
   /** The job finished as this problem: keep the text with the problem. */
   jobBecame: (jobId: string, problemId: string) => {
