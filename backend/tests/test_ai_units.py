@@ -83,6 +83,17 @@ def test_budget_reserves_worst_case_and_charges_actual():
     assert b.report()["by_stage"] == {"parse": 1000}
 
 
+def test_no_cap_never_refuses_but_still_counts():
+    b = Budget(0)
+    with b.reserve(5_000_000, "narration") as charge:
+        charge(40_000)
+    with b.reserve(9_000_000, "repair"):
+        pass
+    assert b.used == 9_040_000
+    assert b.report() == {"limit": 0, "used": 9_040_000,
+                          "by_stage": {"narration": 40_000, "repair": 9_000_000}}  # fmt: skip
+
+
 def test_failed_call_counts_its_whole_reservation():
     b = Budget(10_000)
     with pytest.raises(RuntimeError), b.reserve(3000, "parse"):

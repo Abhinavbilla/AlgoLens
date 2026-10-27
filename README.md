@@ -26,7 +26,7 @@ Privacy: the statement is sent to those providers (free tiers may use prompts to
 3. Every approach is run on the examples and 300 random valid inputs against the brute force, and its C++ against its Python. Failures get up to two repair rounds. Only approaches that pass everything are marked verified.
 4. Verified approaches get an animation (checked against real recordings), and a chart of how their work grows with input size.
 
-A per-problem token budget (`ALGOLENS_MAX_TOKENS_PER_PROBLEM`) caps the AI spend.
+A per-problem token budget (`ALGOLENS_MAX_TOKENS_PER_PROBLEM`) can cap the AI spend; it is off (0) by default.
 
 ### The tutor
 

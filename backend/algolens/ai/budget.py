@@ -3,6 +3,8 @@
 Before a call, its worst case (prompt + max output) is reserved; afterwards the reservation
 is replaced by what was actually used. Calls running in parallel therefore can't overshoot
 together, and a call that wouldn't fit isn't made: BudgetExhausted is raised instead.
+
+A limit of 0 means no cap: tokens are still counted (for the run record), never refused.
 """
 
 import threading
@@ -25,13 +27,20 @@ class Budget:
         self._lock = threading.Lock()
 
     @property
+    def capped(self) -> bool:
+        return self.limit > 0
+
+    @property
     def left(self) -> int:
+        """Tokens that can still be reserved; unbounded (a very large number) without a cap."""
+        if not self.capped:
+            return 2**62
         return self.limit - self.used - self.reserved
 
     @contextmanager
     def reserve(self, tokens: int, stage: str):
         with self._lock:
-            if tokens > self.left:
+            if self.capped and tokens > self.left:
                 raise BudgetExhausted(stage, tokens, self.left)
             self.reserved += tokens
         spent = {"n": tokens}  # if the call fails, the whole reservation counts as used

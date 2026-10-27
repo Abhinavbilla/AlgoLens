@@ -6,7 +6,7 @@ from algolens.config import Settings
 
 def test_defaults_are_valid():
     s = Settings(_env_file=None)
-    assert s.max_tokens_per_problem == 200_000
+    assert s.max_tokens_per_problem == 0  # no cap
     assert s.max_repair_rounds == 2
     assert s.model_brute_a != s.model_brute_b
 
@@ -16,9 +16,8 @@ def test_token_budget_is_configurable(monkeypatch):
     assert Settings(_env_file=None).max_tokens_per_problem == 50_000
 
 
-@pytest.mark.parametrize("value", ["0", "-1"])
-def test_token_budget_must_be_positive(monkeypatch, value):
-    monkeypatch.setenv("ALGOLENS_MAX_TOKENS_PER_PROBLEM", value)
+def test_token_budget_cannot_be_negative(monkeypatch):
+    monkeypatch.setenv("ALGOLENS_MAX_TOKENS_PER_PROBLEM", "-1")
     with pytest.raises(ValidationError):
         Settings(_env_file=None)
 
